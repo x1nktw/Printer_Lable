@@ -36,8 +36,7 @@ public sealed class OrderService : IOrderService
     public async Task<Result<OrderProviderStatusDto>> GetProviderStatusAsync(CancellationToken cancellationToken = default)
     {
         var settings = await _unitOfWork.Settings.GetAsync(cancellationToken);
-        var isFrontPadConfigured = !string.IsNullOrWhiteSpace(settings.FrontPadSecret)
-                                  && !string.IsNullOrWhiteSpace(settings.FrontPadBaseUrl);
+        var webhookConfigured = !string.IsNullOrWhiteSpace(settings.FrontPadWebhookListenUrl);
 
         var inboxPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -46,13 +45,13 @@ public sealed class OrderService : IOrderService
 
         var status = new OrderProviderStatusDto
         {
-            IsDevelopmentMode = !isFrontPadConfigured,
-            IsFrontPadConfigured = isFrontPadConfigured,
-            IsLiveApiAvailable = isFrontPadConfigured,
+            IsDevelopmentMode = false,
+            IsFrontPadConfigured = webhookConfigured,
+            IsLiveApiAvailable = false,
             InboxPath = inboxPath,
             BannerMessage =
                 """
-                Заказы приходят через FrontPad Bridge (webhook) и появляются в списке автоматически. Inbox — подстраховка. Каталог FrontPad — кнопка в разделе Каталог.
+                Заказы: FrontPad Bridge → локальный webhook → список. Inbox — подстраховка. Shop API не используется.
                 """.Trim()
         };
 
@@ -121,63 +120,6 @@ public sealed class OrderService : IOrderService
     /// <inheritdoc />
     public async Task<Result<OrderSyncSummaryDto>> SyncFromProviderAsync(CancellationToken cancellationToken = default)
         => await SyncInboxOrdersAsync(cancellationToken);
-
-    /// <inheritdoc />
-    public async Task<Result<Guid>> CreateKitchenOrderAsync(
-        string orderNumber,
-        IReadOnlyList<KitchenOrderLineDto> lines,
-        CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(orderNumber))
-        {
-            return Result.Failure<Guid>("Укажите номер заказа.");
-        }
-
-        if (lines.Count == 0)
-        {
-            return Result.Failure<Guid>("Добавьте хотя бы одну позицию.");
-        }
-
-        var externalId = $"kitchen-local-{orderNumber.Trim()}-{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
-        var order = new Domain.Entities.Order
-        {
-            ExternalOrderId = externalId,
-            Number = orderNumber.Trim(),
-            Status = OrderStatus.New,
-            Comment = "Создан вручную в LabelPrint",
-            OrderedAt = DateTimeOffset.UtcNow,
-            ReceivedAt = DateTimeOffset.UtcNow,
-            TotalAmount = lines.Sum(l => (l.Price ?? 0) * l.Quantity)
-        };
-
-        var index = 1;
-        foreach (var line in lines)
-        {
-            Guid? productId = line.ProductId;
-            if (productId is null && !string.IsNullOrWhiteSpace(line.Sku))
-            {
-                var bySku = await _unitOfWork.Products.GetBySkuAsync(line.Sku!, cancellationToken);
-                productId = bySku?.Id;
-            }
-
-            order.Items.Add(new Domain.Entities.OrderItem
-            {
-                ProductId = productId,
-                Sku = line.Sku,
-                Name = string.IsNullOrWhiteSpace(line.Name) ? (line.Sku ?? "Позиция") : line.Name,
-                Quantity = line.Quantity <= 0 ? 1 : line.Quantity,
-                Price = line.Price,
-                PositionIndex = index,
-                PositionTotal = lines.Count
-            });
-            index++;
-        }
-
-        await _unitOfWork.Orders.AddAsync(order, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Manual kitchen order {Number} created as {Id}", order.Number, order.Id);
-        return Result.Success(order.Id);
-    }
 
     /// <inheritdoc />
     public async Task<Result<(IReadOnlyList<OrderListItemDto> Items, int TotalCount)>> SearchAsync(

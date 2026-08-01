@@ -46,8 +46,6 @@ public sealed class SettingsService : ISettingsService
         settings.AutoPrintOrders = dto.AutoPrintOrders;
         settings.AutoRefreshOrders = dto.AutoRefreshOrders;
         settings.OrdersRefreshIntervalSeconds = dto.OrdersRefreshIntervalSeconds;
-        settings.FrontPadSecret = dto.FrontPadSecret;
-        settings.FrontPadBaseUrl = dto.FrontPadBaseUrl;
         settings.FrontPadWebhookListenUrl = string.IsNullOrWhiteSpace(dto.FrontPadWebhookListenUrl)
             ? "http://127.0.0.1:8765/"
             : dto.FrontPadWebhookListenUrl.Trim();
@@ -76,8 +74,6 @@ public sealed class SettingsService : ISettingsService
         AutoPrintOrders = s.AutoPrintOrders,
         AutoRefreshOrders = s.AutoRefreshOrders,
         OrdersRefreshIntervalSeconds = s.OrdersRefreshIntervalSeconds,
-        FrontPadSecret = s.FrontPadSecret,
-        FrontPadBaseUrl = s.FrontPadBaseUrl,
         FrontPadWebhookListenUrl = string.IsNullOrWhiteSpace(s.FrontPadWebhookListenUrl)
             ? "http://127.0.0.1:8765/"
             : s.FrontPadWebhookListenUrl,

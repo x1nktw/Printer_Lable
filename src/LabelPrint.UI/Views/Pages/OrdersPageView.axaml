@@ -1,7 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:LabelPrint.UI.ViewModels"
-             xmlns:dto="using:LabelPrint.Application.DTOs"
              x:Class="LabelPrint.UI.Views.Pages.OrdersPageView"
              x:DataType="vm:OrdersViewModel">
   <DockPanel Margin="8">
@@ -15,60 +14,6 @@
           <TextBlock Text="{Binding InboxPath, StringFormat=Inbox: {0}}" Opacity="0.7" TextWrapping="Wrap" FontSize="12" />
         </StackPanel>
       </Border>
-
-      <Expander Header="Ручной заказ (запасной ввод)"
-                IsExpanded="{Binding IsKitchenPanelExpanded}">
-        <StackPanel Spacing="8" Margin="0,8,0,0">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBox Watermark="№ заказа"
-                     Text="{Binding KitchenOrderNumber}"
-                     Width="120"
-                     MinHeight="32" />
-            <TextBox Watermark="Поиск товара (SKU / имя)"
-                     Text="{Binding ProductSearchText}"
-                     Width="260"
-                     MinHeight="32" />
-            <Button Content="Найти" Command="{Binding SearchProductsCommand}" />
-            <Button Content="В заказ +" Command="{Binding AddSelectedProductToDraftCommand}" />
-            <Button Content="Очистить" Command="{Binding ClearDraftCommand}" />
-            <Button Content="Создать заказ" Command="{Binding CreateKitchenOrderCommand}" />
-          </StackPanel>
-          <Grid ColumnDefinitions="*,*">
-            <ListBox Grid.Column="0"
-                     ItemsSource="{Binding ProductHits}"
-                     SelectedItem="{Binding SelectedProductHit}"
-                     Height="120"
-                     MaxHeight="140"
-                     Margin="0,0,8,0">
-              <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="dto:ProductListItemDto">
-                  <TextBlock>
-                    <TextBlock.Text>
-                      <MultiBinding StringFormat="{}{0} — {1}">
-                        <Binding Path="Sku" />
-                        <Binding Path="Name" />
-                      </MultiBinding>
-                    </TextBlock.Text>
-                  </TextBlock>
-                </DataTemplate>
-              </ListBox.ItemTemplate>
-            </ListBox>
-            <DataGrid Grid.Column="1"
-                      ItemsSource="{Binding DraftLines}"
-                      AutoGenerateColumns="False"
-                      Height="120"
-                      MaxHeight="140"
-                      IsReadOnly="False"
-                      CanUserResizeColumns="True">
-              <DataGrid.Columns>
-                <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" IsReadOnly="True" />
-                <DataGridTextColumn Header="SKU" Binding="{Binding Sku}" Width="80" IsReadOnly="True" />
-                <DataGridTextColumn Header="Кол-во" Binding="{Binding Quantity}" Width="70" />
-              </DataGrid.Columns>
-            </DataGrid>
-          </Grid>
-        </StackPanel>
-      </Expander>
 
       <StackPanel Orientation="Horizontal" Spacing="8">
         <TextBox Watermark="Поиск № / клиент"

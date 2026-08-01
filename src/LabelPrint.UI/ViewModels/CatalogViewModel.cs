@@ -174,19 +174,6 @@ public partial class CatalogViewModel : PageViewModelBase
     }
 
     [RelayCommand]
-    private async Task SyncFrontPadCatalogAsync()
-    {
-        using var scope = _scopeFactory.CreateScope();
-        var sync = scope.ServiceProvider.GetRequiredService<IFrontPadCatalogSyncService>();
-        var result = await sync.SyncProductsAsync();
-        StatusMessage = result.IsFailure ? result.Error : result.Value.Message;
-        if (result.IsSuccess)
-        {
-            await ReloadProductsAsync();
-        }
-    }
-
-    [RelayCommand]
     private async Task PrintSelectedAsync()
     {
         if (SelectedProduct is null)

@@ -18,9 +18,6 @@
         <Button Content="Добавить" Command="{Binding NewProductCommand}" Margin="0,0,8,8" />
         <Button Content="Изменить" Command="{Binding EditSelectedCommand}" Margin="0,0,8,8" />
         <Button Content="Архив" Command="{Binding ArchiveSelectedCommand}" Margin="0,0,8,8" />
-        <Button Content="FrontPad" Command="{Binding SyncFrontPadCatalogCommand}"
-                Margin="0,0,8,8"
-                ToolTip.Tip="Синхронизировать каталог get_products (не чаще 1 раза в час)" />
         <Button Content="Печать" Command="{Binding PrintSelectedCommand}" Margin="0,0,8,8" />
         <ComboBox ItemsSource="{Binding Printers}"
                   SelectedItem="{Binding SelectedPrinter}"

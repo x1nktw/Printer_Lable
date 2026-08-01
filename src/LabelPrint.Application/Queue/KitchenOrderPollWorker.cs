@@ -8,7 +8,6 @@ namespace LabelPrint.Application.Queue;
 /// <summary>
 /// Polls kitchen order inbox on an interval from settings (AutoRefreshOrders).
 /// Optionally auto-prints newly created orders (AutoPrintOrders).
-/// Does not call FrontPad get_products (rate limit 1/hour).
 /// </summary>
 public sealed class KitchenOrderPollWorker : IAsyncDisposable
 {

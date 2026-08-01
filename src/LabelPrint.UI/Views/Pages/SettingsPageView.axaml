@@ -26,12 +26,10 @@
         <TextBlock Text="мм" VerticalAlignment="Center" />
       </StackPanel>
 
-      <TextBlock Text="FrontPad" FontWeight="SemiBold" Margin="0,8,0,0" />
-      <TextBlock Text="Из официального API FrontPad используем только get_products (каталог, лимит 1/час). Заказы — через расширение Bridge на webhook ниже. Секрет: FrontPad → Общие."
+      <TextBlock Text="FrontPad Bridge" FontWeight="SemiBold" Margin="0,8,0,0" />
+      <TextBlock Text="Заказы приходят через расширение Bridge на локальный webhook. Shop API FrontPad (get_products / new_order) не используется."
                  TextWrapping="Wrap"
                  Opacity="0.75" />
-      <TextBox Watermark="Base URL (…/api/index.php)" Text="{Binding FrontPadBaseUrl}" />
-      <TextBox Watermark="Secret (секретный код)" Text="{Binding FrontPadSecret}" PasswordChar="•" />
       <TextBox Watermark="Webhook listen URL (http://127.0.0.1:8765/)" Text="{Binding FrontPadWebhookListenUrl}" />
       <CheckBox Content="Автообновление заказов" IsChecked="{Binding AutoRefreshOrders}" />
       <CheckBox Content="Автопечать заказов" IsChecked="{Binding AutoPrintOrders}" />

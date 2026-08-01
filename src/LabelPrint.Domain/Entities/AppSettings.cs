@@ -18,13 +18,16 @@ public class AppSettings : EntityBase
 
     public bool AutoRefreshOrders { get; set; } = true;
 
-    /// <summary>Orders sync interval in seconds (FrontPad-friendly default ~120).</summary>
+    /// <summary>Orders sync interval in seconds (inbox poll default ~120).</summary>
     public int OrdersRefreshIntervalSeconds { get; set; } = 120;
 
+    /// <summary>Legacy shop-API secret (unused; kept for DB compatibility).</summary>
     public string? FrontPadSecret { get; set; }
 
+    /// <summary>Legacy shop-API base URL (unused; kept for DB compatibility).</summary>
     public string FrontPadBaseUrl { get; set; } = "https://app.frontpad.ru/api/index.php";
 
+    /// <summary>Local HTTP listen URL for FrontPad Bridge webhook.</summary>
     public string? FrontPadWebhookListenUrl { get; set; } = "http://127.0.0.1:8765/";
 
     public string? StoragePath { get; set; }

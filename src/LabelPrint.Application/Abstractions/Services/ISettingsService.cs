@@ -26,10 +26,6 @@ public sealed class SettingsDto
 
     public int OrdersRefreshIntervalSeconds { get; set; }
 
-    public string? FrontPadSecret { get; set; }
-
-    public string FrontPadBaseUrl { get; set; } = string.Empty;
-
     public string? FrontPadWebhookListenUrl { get; set; }
 
     public double DefaultLabelWidthMm { get; set; }

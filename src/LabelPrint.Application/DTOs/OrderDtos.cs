@@ -118,8 +118,10 @@ public sealed class OrderProviderStatusDto
 
     public bool IsDevelopmentMode { get; init; }
 
+    /// <summary>True when webhook listen URL is set (Bridge path).</summary>
     public bool IsFrontPadConfigured { get; init; }
 
+    /// <summary>Always false — shop API is not used.</summary>
     public bool IsLiveApiAvailable { get; init; }
 
     public string? InboxPath { get; init; }

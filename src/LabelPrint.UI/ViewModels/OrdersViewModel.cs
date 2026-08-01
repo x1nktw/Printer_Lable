@@ -76,22 +76,16 @@ public partial class OrdersViewModel : PageViewModelBase
 
     public ObservableCollection<OrderListItemDto> Orders { get; } = new();
     public ObservableCollection<OrderItemRowVm> ItemRows { get; } = new();
-    public ObservableCollection<ProductListItemDto> ProductHits { get; } = new();
-    public ObservableCollection<KitchenDraftLineVm> DraftLines { get; } = new();
 
     [ObservableProperty] private string? _searchText;
     [ObservableProperty] private OrderListItemDto? _selectedOrder;
     [ObservableProperty] private OrderItemRowVm? _selectedItem;
     [ObservableProperty] private string? _statusMessage;
-    [ObservableProperty] private string _bannerMessage = "Кухонные заказы FrontPad — через JSON-inbox / webhook / ручное создание.";
+    [ObservableProperty] private string _bannerMessage = "Кухонные заказы — FrontPad Bridge → webhook / JSON-inbox.";
     [ObservableProperty] private string? _inboxPath;
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private OrderStatus? _statusFilter;
     [ObservableProperty] private OrderDetailDto? _selectedOrderDetail;
-    [ObservableProperty] private string _kitchenOrderNumber = string.Empty;
-    [ObservableProperty] private string? _productSearchText;
-    [ObservableProperty] private ProductListItemDto? _selectedProductHit;
-    [ObservableProperty] private bool _isKitchenPanelExpanded;
 
     partial void OnSelectedOrderChanged(OrderListItemDto? value) => _ = LoadOrderDetailAsync();
 
@@ -132,7 +126,7 @@ public partial class OrdersViewModel : PageViewModelBase
             }
 
             StatusMessage = result.Value.TotalCount == 0
-                ? "Заказов нет. Inbox / webhook с составом, ручное создание или «Пример кухонного»."
+                ? "Заказов нет. Сохраните заказ в FrontPad (Bridge) или положите JSON в inbox / «Пример»."
                 : $"Заказов: {result.Value.TotalCount}";
         }
         catch (Exception ex)
@@ -216,119 +210,6 @@ public partial class OrdersViewModel : PageViewModelBase
             var service = scope.ServiceProvider.GetRequiredService<IOrderService>();
             var result = await service.EnsureSampleInboxOrderAsync();
             StatusMessage = result.IsFailure ? result.Error : result.Value;
-            await LoadAsync();
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = ex.Message;
-        }
-    }
-
-    [RelayCommand]
-    private async Task SearchProductsAsync()
-    {
-        ProductHits.Clear();
-        using var scope = _scopeFactory.CreateScope();
-        var products = scope.ServiceProvider.GetRequiredService<IProductService>();
-        var result = await products.SearchAsync(ProductSearchText, null, includeArchived: false, skip: 0, take: 20);
-        if (result.IsFailure)
-        {
-            StatusMessage = result.Error;
-            return;
-        }
-
-        foreach (var item in result.Value.Items)
-        {
-            ProductHits.Add(item);
-        }
-
-        StatusMessage = result.Value.TotalCount == 0
-            ? "Товары не найдены. Сначала синхронизируйте каталог (get_products)."
-            : $"Найдено: {result.Value.Items.Count}";
-    }
-
-    [RelayCommand]
-    private void AddSelectedProductToDraft()
-    {
-        if (SelectedProductHit is null)
-        {
-            StatusMessage = "Выберите товар из поиска.";
-            return;
-        }
-
-        var existing = DraftLines.FirstOrDefault(d => d.ProductId == SelectedProductHit.Id);
-        if (existing is not null)
-        {
-            existing.Quantity += 1;
-            StatusMessage = $"Количество «{existing.Name}»: {existing.Quantity}";
-            return;
-        }
-
-        DraftLines.Add(new KitchenDraftLineVm
-        {
-            ProductId = SelectedProductHit.Id,
-            Name = SelectedProductHit.Name,
-            Sku = SelectedProductHit.Sku,
-            Quantity = 1,
-            Price = SelectedProductHit.PriceAmount
-        });
-        StatusMessage = $"Добавлено: {SelectedProductHit.Name}";
-    }
-
-    [RelayCommand]
-    private void ClearDraft()
-    {
-        DraftLines.Clear();
-        StatusMessage = "Черновик очищен.";
-    }
-
-    [RelayCommand]
-    private void RemoveDraftLine(KitchenDraftLineVm? line)
-    {
-        if (line is null)
-        {
-            return;
-        }
-
-        DraftLines.Remove(line);
-    }
-
-    [RelayCommand]
-    private async Task CreateKitchenOrderAsync()
-    {
-        if (DraftLines.Count == 0)
-        {
-            StatusMessage = "Добавьте позиции из каталога.";
-            return;
-        }
-
-        var number = string.IsNullOrWhiteSpace(KitchenOrderNumber)
-            ? DateTime.Now.ToString("HHmm")
-            : KitchenOrderNumber.Trim();
-
-        var lines = DraftLines.Select(d => new KitchenOrderLineDto
-        {
-            ProductId = d.ProductId,
-            Name = d.Name,
-            Sku = d.Sku,
-            Quantity = d.Quantity,
-            Price = d.Price
-        }).ToList();
-
-        try
-        {
-            using var scope = _scopeFactory.CreateScope();
-            var service = scope.ServiceProvider.GetRequiredService<IOrderService>();
-            var result = await service.CreateKitchenOrderAsync(number, lines);
-            if (result.IsFailure)
-            {
-                StatusMessage = result.Error;
-                return;
-            }
-
-            DraftLines.Clear();
-            KitchenOrderNumber = string.Empty;
-            StatusMessage = $"Кухонный заказ №{number} создан.";
             await LoadAsync();
         }
         catch (Exception ex)
@@ -468,17 +349,4 @@ public sealed partial class OrderItemRowVm : ObservableObject
     public bool IsPrinted => Item.IsPrinted;
 
     [ObservableProperty] private bool _isSelected;
-}
-
-public sealed partial class KitchenDraftLineVm : ObservableObject
-{
-    public Guid? ProductId { get; init; }
-
-    public string Name { get; init; } = string.Empty;
-
-    public string? Sku { get; init; }
-
-    public decimal? Price { get; init; }
-
-    [ObservableProperty] private decimal _quantity = 1;
 }

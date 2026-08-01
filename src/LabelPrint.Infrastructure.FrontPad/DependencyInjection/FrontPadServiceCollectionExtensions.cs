@@ -1,5 +1,4 @@
 using LabelPrint.Application.Abstractions.Services;
-using LabelPrint.Infrastructure.FrontPad.Api;
 using LabelPrint.Infrastructure.FrontPad.Orders;
 using LabelPrint.Plugins.Abstractions.Orders;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,23 +7,15 @@ using Microsoft.Extensions.Logging;
 namespace LabelPrint.Infrastructure.FrontPad.DependencyInjection;
 
 /// <summary>
-/// Registers FrontPad HTTP API, catalog sync, inbox provider, and webhook listener.
+/// Registers FrontPad inbox provider and webhook listener (no shop API).
 /// </summary>
 public static class FrontPadServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds FrontPad adapters per official internet-shop API docs.
+    /// Adds Bridge webhook + JSON inbox order adapters.
     /// </summary>
     public static IServiceCollection AddFrontPadInfrastructure(this IServiceCollection services)
     {
-        services.AddHttpClient("FrontPad", client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(30);
-        });
-
-        services.AddSingleton<IFrontPadApiClient, FrontPadApiClient>();
-        services.AddScoped<IFrontPadCatalogSyncService, FrontPadCatalogSyncService>();
-
         services.AddSingleton<JsonFileOrderProvider>();
         services.AddSingleton<NullOrderProvider>();
         services.AddSingleton<CompositeOrderProvider>();

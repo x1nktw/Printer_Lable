@@ -13,14 +13,8 @@ public interface IOrderService
 
     Task<Result<OrderSyncSummaryDto>> SyncFromProviderAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Syncs only kitchen/inbox orders (no get_products). For background poll.</summary>
+    /// <summary>Syncs kitchen/inbox orders (Bridge webhook / JSON files). For background poll.</summary>
     Task<Result<OrderSyncSummaryDto>> SyncInboxOrdersAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>Creates a local kitchen order (manual / fallback).</summary>
-    Task<Result<Guid>> CreateKitchenOrderAsync(
-        string orderNumber,
-        IReadOnlyList<KitchenOrderLineDto> lines,
-        CancellationToken cancellationToken = default);
 
     Task<Result<(IReadOnlyList<OrderListItemDto> Items, int TotalCount)>> SearchAsync(
         string? search,

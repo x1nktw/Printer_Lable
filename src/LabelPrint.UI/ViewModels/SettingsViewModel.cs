@@ -21,8 +21,6 @@ public partial class SettingsViewModel : PageViewModelBase
     [ObservableProperty] private bool _autoPrintOrders;
     [ObservableProperty] private bool _autoRefreshOrders = true;
     [ObservableProperty] private int _ordersRefreshIntervalSeconds = 120;
-    [ObservableProperty] private string? _frontPadSecret;
-    [ObservableProperty] private string _frontPadBaseUrl = "https://app.frontpad.ru/api/index.php";
     [ObservableProperty] private string? _frontPadWebhookListenUrl = "http://127.0.0.1:8765/";
     [ObservableProperty] private double _defaultLabelWidthMm = 58;
     [ObservableProperty] private double _defaultLabelHeightMm = 40;
@@ -64,8 +62,6 @@ public partial class SettingsViewModel : PageViewModelBase
         AutoPrintOrders = dto.AutoPrintOrders;
         AutoRefreshOrders = dto.AutoRefreshOrders;
         OrdersRefreshIntervalSeconds = dto.OrdersRefreshIntervalSeconds;
-        FrontPadSecret = dto.FrontPadSecret;
-        FrontPadBaseUrl = dto.FrontPadBaseUrl;
         FrontPadWebhookListenUrl = dto.FrontPadWebhookListenUrl;
         DefaultLabelWidthMm = dto.DefaultLabelWidthMm;
         DefaultLabelHeightMm = dto.DefaultLabelHeightMm;
@@ -99,8 +95,6 @@ public partial class SettingsViewModel : PageViewModelBase
             AutoPrintOrders = AutoPrintOrders,
             AutoRefreshOrders = AutoRefreshOrders,
             OrdersRefreshIntervalSeconds = OrdersRefreshIntervalSeconds,
-            FrontPadSecret = FrontPadSecret,
-            FrontPadBaseUrl = FrontPadBaseUrl,
             FrontPadWebhookListenUrl = FrontPadWebhookListenUrl,
             DefaultLabelWidthMm = DefaultLabelWidthMm,
             DefaultLabelHeightMm = DefaultLabelHeightMm,

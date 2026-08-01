@@ -7,11 +7,16 @@
 
 ## [Unreleased]
 
+### Removed
+
+- FrontPad shop API: `get_products` / `IFrontPadApiClient` / sync каталога, поля Secret и Base URL в UI.
+- Ручной заказ (`CreateKitchenOrder` / панель на странице Заказы). Заказы только через Bridge webhook и JSON-inbox.
+
 ### Added
 
 #### UI и навигация
 - Пункт меню **Сырьё**: быстрая печать маркировки сырья (список категории «Сырьё», свободное имя, принтер, override даты/времени).
-- В **Каталоге**: кнопка **FrontPad** (`get_products`, лимит 1/час), тулбар на `WrapPanel`, override даты/времени при печати.
+- В **Каталоге**: тулбар на `WrapPanel`, override даты/времени при печати.
 - В **Настройках**: блок **Дата/время на этикетках** — `Realtime` или ручная метка (`LabelDateTimeMode` / `ManualLabelDateTime`).
 - Документация для оператора: [PRINTERS.md](docs/PRINTERS.md) (как добавить виртуальный / Windows / сетевой принтер).
 
@@ -43,9 +48,7 @@
 ### Changed
 
 - Тема только из **Настроек** (кнопка темы убрана из сайдбара).
-- Синхронизация каталога FrontPad перенесена из **Заказов** в **Каталог**.
-- `OrderService.SyncFromProviderAsync` = только inbox (без `get_products`).
-- Заказы: короче баннер, ручная панель заказа свёрнута по умолчанию.
+- `OrderService.SyncFromProviderAsync` = только inbox (Bridge / webhook).
 - Ширина кухонного чека: с горизонтали 58×40/80 на вертикаль **40×58**.
 
 ### Fixed
@@ -81,7 +84,7 @@
 
 - Настройки, каталог (категории, EAV, CSV), шаблоны и редактор (snap, undo, переменные).
 - Печать: File / Windows / TSPL / CPCL gateways, очередь, история.
-- Заказы: inbox JSON, matching, webhook, FrontPad Bridge; из API только `get_products`.
+- Заказы: inbox JSON, matching, webhook, FrontPad Bridge (без shop API).
 - См. также [FRONTPAD_KITCHEN.md](docs/FRONTPAD_KITCHEN.md), [INSTALLER.md](docs/INSTALLER.md).
 
 ## [0.2.0] - 2026-07-31

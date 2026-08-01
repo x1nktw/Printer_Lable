@@ -3,7 +3,7 @@ using LabelPrint.Plugins.Abstractions.Orders;
 namespace LabelPrint.Infrastructure.FrontPad.Orders;
 
 /// <summary>
-/// Combines dev file inbox with FrontPad API placeholder (no fake cloud sync).
+/// Order source: local JSON inbox (filled by Bridge webhook). No shop API pull.
 /// </summary>
 public sealed class CompositeOrderProvider : IOrderProvider, IOrderProviderStatus
 {
@@ -20,13 +20,8 @@ public sealed class CompositeOrderProvider : IOrderProvider, IOrderProviderStatu
     public string ProviderKey => "composite";
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<ExternalOrderDto>> GetNewOrdersAsync(CancellationToken cancellationToken = default)
-    {
-        // Dev inbox always available; live FrontPad returns empty until spike.
-        var fileOrders = await _fileProvider.GetNewOrdersAsync(cancellationToken);
-        _ = await _nullProvider.GetNewOrdersAsync(cancellationToken);
-        return fileOrders;
-    }
+    public Task<IReadOnlyList<ExternalOrderDto>> GetNewOrdersAsync(CancellationToken cancellationToken = default) =>
+        _fileProvider.GetNewOrdersAsync(cancellationToken);
 
     /// <inheritdoc />
     public Task AcknowledgeAsync(string externalOrderId, CancellationToken cancellationToken = default) =>
