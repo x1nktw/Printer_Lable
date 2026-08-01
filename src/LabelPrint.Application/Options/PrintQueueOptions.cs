@@ -10,7 +10,7 @@ public sealed class PrintQueueOptions
     /// <summary>When true, a background worker processes pending jobs.</summary>
     public bool UseBackgroundWorker { get; set; } = true;
 
-    /// <summary>When true, <see cref="Services.IPrintService.PrintProductAsync"/> processes immediately (tests / fallback).</summary>
+    /// <summary>When true, <see cref="Abstractions.Services.IPrintService.PrintProductAsync"/> processes immediately (tests / fallback).</summary>
     public bool ProcessSynchronously { get; set; }
 
     /// <summary>Delay between worker poll iterations in milliseconds.</summary>

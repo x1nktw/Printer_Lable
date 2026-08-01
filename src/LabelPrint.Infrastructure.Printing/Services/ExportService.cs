@@ -46,7 +46,7 @@ public sealed class ExportService : IExportService
         var context = await BuildRenderContextAsync(productId, cancellationToken);
         if (context.IsFailure)
         {
-            return Result.Failure<byte[]>(context.Error);
+            return Result.Failure<byte[]>(context.Error ?? "Failed to build render context.");
         }
 
         var rendered = await _renderService.RenderAsync(context.Value.Document, context.Value.Variables, cancellationToken);
@@ -59,13 +59,13 @@ public sealed class ExportService : IExportService
         var pngResult = await RenderProductLabelPngAsync(productId, cancellationToken);
         if (pngResult.IsFailure)
         {
-            return Result.Failure<byte[]>(pngResult.Error);
+            return Result.Failure<byte[]>(pngResult.Error ?? "Failed to render PNG label.");
         }
 
         var context = await BuildRenderContextAsync(productId, cancellationToken);
         if (context.IsFailure)
         {
-            return Result.Failure<byte[]>(context.Error);
+            return Result.Failure<byte[]>(context.Error ?? "Failed to build render context.");
         }
 
         var widthMm = context.Value.Document.Canvas.WidthMm;

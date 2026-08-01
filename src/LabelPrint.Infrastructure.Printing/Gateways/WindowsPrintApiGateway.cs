@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
+using System.Runtime.Versioning;
 using LabelPrint.Domain.Entities;
 using LabelPrint.Domain.Enums;
 using LabelPrint.Plugins.Abstractions.Printing;
@@ -21,6 +22,7 @@ internal sealed class WindowsPrintApiGateway : IProtocolPrinterGateway
 
     public PrinterProtocol Protocol => PrinterProtocol.Windows;
 
+    [SupportedOSPlatform("windows")]
     public Task<PrinterCapabilities> GetCapabilitiesAsync(Printer printer, CancellationToken cancellationToken = default)
     {
         EnsureWindows();
@@ -33,6 +35,7 @@ internal sealed class WindowsPrintApiGateway : IProtocolPrinterGateway
             SupportedMedia: ["PNG", "Raster"]));
     }
 
+    [SupportedOSPlatform("windows")]
     public Task<PrinterDeviceStatus> GetStatusAsync(Printer printer, CancellationToken cancellationToken = default)
     {
         EnsureWindows();
@@ -49,6 +52,7 @@ internal sealed class WindowsPrintApiGateway : IProtocolPrinterGateway
             Message: installed ? null : $"Windows printer '{printer.ConnectionString}' was not found."));
     }
 
+    [SupportedOSPlatform("windows")]
     public Task PrintAsync(Printer printer, RenderedLabel label, int copies, CancellationToken cancellationToken = default)
     {
         EnsureWindows();
@@ -166,6 +170,7 @@ internal sealed class WindowsPrintApiGateway : IProtocolPrinterGateway
         return Task.CompletedTask;
     }
 
+    [SupportedOSPlatform("windows")]
     private static Image PreparePrintImage(Image source, bool rotate90Clockwise)
     {
         if (!rotate90Clockwise)

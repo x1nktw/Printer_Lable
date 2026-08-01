@@ -75,6 +75,7 @@ public sealed class DatabaseInitializer
         {
             var backupPath = _dbContext.AppSettings
                 .AsNoTracking()
+                .OrderBy(s => s.Id)
                 .Select(s => s.BackupPath)
                 .FirstOrDefault();
             if (!string.IsNullOrWhiteSpace(backupPath))
@@ -107,7 +108,9 @@ public sealed class DatabaseInitializer
         }
         else
         {
-            var existing = await _dbContext.AppSettings.FirstAsync(cancellationToken);
+            var existing = await _dbContext.AppSettings
+                .OrderBy(s => s.Id)
+                .FirstAsync(cancellationToken);
             if (string.IsNullOrWhiteSpace(existing.FrontPadWebhookListenUrl))
             {
                 existing.FrontPadWebhookListenUrl = "http://127.0.0.1:8765/";

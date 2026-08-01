@@ -30,7 +30,11 @@ public static class PrintingServiceCollectionExtensions
 
         services.AddScoped<ILabelRenderService, SkiaLabelRenderService>();
         services.AddScoped<IProtocolPrinterGateway, FilePrinterGateway>();
-        services.AddScoped<IProtocolPrinterGateway, WindowsPrintApiGateway>();
+        if (OperatingSystem.IsWindows())
+        {
+            services.AddScoped<IProtocolPrinterGateway, WindowsPrintApiGateway>();
+        }
+
         services.AddScoped<IProtocolPrinterGateway, TsplPrinterGateway>();
         services.AddScoped<IProtocolPrinterGateway, CpclPrinterGateway>();
         services.AddScoped<IProtocolPrinterGateway, EscPosPrinterGateway>();
