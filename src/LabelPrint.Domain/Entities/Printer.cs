@@ -23,6 +23,18 @@ public class Printer : EntityBase
     /// </summary>
     public bool Rotate90 { get; set; }
 
+    /// <summary>
+    /// Extra horizontal shift for Windows GDI print (mm). Positive moves content right.
+    /// Applied after hard-margin compensation.
+    /// </summary>
+    public double PrintOffsetXMm { get; set; }
+
+    /// <summary>
+    /// Extra vertical shift for Windows GDI print (mm). Positive moves content down.
+    /// If the top is clipped and the bottom is empty, try a negative value (e.g. -2).
+    /// </summary>
+    public double PrintOffsetYMm { get; set; }
+
     public int Dpi { get; set; } = 203;
 
     /// <summary>Print darkness / density (device-specific, typically 0-15).</summary>

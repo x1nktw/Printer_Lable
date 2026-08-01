@@ -148,6 +148,8 @@ public sealed class PrinterService : IPrinterService
         printer.ConnectionString = dto.ConnectionString.Trim();
         printer.PaperWidthMm = dto.PaperWidthMm;
         printer.Rotate90 = dto.Rotate90;
+        printer.PrintOffsetXMm = dto.PrintOffsetXMm;
+        printer.PrintOffsetYMm = dto.PrintOffsetYMm;
         printer.Dpi = dto.Dpi;
         printer.Darkness = dto.Darkness;
         printer.Speed = dto.Speed;
@@ -175,6 +177,8 @@ public sealed class PrinterService : IPrinterService
         ConnectionString = printer.ConnectionString,
         PaperWidthMm = printer.PaperWidthMm,
         Rotate90 = printer.Rotate90,
+        PrintOffsetXMm = printer.PrintOffsetXMm,
+        PrintOffsetYMm = printer.PrintOffsetYMm,
         Dpi = printer.Dpi,
         IsDefault = printer.IsDefault,
         IsActive = printer.IsActive
@@ -188,6 +192,8 @@ public sealed class PrinterService : IPrinterService
         ConnectionString = printer.ConnectionString,
         PaperWidthMm = printer.PaperWidthMm,
         Rotate90 = printer.Rotate90,
+        PrintOffsetXMm = printer.PrintOffsetXMm,
+        PrintOffsetYMm = printer.PrintOffsetYMm,
         Dpi = printer.Dpi,
         Darkness = printer.Darkness,
         Speed = printer.Speed,

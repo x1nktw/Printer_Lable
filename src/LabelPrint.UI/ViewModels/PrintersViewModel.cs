@@ -34,6 +34,8 @@ public partial class PrintersViewModel : PageViewModelBase
     [ObservableProperty] private string _editConnectionString = string.Empty;
     [ObservableProperty] private double _editPaperWidthMm = 58;
     [ObservableProperty] private bool _editRotate90;
+    [ObservableProperty] private double _editPrintOffsetXMm;
+    [ObservableProperty] private double _editPrintOffsetYMm;
     [ObservableProperty] private int _editDpi = 203;
     [ObservableProperty] private int _editDarkness = 8;
     [ObservableProperty] private int _editSpeed = 4;
@@ -70,6 +72,8 @@ public partial class PrintersViewModel : PageViewModelBase
         EditConnectionString = string.Empty;
         EditPaperWidthMm = 58;
         EditRotate90 = false;
+        EditPrintOffsetXMm = 0;
+        EditPrintOffsetYMm = 0;
         EditDpi = 203;
         EditDarkness = 8;
         EditSpeed = 4;
@@ -102,6 +106,8 @@ public partial class PrintersViewModel : PageViewModelBase
         EditConnectionString = dto.ConnectionString;
         EditPaperWidthMm = dto.PaperWidthMm;
         EditRotate90 = dto.Rotate90;
+        EditPrintOffsetXMm = dto.PrintOffsetXMm;
+        EditPrintOffsetYMm = dto.PrintOffsetYMm;
         EditDpi = dto.Dpi;
         EditDarkness = dto.Darkness;
         EditSpeed = dto.Speed;
@@ -123,6 +129,8 @@ public partial class PrintersViewModel : PageViewModelBase
             ConnectionString = EditConnectionString,
             PaperWidthMm = EditPaperWidthMm,
             Rotate90 = EditRotate90,
+            PrintOffsetXMm = EditPrintOffsetXMm,
+            PrintOffsetYMm = EditPrintOffsetYMm,
             Dpi = EditDpi,
             Darkness = EditDarkness,
             Speed = EditSpeed,

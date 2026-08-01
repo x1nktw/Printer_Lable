@@ -37,6 +37,10 @@ public class PrinterListItemDto
 
     public bool Rotate90 { get; init; }
 
+    public double PrintOffsetXMm { get; init; }
+
+    public double PrintOffsetYMm { get; init; }
+
     public int Dpi { get; init; }
 
     public bool IsDefault { get; init; }
@@ -65,6 +69,12 @@ public sealed class PrinterUpsertDto
 
     /// <summary>Force 90° rotation (portrait template on landscape label stock).</summary>
     public bool Rotate90 { get; init; }
+
+    /// <summary>Extra Windows print shift X (mm). Positive → right.</summary>
+    public double PrintOffsetXMm { get; init; }
+
+    /// <summary>Extra Windows print shift Y (mm). Positive → down. Top clipped → try negative (e.g. -2).</summary>
+    public double PrintOffsetYMm { get; init; }
 
     public int Dpi { get; init; } = 203;
 

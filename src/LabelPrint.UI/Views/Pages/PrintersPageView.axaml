@@ -43,6 +43,16 @@
                   IsChecked="{Binding EditRotate90}" />
         <TextBlock Text="Если печать уезжает на 2 этикетки — включите поворот или укажите реальную ширину ленты (часто 58)."
                    Opacity="0.7" TextWrapping="Wrap" FontSize="12" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <NumericUpDown Value="{Binding EditPrintOffsetXMm}" Minimum="-20" Maximum="20"
+                         Width="120" MinWidth="120" FormatString="0.#" Increment="0.5" />
+          <TextBlock Text="смещ. X мм" VerticalAlignment="Center" Opacity="0.7" />
+          <NumericUpDown Value="{Binding EditPrintOffsetYMm}" Minimum="-20" Maximum="20"
+                         Width="120" MinWidth="120" FormatString="0.#" Increment="0.5" />
+          <TextBlock Text="смещ. Y мм" VerticalAlignment="Center" Opacity="0.7" />
+        </StackPanel>
+        <TextBlock Text="Windows: если верх обрезан и снизу пусто — уменьшите Y (например −2). Если низ обрезан — увеличьте Y."
+                   Opacity="0.7" TextWrapping="Wrap" FontSize="12" />
         <CheckBox Content="Принтер по умолчанию" IsChecked="{Binding EditIsDefault}" />
         <TextBox Watermark="Примечания" Text="{Binding EditNotes}" AcceptsReturn="True" MinHeight="48" />
         <StackPanel Orientation="Horizontal" Spacing="8">

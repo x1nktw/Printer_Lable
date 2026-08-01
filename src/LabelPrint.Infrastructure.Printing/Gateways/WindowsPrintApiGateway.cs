@@ -108,25 +108,40 @@ internal sealed class WindowsPrintApiGateway : IProtocolPrinterGateway
                 throw new InvalidOperationException("Print graphics context is unavailable.");
             }
 
-            e.Graphics.PageUnit = GraphicsUnit.Millimeter;
+            // Stay in hundredths-of-an-inch (Display) so HardMargin / PageBounds share one unit system.
+            e.Graphics.PageUnit = GraphicsUnit.Display;
+            e.Graphics.PageScale = 1f;
             e.Graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
             e.Graphics.PixelOffsetMode = PixelOffsetMode.Half;
             e.Graphics.SmoothingMode = SmoothingMode.None;
 
-            // HardMargin* are in hundredths of an inch. Drawing at (-hardX,-hardY)
-            // aligns the bitmap with the physical page so the header is not eaten by
-            // the unprintable top strip (which otherwise leaves empty space at the bottom).
-            var hardXmm = HundredthsInchToMm(e.PageSettings.HardMarginX);
-            var hardYmm = HundredthsInchToMm(e.PageSettings.HardMarginY);
+            var (originX, originY) = ResolvePrintOrigin(
+                e.PageSettings.HardMarginX,
+                e.PageSettings.HardMarginY,
+                e.PageSettings.PrintableArea.X,
+                e.PageSettings.PrintableArea.Y,
+                printer.PrintOffsetXMm,
+                printer.PrintOffsetYMm);
 
-            e.Graphics.DrawImage(
-                printImage,
-                -hardXmm,
-                -hardYmm,
-                (float)paperW,
-                (float)paperH);
+            // Prefer the driver page size; fall back to the label paper we requested.
+            var destW = e.PageBounds.Width > 0 ? e.PageBounds.Width : MmToHundredthsInch(paperW);
+            var destH = e.PageBounds.Height > 0 ? e.PageBounds.Height : MmToHundredthsInch(paperH);
 
+            e.Graphics.DrawImage(printImage, originX, originY, destW, destH);
             e.HasMorePages = false;
+
+            _logger.LogInformation(
+                "Windows print origin=({OriginX:0.##},{OriginY:0.##}) hi, page={PageW}x{PageH} hi, hard=({HardX:0.##},{HardY:0.##}), printable=({PrintX:0.##},{PrintY:0.##}), offsetMm=({OffX},{OffY})",
+                originX,
+                originY,
+                destW,
+                destH,
+                e.PageSettings.HardMarginX,
+                e.PageSettings.HardMarginY,
+                e.PageSettings.PrintableArea.X,
+                e.PageSettings.PrintableArea.Y,
+                printer.PrintOffsetXMm,
+                printer.PrintOffsetYMm);
         };
 
         try
@@ -191,11 +206,50 @@ internal sealed class WindowsPrintApiGateway : IProtocolPrinterGateway
         return (designW, designH, false);
     }
 
+    /// <summary>
+    /// Graphics origin is the printable area. Negative shift moves content toward the
+    /// physical page edge so the header is not eaten by the top hard margin.
+    /// Units: hundredths of an inch (GraphicsUnit.Display while printing).
+    /// </summary>
+    internal static (float OriginX, float OriginY) ResolvePrintOrigin(
+        float hardMarginXHi,
+        float hardMarginYHi,
+        float printableAreaXHi,
+        float printableAreaYHi,
+        double offsetXMm,
+        double offsetYMm)
+    {
+        // Some drivers zero HardMargin but fill PrintableArea (or the reverse).
+        var insetX = Math.Max(0f, Math.Max(hardMarginXHi, printableAreaXHi));
+        var insetY = Math.Max(0f, Math.Max(hardMarginYHi, printableAreaYHi));
+
+        // Cheap thermal drivers often under-report the top unprintable strip by ~1–2 mm,
+        // which leaves a clipped header and empty footer. Pad when the driver reports little.
+        const float underReportPadHi = 100f / 25.4f * 1.5f; // 1.5 mm
+        if (insetY < underReportPadHi)
+        {
+            insetY = underReportPadHi;
+        }
+        else
+        {
+            insetY += underReportPadHi * 0.5f; // ~0.75 mm extra when a margin is reported
+        }
+
+        if (insetX < underReportPadHi * 0.5f)
+        {
+            insetX = underReportPadHi * 0.5f;
+        }
+
+        return (
+            -insetX + MmToHundredthsInchFloat(offsetXMm),
+            -insetY + MmToHundredthsInchFloat(offsetYMm));
+    }
+
     private static int MmToHundredthsInch(double mm) =>
         Math.Max(1, (int)Math.Round(mm / 25.4d * 100d, MidpointRounding.AwayFromZero));
 
-    private static float HundredthsInchToMm(float hundredths) =>
-        hundredths / 100f * 25.4f;
+    private static float MmToHundredthsInchFloat(double mm) =>
+        (float)(mm / 25.4d * 100d);
 
     private static void EnsureWindows()
     {

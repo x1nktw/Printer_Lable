@@ -55,11 +55,13 @@
 - AccessViolation в рендере добавок: двойной `Dispose` у `SKFont` / lifetime встроенного Inter.
 - **Windows-печать: этикетка выходила в разы мельче ленты** — `DrawImage` растягивал PNG на `MarginBounds` страницы драйвера. Теперь страница и отрисовка в физических мм шаблона (`label.WidthMm` × `label.HeightMm`).
 - **Печать на двух этикетках / неверная ориентация** — портретный макет 40×58 на рулоне 58 мм шёл вдоль подачи. Автоповорот 90°, если ширина ленты ближе к длинной стороне макета; галка **Повернуть 90°** в настройках принтера; миграция `AddPrinterRotate90`.
-- **Верх этикетки обрезан, снизу пусто** — не учтён HardMargin драйвера Windows; отрисовка со смещением `-HardMargin` и поворот через `RotateFlip`.
+- **Верх этикетки обрезан, снизу пусто** — HardMargin/PrintableArea + авто-запас ~1.5 мм; поля **смещ. X/Y мм** в настройках принтера; лог origin при печати.
 
 ### Database
 
 - Миграция `AddLabelDateTimeSettings`: `AppSettings.LabelDateTimeMode`, `AppSettings.ManualLabelDateTime`.
+- Миграция `AddPrinterRotate90`: `Printers.Rotate90`.
+- Миграция `AddPrinterPrintOffset`: `Printers.PrintOffsetXMm`, `PrintOffsetYMm`.
 
 ---
 
