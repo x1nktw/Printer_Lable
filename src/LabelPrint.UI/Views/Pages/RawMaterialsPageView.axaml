@@ -8,7 +8,7 @@
   <DockPanel Margin="8">
     <StackPanel DockPanel.Dock="Top" Spacing="10">
       <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold" />
-      <TextBlock Text="Маркировка сырья: название, дата и время. Дата по умолчанию из Настроек; можно задать вручную."
+      <TextBlock Text="Маркировка сырья: название, дата, время и срок годности (дата + дни из карточки). Дата по умолчанию из Настроек; можно задать вручную."
                  Opacity="0.75"
                  TextWrapping="Wrap" />
       <TextBlock Text="{Binding StatusMessage}" Opacity="0.7" TextWrapping="Wrap" />
@@ -38,6 +38,10 @@
         <TextBox Watermark="Название сырья"
                  Text="{Binding CustomName}"
                  MinHeight="36" />
+        <TextBlock Text="{Binding ShelfLifeHint}"
+                   Opacity="0.7"
+                   TextWrapping="Wrap"
+                   IsVisible="{Binding HasShelfLifeHint}" />
         <ComboBox ItemsSource="{Binding Printers}"
                   SelectedItem="{Binding SelectedPrinter}"
                   PlaceholderText="Принтер"

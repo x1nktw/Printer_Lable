@@ -40,6 +40,10 @@ public sealed class SettingsDto
 
     public DateTimeOffset? ManualLabelDateTime { get; set; }
 
+    public Guid? OrdersPrintTemplateId { get; set; }
+
+    public Guid? MarkingPrintTemplateId { get; set; }
+
     /// <summary>Optional override for SQLite database file path.</summary>
     public string? DatabasePath { get; set; }
 

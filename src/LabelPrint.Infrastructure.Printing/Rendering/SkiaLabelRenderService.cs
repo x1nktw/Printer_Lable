@@ -272,10 +272,31 @@ public sealed class SkiaLabelRenderService : ILabelRenderService
             lines = lines.Take(maxLines).ToList();
         }
 
-        var drawY = y + textSize;
+        var skAlign = font.HorizontalAlign switch
+        {
+            TextHorizontalAlign.Center => SKTextAlign.Center,
+            TextHorizontalAlign.Right => SKTextAlign.Right,
+            _ => SKTextAlign.Left
+        };
+
+        var drawX = skAlign switch
+        {
+            SKTextAlign.Center => x + width / 2f,
+            SKTextAlign.Right => x + width,
+            _ => x
+        };
+
+        var blockHeight = lines.Count * lineHeight;
+        var drawY = font.VerticalAlign switch
+        {
+            TextVerticalAlign.Middle => y + Math.Max(0f, (height - blockHeight) / 2f) + textSize,
+            TextVerticalAlign.Bottom => y + Math.Max(0f, height - blockHeight) + textSize,
+            _ => y + textSize
+        };
+
         foreach (var line in lines)
         {
-            canvas.DrawText(line, x, drawY, SKTextAlign.Left, skFont, paint);
+            canvas.DrawText(line, drawX, drawY, skAlign, skFont, paint);
             drawY += lineHeight;
             if (drawY - y > height + textSize * 0.25f)
             {

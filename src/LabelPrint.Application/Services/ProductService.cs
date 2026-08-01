@@ -4,6 +4,7 @@ using LabelPrint.Application.Abstractions.Services;
 using LabelPrint.Application.Common;
 using LabelPrint.Application.DTOs;
 using LabelPrint.Domain.Entities;
+using LabelPrint.Domain.Enums;
 using LabelPrint.Domain.ValueObjects;
 using Microsoft.Extensions.Logging;
 
@@ -175,10 +176,23 @@ public sealed class ProductService : IProductService
             Barcode = p.Barcode,
             PriceAmount = p.PriceAmount,
             CategoryName = p.Category?.Name,
+            ShelfLifeDays = p.ShelfLifeDays,
+            ShelfLifeUnit = p.ShelfLifeUnit,
+            ShelfLifeDisplay = FormatShelfLife(p.ShelfLifeDays, p.ShelfLifeUnit),
             IsArchived = p.IsArchived
         }).ToList();
 
         return Result.Success<(IReadOnlyList<ProductListItemDto>, int)>((dtos, total));
+    }
+
+    private static string? FormatShelfLife(int? value, ShelfLifeUnit unit)
+    {
+        if (value is not > 0)
+        {
+            return null;
+        }
+
+        return unit == ShelfLifeUnit.Hours ? $"{value} ч." : $"{value} дн.";
     }
 
     private async Task<string?> ValidateCategoryAsync(Guid? categoryId, CancellationToken cancellationToken)
@@ -237,6 +251,7 @@ public sealed class ProductService : IProductService
         product.ManufactureDate = dto.ManufactureDate;
         product.ExpireDate = dto.ExpireDate;
         product.ShelfLifeDays = dto.ShelfLifeDays;
+        product.ShelfLifeUnit = dto.ShelfLifeUnit;
         product.CategoryId = dto.CategoryId;
         product.DefaultTemplateId = dto.DefaultTemplateId;
         product.OrderItemTemplateId = dto.OrderItemTemplateId;
@@ -254,6 +269,7 @@ public sealed class ProductService : IProductService
         ManufactureDate = product.ManufactureDate,
         ExpireDate = product.ExpireDate,
         ShelfLifeDays = product.ShelfLifeDays,
+        ShelfLifeUnit = product.ShelfLifeUnit,
         CategoryId = product.CategoryId,
         DefaultTemplateId = product.DefaultTemplateId,
         OrderItemTemplateId = product.OrderItemTemplateId,

@@ -25,6 +25,8 @@ public sealed class ProductUpsertDto
 
     public int? ShelfLifeDays { get; set; }
 
+    public ShelfLifeUnit ShelfLifeUnit { get; set; } = ShelfLifeUnit.Days;
+
     public Guid? CategoryId { get; set; }
 
     public Guid? DefaultTemplateId { get; set; }
@@ -48,6 +50,13 @@ public sealed class ProductListItemDto
     public decimal PriceAmount { get; init; }
 
     public string? CategoryName { get; init; }
+
+    public int? ShelfLifeDays { get; init; }
+
+    public ShelfLifeUnit ShelfLifeUnit { get; init; }
+
+    /// <summary>Display like «3 дн.» or «12 ч.».</summary>
+    public string? ShelfLifeDisplay { get; init; }
 
     public bool IsArchived { get; init; }
 }

@@ -1,5 +1,7 @@
+using System.Globalization;
 using LabelPrint.Application.Abstractions.Repositories;
 using LabelPrint.Application.Abstractions.Services;
+using LabelPrint.Domain.Enums;
 using LabelPrint.Plugins.Abstractions.Variables;
 
 namespace LabelPrint.Application.Variables;
@@ -147,17 +149,81 @@ public sealed class TimeVariableProvider : IVariableProvider
     }
 }
 
-/// <summary>Product expire date or context override.</summary>
-public sealed class ExpireDateVariableProvider : ProductFieldVariableProvider
+/// <summary>Product expire date/time from fixed date, shelf life, or context override.</summary>
+public sealed class ExpireDateVariableProvider : IVariableProvider
 {
-    public ExpireDateVariableProvider(IUnitOfWork unitOfWork) : base(unitOfWork)
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ILabelDateTimeService _labelDateTime;
+
+    public ExpireDateVariableProvider(IUnitOfWork unitOfWork, ILabelDateTimeService labelDateTime)
     {
+        _unitOfWork = unitOfWork;
+        _labelDateTime = labelDateTime;
     }
 
-    public override string Key => "ExpireDate";
+    public string Key => "ExpireDate";
 
-    public override string DisplayName => "Срок годности";
+    public string DisplayName => "Срок годности";
 
-    protected override string? ResolveFromProduct(Domain.Entities.Product product) =>
-        product.ExpireDate?.ToString("dd.MM.yyyy");
+    public async Task<string> ResolveAsync(VariableContext context, CancellationToken cancellationToken = default)
+    {
+        if (context.Values.TryGetValue(Key, out var explicitValue) && !string.IsNullOrWhiteSpace(explicitValue))
+        {
+            return explicitValue;
+        }
+
+        Domain.Entities.Product? product = null;
+        if (context.ProductId is Guid productId)
+        {
+            product = await _unitOfWork.Products.GetByIdAsync(productId, cancellationToken);
+        }
+
+        if (product?.ExpireDate is DateOnly fixedExpire)
+        {
+            return fixedExpire.ToString("dd.MM.yyyy");
+        }
+
+        if (product?.ShelfLifeDays is int value && value > 0)
+        {
+            var baseDt = await ResolveBaseDateTimeAsync(context, cancellationToken);
+            if (product.ShelfLifeUnit == ShelfLifeUnit.Hours)
+            {
+                return baseDt.AddHours(value).ToString("dd.MM.yyyy HH:mm");
+            }
+
+            return DateOnly.FromDateTime(baseDt).AddDays(value).ToString("dd.MM.yyyy");
+        }
+
+        return string.Empty;
+    }
+
+    private async Task<DateTime> ResolveBaseDateTimeAsync(VariableContext context, CancellationToken cancellationToken)
+    {
+        DateOnly? date = null;
+        if (context.Values.TryGetValue("Date", out var dateText)
+            && DateOnly.TryParseExact(dateText, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+        {
+            date = parsedDate;
+        }
+
+        TimeSpan time = TimeSpan.Zero;
+        if (context.Values.TryGetValue("Time", out var timeText)
+            && TimeSpan.TryParseExact(timeText, @"hh\:mm", CultureInfo.InvariantCulture, out var parsedTime))
+        {
+            time = parsedTime;
+        }
+        else if (context.Values.TryGetValue("Time", out timeText)
+                 && TimeSpan.TryParse(timeText, CultureInfo.InvariantCulture, out parsedTime))
+        {
+            time = parsedTime;
+        }
+
+        if (date is not null)
+        {
+            return date.Value.ToDateTime(TimeOnly.FromTimeSpan(time));
+        }
+
+        var effective = await _labelDateTime.GetEffectiveAsync(cancellationToken: cancellationToken);
+        return effective.ToLocalTime().DateTime;
+    }
 }

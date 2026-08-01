@@ -99,4 +99,8 @@ public sealed class TemplateFont
     public bool Bold { get; set; }
 
     public bool Italic { get; set; }
+
+    public TextHorizontalAlign HorizontalAlign { get; set; } = TextHorizontalAlign.Left;
+
+    public TextVerticalAlign VerticalAlign { get; set; } = TextVerticalAlign.Top;
 }

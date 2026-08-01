@@ -8,8 +8,31 @@
         <local:ViewLocator />
     </Application.DataTemplates>
 
+    <Application.Resources>
+      <ResourceDictionary>
+        <ResourceDictionary.ThemeDictionaries>
+          <ResourceDictionary x:Key="Dark">
+            <!-- Keep focus border same as idle — no accent outline on fields -->
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#595959" />
+            <SolidColorBrush x:Key="TextControlElevationBorderFocusedBrush" Color="#595959" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#595959" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundBorderBrushFocused" Color="#595959" />
+          </ResourceDictionary>
+          <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#8A8A8A" />
+            <SolidColorBrush x:Key="TextControlElevationBorderFocusedBrush" Color="#8A8A8A" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#8A8A8A" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundBorderBrushFocused" Color="#8A8A8A" />
+          </ResourceDictionary>
+        </ResourceDictionary.ThemeDictionaries>
+      </ResourceDictionary>
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+        <Style Selector=":is(Control)">
+          <Setter Property="FocusAdorner" Value="{x:Null}" />
+        </Style>
     </Application.Styles>
 </Application>

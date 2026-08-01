@@ -93,4 +93,21 @@ internal sealed class ProductRepository : IProductRepository
         product.IsArchived = true;
         product.UpdatedAt = DateTimeOffset.UtcNow;
     }
+
+    public async Task<IReadOnlySet<Guid>> GetReferencedTemplateIdsAsync(CancellationToken cancellationToken = default)
+    {
+        var defaults = await _db.Products.AsNoTracking()
+            .Where(p => !p.IsArchived && p.DefaultTemplateId != null)
+            .Select(p => p.DefaultTemplateId!.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var orderItem = await _db.Products.AsNoTracking()
+            .Where(p => !p.IsArchived && p.OrderItemTemplateId != null)
+            .Select(p => p.OrderItemTemplateId!.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        return defaults.Concat(orderItem).ToHashSet();
+    }
 }

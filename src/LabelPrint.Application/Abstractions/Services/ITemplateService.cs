@@ -40,6 +40,9 @@ public sealed class TemplateListItemDto
 
     public bool IsSystemPreset { get; init; }
 
+    /// <summary>True when selected as print template on Orders or Marking pages.</summary>
+    public bool IsInUse { get; init; }
+
     public bool IsArchived { get; init; }
 }
 

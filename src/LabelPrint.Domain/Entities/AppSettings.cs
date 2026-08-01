@@ -55,4 +55,10 @@ public class AppSettings : EntityBase
 
     /// <summary>Used when <see cref="LabelDateTimeMode"/> is Manual.</summary>
     public DateTimeOffset? ManualLabelDateTime { get; set; }
+
+    /// <summary>Template selected on Orders page for kitchen label print.</summary>
+    public Guid? OrdersPrintTemplateId { get; set; }
+
+    /// <summary>Template selected on Marking (сырьё) page for label print.</summary>
+    public Guid? MarkingPrintTemplateId { get; set; }
 }

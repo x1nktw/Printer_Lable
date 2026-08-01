@@ -3,6 +3,7 @@ using System;
 using LabelPrint.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LabelPrint.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(LabelPrintDbContext))]
-    partial class LabelPrintDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260801211335_AddProductShelfLifeUnit")]
+    partial class AddProductShelfLifeUnit
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.14");
@@ -118,14 +121,8 @@ namespace LabelPrint.Infrastructure.Persistence.Migrations
                     b.Property<long?>("ManualLabelDateTime")
                         .HasColumnType("INTEGER");
 
-                    b.Property<Guid?>("MarkingPrintTemplateId")
-                        .HasColumnType("TEXT");
-
                     b.Property<int>("MaxPrintRetries")
                         .HasColumnType("INTEGER");
-
-                    b.Property<Guid?>("OrdersPrintTemplateId")
-                        .HasColumnType("TEXT");
 
                     b.Property<int>("OrdersRefreshIntervalSeconds")
                         .HasColumnType("INTEGER");

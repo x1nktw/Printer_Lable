@@ -3,6 +3,36 @@ using LabelPrint.Application.Templates;
 
 namespace LabelPrint.Application.Tests;
 
+public class TemplateAlignmentHelperTests
+{
+    [Fact]
+    public void AlignToCanvasCenterHorizontal_Centers_Single_Element()
+    {
+        var items = new List<TemplateAlignmentHelper.MutableBounds>
+        {
+            new() { Id = "a", X = 0, Y = 5, Width = 20, Height = 10 }
+        };
+
+        TemplateAlignmentHelper.AlignToCanvasCenterHorizontal(items, canvasWidthMm: 58);
+
+        items[0].X.Should().Be(19);
+    }
+
+    [Fact]
+    public void AlignLeft_Aligns_Relative_To_Selection()
+    {
+        var items = new List<TemplateAlignmentHelper.MutableBounds>
+        {
+            new() { Id = "a", X = 10, Y = 0, Width = 5, Height = 5 },
+            new() { Id = "b", X = 30, Y = 0, Width = 5, Height = 5 }
+        };
+
+        TemplateAlignmentHelper.AlignLeft(items);
+
+        items.Should().OnlyContain(b => b.X == 10);
+    }
+}
+
 public class EditorUndoStackTests
 {
     [Fact]

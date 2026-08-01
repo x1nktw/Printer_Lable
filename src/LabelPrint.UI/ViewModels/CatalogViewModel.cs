@@ -20,6 +20,8 @@ public partial class CatalogViewModel : PageViewModelBase
     private Guid? _rawCategoryId;
     private Guid? _editDefaultTemplateId;
     private Guid? _editOrderItemTemplateId;
+    private DateOnly? _editExpireDate;
+    private DateOnly? _editManufactureDate;
 
     public CatalogViewModel(IServiceScopeFactory scopeFactory, IUiDialogService dialogs)
     {
@@ -38,6 +40,7 @@ public partial class CatalogViewModel : PageViewModelBase
     [ObservableProperty] private int _selectedSectionIndex;
     [ObservableProperty] private string? _searchText;
     [ObservableProperty] private ProductListItemDto? _selectedProduct;
+    [ObservableProperty] private ProductListItemDto? _selectedRawProduct;
     [ObservableProperty] private string? _statusMessage;
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private bool _canLoadMore;
@@ -45,6 +48,8 @@ public partial class CatalogViewModel : PageViewModelBase
     [ObservableProperty] private string _editSku = string.Empty;
     [ObservableProperty] private string? _editBarcode;
     [ObservableProperty] private decimal? _editPrice;
+    [ObservableProperty] private decimal? _editShelfLifeValue;
+    [ObservableProperty] private ShelfLifeUnit _editShelfLifeUnit = ShelfLifeUnit.Days;
     [ObservableProperty] private Guid? _editCategoryId;
     [ObservableProperty] private CategoryOptionVm? _editCategoryOption;
     [ObservableProperty] private bool _isEditorOpen;
@@ -64,6 +69,30 @@ public partial class CatalogViewModel : PageViewModelBase
     public bool IsRawSection => SelectedSectionIndex == 1;
     public bool IsAddonsSection => SelectedSectionIndex == 2;
     public bool IsProductCatalogSection => SelectedSectionIndex is 0 or 1;
+
+    public IReadOnlyList<ShelfLifeUnitOptionVm> ShelfLifeUnitOptions { get; } =
+    [
+        new(ShelfLifeUnit.Days, "дней"),
+        new(ShelfLifeUnit.Hours, "часов")
+    ];
+
+    public ShelfLifeUnitOptionVm EditShelfLifeUnitOption
+    {
+        get => ShelfLifeUnitOptions.First(o => o.Unit == EditShelfLifeUnit);
+        set
+        {
+            if (value is null)
+            {
+                return;
+            }
+
+            EditShelfLifeUnit = value.Unit;
+            OnPropertyChanged(nameof(EditShelfLifeUnitOption));
+        }
+    }
+
+    private ProductListItemDto? CurrentSelectedProduct =>
+        IsRawSection ? SelectedRawProduct : SelectedProduct;
 
     partial void OnSelectedSectionIndexChanged(int value)
     {
@@ -102,6 +131,11 @@ public partial class CatalogViewModel : PageViewModelBase
         EditSku = string.Empty;
         EditBarcode = null;
         EditPrice = 0;
+        EditShelfLifeValue = null;
+        EditShelfLifeUnit = ShelfLifeUnit.Days;
+        OnPropertyChanged(nameof(EditShelfLifeUnitOption));
+        _editExpireDate = null;
+        _editManufactureDate = null;
         if (IsRawSection)
         {
             EditCategoryId = _rawCategoryId;
@@ -120,14 +154,16 @@ public partial class CatalogViewModel : PageViewModelBase
     [RelayCommand]
     private async Task EditSelectedAsync()
     {
-        if (SelectedProduct is null)
+        var selected = CurrentSelectedProduct;
+        if (selected is null)
         {
+            StatusMessage = "Выберите позицию в списке.";
             return;
         }
 
         using var scope = _scopeFactory.CreateScope();
         var products = scope.ServiceProvider.GetRequiredService<IProductService>();
-        var result = await products.GetAsync(SelectedProduct.Id);
+        var result = await products.GetAsync(selected.Id);
         if (result.IsFailure)
         {
             StatusMessage = result.Error;
@@ -135,11 +171,16 @@ public partial class CatalogViewModel : PageViewModelBase
         }
 
         var dto = result.Value;
-        EditingId = SelectedProduct.Id;
+        EditingId = selected.Id;
         EditName = dto.Name;
         EditSku = dto.Sku;
         EditBarcode = dto.Barcode;
         EditPrice = dto.PriceAmount;
+        EditShelfLifeValue = dto.ShelfLifeDays;
+        EditShelfLifeUnit = dto.ShelfLifeUnit;
+        OnPropertyChanged(nameof(EditShelfLifeUnitOption));
+        _editExpireDate = dto.ExpireDate;
+        _editManufactureDate = dto.ManufactureDate;
         EditCategoryId = dto.CategoryId;
         EditCategoryOption = CategoryOptions.FirstOrDefault(c => c.Id == EditCategoryId);
         _editDefaultTemplateId = dto.DefaultTemplateId;
@@ -154,13 +195,24 @@ public partial class CatalogViewModel : PageViewModelBase
     [RelayCommand]
     private async Task SaveAsync()
     {
+        var sku = EditSku?.Trim() ?? string.Empty;
+        if (IsRawSection && string.IsNullOrWhiteSpace(sku))
+        {
+            sku = $"RAW-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
+            EditSku = sku;
+        }
+
         var dto = new ProductUpsertDto
         {
             Name = EditName,
-            Sku = EditSku,
+            Sku = sku,
             Barcode = EditBarcode,
             PriceAmount = EditPrice ?? 0,
-            CategoryId = IsRawSection ? _rawCategoryId : EditCategoryId,
+            ShelfLifeDays = EditShelfLifeValue is > 0 ? (int)EditShelfLifeValue.Value : null,
+            ShelfLifeUnit = EditShelfLifeUnit,
+            ExpireDate = _editExpireDate,
+            ManufactureDate = _editManufactureDate,
+            CategoryId = IsRawSection ? _rawCategoryId : null,
             DefaultTemplateId = _editDefaultTemplateId,
             OrderItemTemplateId = _editOrderItemTemplateId,
             CustomFieldValues = CustomFields.ToDictionary(f => f.DefinitionId, f => f.Value)
@@ -196,15 +248,27 @@ public partial class CatalogViewModel : PageViewModelBase
     [RelayCommand]
     private async Task ArchiveSelectedAsync()
     {
-        if (SelectedProduct is null)
+        var selected = CurrentSelectedProduct;
+        if (selected is null)
+        {
+            StatusMessage = "Выберите позицию в списке.";
+            return;
+        }
+
+        var confirmed = await _dialogs.ConfirmAsync(
+            "Удаление",
+            $"Удалить «{selected.Name}»?",
+            confirmText: "Удалить",
+            cancelText: "Отмена");
+        if (!confirmed)
         {
             return;
         }
 
         using var scope = _scopeFactory.CreateScope();
         var products = scope.ServiceProvider.GetRequiredService<IProductService>();
-        var result = await products.ArchiveAsync(SelectedProduct.Id);
-        StatusMessage = result.IsFailure ? result.Error : "Товар архивирован";
+        var result = await products.ArchiveAsync(selected.Id);
+        StatusMessage = result.IsFailure ? result.Error : "Удалено";
         await ReloadProductsAsync();
     }
 
@@ -243,7 +307,7 @@ public partial class CatalogViewModel : PageViewModelBase
         using var scope = _scopeFactory.CreateScope();
         var fields = scope.ServiceProvider.GetRequiredService<ICustomFieldService>();
         var result = await fields.ArchiveAsync(SelectedFieldDefinition.Id);
-        StatusMessage = result.IsFailure ? result.Error : "Поле архивировано";
+        StatusMessage = result.IsFailure ? result.Error : "Поле удалено";
         await LoadFieldDefinitionsAsync();
     }
 
@@ -327,10 +391,20 @@ public partial class CatalogViewModel : PageViewModelBase
             return;
         }
 
+        var confirmed = await _dialogs.ConfirmAsync(
+            "Удаление",
+            $"Удалить добавку «{SelectedAddon.Name}»?",
+            confirmText: "Удалить",
+            cancelText: "Отмена");
+        if (!confirmed)
+        {
+            return;
+        }
+
         using var scope = _scopeFactory.CreateScope();
         var addons = scope.ServiceProvider.GetRequiredService<IAddonService>();
         var result = await addons.ArchiveAsync(SelectedAddon.Id);
-        StatusMessage = result.IsFailure ? result.Error : "Добавка архивирована";
+        StatusMessage = result.IsFailure ? result.Error : "Добавка удалена";
         await LoadAddonsAsync();
     }
 
@@ -529,11 +603,14 @@ public partial class CatalogViewModel : PageViewModelBase
 
         foreach (var c in result.Value.OrderBy(c => c.Name))
         {
-            CategoryOptions.Add(new CategoryOptionVm(c.Id, c.Name));
             if (c.Name.Equals(RawCategoryName, StringComparison.OrdinalIgnoreCase))
             {
                 _rawCategoryId = c.Id;
+                // Сырьё / маркировка — отдельная вкладка, не в списке категорий товара.
+                continue;
             }
+
+            CategoryOptions.Add(new CategoryOptionVm(c.Id, c.Name));
         }
     }
 
@@ -576,6 +653,18 @@ public sealed class CategoryOptionVm
     }
 
     public Guid? Id { get; }
+    public string Name { get; }
+}
+
+public sealed class ShelfLifeUnitOptionVm
+{
+    public ShelfLifeUnitOptionVm(ShelfLifeUnit unit, string name)
+    {
+        Unit = unit;
+        Name = name;
+    }
+
+    public ShelfLifeUnit Unit { get; }
     public string Name { get; }
 }
 

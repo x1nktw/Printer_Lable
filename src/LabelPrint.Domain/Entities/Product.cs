@@ -29,7 +29,10 @@ public class Product : EntityBase
 
     public DateOnly? ExpireDate { get; set; }
 
+    /// <summary>Shelf life duration value (interpreted with <see cref="ShelfLifeUnit"/>).</summary>
     public int? ShelfLifeDays { get; set; }
+
+    public ShelfLifeUnit ShelfLifeUnit { get; set; } = ShelfLifeUnit.Days;
 
     public Guid? CategoryId { get; set; }
 

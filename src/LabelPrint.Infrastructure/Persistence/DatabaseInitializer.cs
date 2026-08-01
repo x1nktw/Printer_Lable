@@ -121,8 +121,50 @@ public sealed class DatabaseInitializer
         await EnsureSystemTemplatesAsync(cancellationToken);
         await EnsureRawMaterialsSeedAsync(cancellationToken);
         await EnsureAddonsSeedAsync(cancellationToken);
+        await EnsureDefaultPrintTemplateSelectionsAsync(cancellationToken);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task EnsureDefaultPrintTemplateSelectionsAsync(CancellationToken cancellationToken)
+    {
+        var settings = await _dbContext.AppSettings.OrderBy(s => s.Id).FirstAsync(cancellationToken);
+        if (settings.OrdersPrintTemplateId is not null && settings.MarkingPrintTemplateId is not null)
+        {
+            return;
+        }
+
+        var all = await _dbContext.LabelTemplates.AsNoTracking()
+            .Where(t => !t.IsArchived)
+            .ToListAsync(cancellationToken);
+        if (all.Count == 0)
+        {
+            return;
+        }
+
+        var changed = false;
+        if (settings.OrdersPrintTemplateId is null)
+        {
+            settings.OrdersPrintTemplateId =
+                all.FirstOrDefault(t => t.Name.Contains("Кухня чек", StringComparison.OrdinalIgnoreCase))?.Id
+                ?? all.FirstOrDefault(t => t.Name.Contains("Кухня", StringComparison.OrdinalIgnoreCase))?.Id
+                ?? all[0].Id;
+            changed = true;
+        }
+
+        if (settings.MarkingPrintTemplateId is null)
+        {
+            settings.MarkingPrintTemplateId =
+                all.FirstOrDefault(t => t.Name.Contains("Сырьё", StringComparison.OrdinalIgnoreCase))?.Id
+                ?? all.FirstOrDefault(t => t.Name.Contains("Срок", StringComparison.OrdinalIgnoreCase))?.Id
+                ?? all[0].Id;
+            changed = true;
+        }
+
+        if (changed)
+        {
+            settings.UpdatedAt = DateTimeOffset.UtcNow;
+        }
     }
 
     private async Task EnsureAddonsSeedAsync(CancellationToken cancellationToken)
@@ -164,7 +206,7 @@ public sealed class DatabaseInitializer
             ("Позиция заказа 58×40", 58, 40,
                 """{"schemaVersion":1,"name":"Позиция заказа","canvas":{"widthMm":58,"heightMm":40,"dpi":203},"elements":[{"id":"el1","type":0,"bounds":{"x":2,"y":2,"width":54,"height":7},"bindingMode":1,"valueBinding":"OrderNumber","font":{"family":"Arial","sizePt":10}},{"id":"el2","type":0,"bounds":{"x":2,"y":11,"width":54,"height":14},"bindingMode":1,"valueBinding":"PositionName","font":{"family":"Arial","sizePt":14,"bold":true}},{"id":"el3","type":0,"bounds":{"x":2,"y":28,"width":54,"height":8},"content":"{{PositionIndex}}/{{PositionTotal}}","bindingMode":0,"font":{"family":"Arial","sizePt":12}}]}"""),
             ("Сырьё 58×40", 58, 40,
-                """{"schemaVersion":1,"name":"Сырьё 58x40","canvas":{"widthMm":58,"heightMm":40,"dpi":203},"elements":[{"id":"el1","type":0,"bounds":{"x":2,"y":3,"width":54,"height":18},"bindingMode":1,"valueBinding":"ProductName","font":{"family":"Arial","sizePt":18,"bold":true}},{"id":"el2","type":0,"bounds":{"x":2,"y":24,"width":28,"height":10},"bindingMode":1,"valueBinding":"Date","font":{"family":"Arial","sizePt":11}},{"id":"el3","type":0,"bounds":{"x":30,"y":24,"width":26,"height":10},"bindingMode":1,"valueBinding":"Time","font":{"family":"Arial","sizePt":11,"bold":true}}]}"""),
+                """{"schemaVersion":1,"name":"Сырьё 58x40","canvas":{"widthMm":58,"heightMm":40,"dpi":203},"elements":[{"id":"el1","type":0,"bounds":{"x":2,"y":2,"width":54,"height":14},"bindingMode":1,"valueBinding":"ProductName","font":{"family":"Arial","sizePt":16,"bold":true}},{"id":"el2","type":0,"bounds":{"x":2,"y":18,"width":28,"height":8},"bindingMode":1,"valueBinding":"Date","font":{"family":"Arial","sizePt":10}},{"id":"el3","type":0,"bounds":{"x":30,"y":18,"width":26,"height":8},"bindingMode":1,"valueBinding":"Time","font":{"family":"Arial","sizePt":10,"bold":true}},{"id":"el4","type":0,"bounds":{"x":2,"y":28,"width":54,"height":9},"bindingMode":1,"valueBinding":"ExpireDate","font":{"family":"Arial","sizePt":11,"bold":true}}]}"""),
             ("Штрихкод 58×40", 58, 40,
                 """{"schemaVersion":1,"name":"Штрихкод 58x40","canvas":{"widthMm":58,"heightMm":40,"dpi":203},"elements":[{"id":"el1","type":0,"bounds":{"x":2,"y":2,"width":54,"height":7},"bindingMode":1,"valueBinding":"ProductName","font":{"family":"Arial","sizePt":9}},{"id":"el2","type":2,"bounds":{"x":3,"y":10,"width":52,"height":20},"symbology":0,"valueBinding":"Barcode"},{"id":"el3","type":0,"bounds":{"x":2,"y":31,"width":54,"height":6},"bindingMode":1,"valueBinding":"Sku","font":{"family":"Arial","sizePt":9}}]}"""),
             ("Кухня 58×40", 58, 40,

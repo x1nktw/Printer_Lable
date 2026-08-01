@@ -57,6 +57,8 @@ public sealed class SettingsService : ISettingsService
         settings.ManualLabelDateTime = dto.LabelDateTimeMode == Domain.Enums.LabelDateTimeMode.Manual
             ? dto.ManualLabelDateTime ?? DateTimeOffset.Now
             : null;
+        settings.OrdersPrintTemplateId = dto.OrdersPrintTemplateId;
+        settings.MarkingPrintTemplateId = dto.MarkingPrintTemplateId;
         settings.DatabasePath = string.IsNullOrWhiteSpace(dto.DatabasePath) ? null : dto.DatabasePath.Trim();
         settings.BackupPath = string.IsNullOrWhiteSpace(dto.BackupPath) ? null : dto.BackupPath.Trim();
         settings.UpdatedAt = DateTimeOffset.UtcNow;
@@ -83,6 +85,8 @@ public sealed class SettingsService : ISettingsService
         AutoBackupEnabled = s.AutoBackupEnabled,
         LabelDateTimeMode = s.LabelDateTimeMode,
         ManualLabelDateTime = s.ManualLabelDateTime ?? DateTimeOffset.Now,
+        OrdersPrintTemplateId = s.OrdersPrintTemplateId,
+        MarkingPrintTemplateId = s.MarkingPrintTemplateId,
         DatabasePath = s.DatabasePath,
         BackupPath = s.BackupPath,
         DefaultBackupDirectory = ResolveBackupDirectory(s)

@@ -36,6 +36,18 @@ public sealed class TemplateService : ITemplateService
         }
 
         var (items, total) = await _unitOfWork.Templates.SearchAsync(search, includeArchived, skip, take, cancellationToken);
+        var settings = await _unitOfWork.Settings.GetAsync(cancellationToken);
+        var usedIds = new HashSet<Guid>();
+        if (settings.OrdersPrintTemplateId is Guid ordersTid)
+        {
+            usedIds.Add(ordersTid);
+        }
+
+        if (settings.MarkingPrintTemplateId is Guid markingTid)
+        {
+            usedIds.Add(markingTid);
+        }
+
         var dtos = items.Select(t => new TemplateListItemDto
         {
             Id = t.Id,
@@ -44,6 +56,7 @@ public sealed class TemplateService : ITemplateService
             HeightMm = t.HeightMm,
             SchemaVersion = t.SchemaVersion,
             IsSystemPreset = t.IsSystemPreset,
+            IsInUse = usedIds.Contains(t.Id),
             IsArchived = t.IsArchived
         }).ToList();
 
@@ -158,9 +171,21 @@ public sealed class TemplateService : ITemplateService
             return Result.Failure("Шаблон не найден.");
         }
 
-        if (template.IsSystemPreset)
+        var usedIds = new HashSet<Guid>();
+        var settings = await _unitOfWork.Settings.GetAsync(cancellationToken);
+        if (settings.OrdersPrintTemplateId is Guid ordersTid)
         {
-            return Result.Failure("Системную заготовку нельзя архивировать. Создайте копию.");
+            usedIds.Add(ordersTid);
+        }
+
+        if (settings.MarkingPrintTemplateId is Guid markingTid)
+        {
+            usedIds.Add(markingTid);
+        }
+
+        if (usedIds.Contains(id))
+        {
+            return Result.Failure("Шаблон выбран в Заказах или Маркировке и его нельзя удалить.");
         }
 
         await _unitOfWork.Templates.SoftArchiveAsync(id, cancellationToken);

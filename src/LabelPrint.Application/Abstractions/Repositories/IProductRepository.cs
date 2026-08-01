@@ -33,4 +33,7 @@ public interface IProductRepository
     void Update(Product product);
 
     Task SoftArchiveAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Template ids referenced by non-archived products (default or order-item template).</summary>
+    Task<IReadOnlySet<Guid>> GetReferencedTemplateIdsAsync(CancellationToken cancellationToken = default);
 }

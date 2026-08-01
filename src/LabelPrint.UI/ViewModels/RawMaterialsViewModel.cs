@@ -11,6 +11,7 @@ namespace LabelPrint.UI.ViewModels;
 public partial class RawMaterialsViewModel : PageViewModelBase
 {
     private readonly IServiceScopeFactory _scopeFactory;
+    private bool _suppressTemplatePersist;
 
     public RawMaterialsViewModel(IServiceScopeFactory scopeFactory)
     {
@@ -32,12 +33,22 @@ public partial class RawMaterialsViewModel : PageViewModelBase
     [ObservableProperty] private DateTime? _labelDate = DateTime.Today;
     [ObservableProperty] private TimeSpan? _labelTime = DateTime.Now.TimeOfDay;
 
+    public string? ShelfLifeHint =>
+        SelectedItem?.ShelfLifeDisplay is { Length: > 0 } display
+            ? $"Срок годности: {display} (годен до = дата/время этикетки + срок)"
+            : null;
+
+    public bool HasShelfLifeHint => ShelfLifeHint is not null;
+
     partial void OnSelectedItemChanged(ProductListItemDto? value)
     {
         if (value is not null)
         {
             CustomName = value.Name;
         }
+
+        OnPropertyChanged(nameof(ShelfLifeHint));
+        OnPropertyChanged(nameof(HasShelfLifeHint));
     }
 
     [RelayCommand]
@@ -95,6 +106,7 @@ public partial class RawMaterialsViewModel : PageViewModelBase
     private async Task LoadTemplatesAsync(IServiceScope scope)
     {
         var templates = scope.ServiceProvider.GetRequiredService<ITemplateService>();
+        var settingsSvc = scope.ServiceProvider.GetRequiredService<ISettingsService>();
         var result = await templates.SearchAsync(null, includeArchived: false, skip: 0, take: 200);
         Templates.Clear();
         if (result.IsFailure)
@@ -107,9 +119,62 @@ public partial class RawMaterialsViewModel : PageViewModelBase
             Templates.Add(item);
         }
 
-        SelectedTemplate ??= Templates.FirstOrDefault(t =>
-                                t.Name.Contains("Сырьё", StringComparison.OrdinalIgnoreCase))
-                            ?? Templates.FirstOrDefault();
+        Guid? preferredId = null;
+        var settings = await settingsSvc.GetAsync();
+        if (settings.IsSuccess)
+        {
+            preferredId = settings.Value.MarkingPrintTemplateId;
+        }
+
+        _suppressTemplatePersist = true;
+        try
+        {
+            SelectedTemplate = (preferredId is Guid id
+                                   ? Templates.FirstOrDefault(t => t.Id == id)
+                                   : null)
+                               ?? Templates.FirstOrDefault(t =>
+                                   t.Name.Contains("Сырьё", StringComparison.OrdinalIgnoreCase))
+                               ?? Templates.FirstOrDefault();
+        }
+        finally
+        {
+            _suppressTemplatePersist = false;
+        }
+
+        if (SelectedTemplate is not null && preferredId != SelectedTemplate.Id)
+        {
+            await PersistSelectedTemplateAsync(SelectedTemplate.Id);
+        }
+    }
+
+    partial void OnSelectedTemplateChanged(TemplateListItemDto? value)
+    {
+        if (_suppressTemplatePersist || value is null)
+        {
+            return;
+        }
+
+        _ = PersistSelectedTemplateAsync(value.Id);
+    }
+
+    private async Task PersistSelectedTemplateAsync(Guid templateId)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var settingsSvc = scope.ServiceProvider.GetRequiredService<ISettingsService>();
+        var current = await settingsSvc.GetAsync();
+        if (current.IsFailure)
+        {
+            return;
+        }
+
+        var dto = current.Value;
+        if (dto.MarkingPrintTemplateId == templateId)
+        {
+            return;
+        }
+
+        dto.MarkingPrintTemplateId = templateId;
+        await settingsSvc.SaveAsync(dto);
     }
 
     [RelayCommand]

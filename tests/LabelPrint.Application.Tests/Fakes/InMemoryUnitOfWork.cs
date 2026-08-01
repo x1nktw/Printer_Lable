@@ -146,6 +146,17 @@ internal sealed class InMemoryUnitOfWork : IUnitOfWork
 
             return Task.CompletedTask;
         }
+
+        public Task<IReadOnlySet<Guid>> GetReferencedTemplateIdsAsync(CancellationToken cancellationToken = default)
+        {
+            var ids = _items
+                .Where(p => !p.IsArchived)
+                .SelectMany(p => new Guid?[] { p.DefaultTemplateId, p.OrderItemTemplateId })
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToHashSet();
+            return Task.FromResult((IReadOnlySet<Guid>)ids);
+        }
     }
 
     private sealed class InMemoryCategoryRepository : ICategoryRepository

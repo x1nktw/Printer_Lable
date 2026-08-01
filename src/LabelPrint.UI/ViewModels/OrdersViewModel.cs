@@ -14,6 +14,7 @@ public partial class OrdersViewModel : PageViewModelBase
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IOrderFeedNotifier _feedNotifier;
     private int _silentReload;
+    private bool _suppressTemplatePersist;
 
     public OrdersViewModel(IServiceScopeFactory scopeFactory, IOrderFeedNotifier feedNotifier)
     {
@@ -292,6 +293,7 @@ public partial class OrdersViewModel : PageViewModelBase
     private async Task LoadTemplatesAsync(IServiceScope scope)
     {
         var templates = scope.ServiceProvider.GetRequiredService<ITemplateService>();
+        var settingsSvc = scope.ServiceProvider.GetRequiredService<ISettingsService>();
         var result = await templates.SearchAsync(null, includeArchived: false, skip: 0, take: 200);
         Templates.Clear();
         if (result.IsFailure)
@@ -304,10 +306,63 @@ public partial class OrdersViewModel : PageViewModelBase
             Templates.Add(item);
         }
 
-        SelectedTemplate ??= Templates.FirstOrDefault(t =>
-                                t.Name.Contains("Кухня чек", StringComparison.OrdinalIgnoreCase)
-                                || t.Name.Contains("Кухня", StringComparison.OrdinalIgnoreCase))
-                            ?? Templates.FirstOrDefault();
+        Guid? preferredId = null;
+        var settings = await settingsSvc.GetAsync();
+        if (settings.IsSuccess)
+        {
+            preferredId = settings.Value.OrdersPrintTemplateId;
+        }
+
+        _suppressTemplatePersist = true;
+        try
+        {
+            SelectedTemplate = (preferredId is Guid id
+                                   ? Templates.FirstOrDefault(t => t.Id == id)
+                                   : null)
+                               ?? Templates.FirstOrDefault(t =>
+                                   t.Name.Contains("Кухня чек", StringComparison.OrdinalIgnoreCase)
+                                   || t.Name.Contains("Кухня", StringComparison.OrdinalIgnoreCase))
+                               ?? Templates.FirstOrDefault();
+        }
+        finally
+        {
+            _suppressTemplatePersist = false;
+        }
+
+        if (SelectedTemplate is not null && preferredId != SelectedTemplate.Id)
+        {
+            await PersistSelectedTemplateAsync(SelectedTemplate.Id);
+        }
+    }
+
+    partial void OnSelectedTemplateChanged(TemplateListItemDto? value)
+    {
+        if (_suppressTemplatePersist || value is null)
+        {
+            return;
+        }
+
+        _ = PersistSelectedTemplateAsync(value.Id);
+    }
+
+    private async Task PersistSelectedTemplateAsync(Guid templateId)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var settingsSvc = scope.ServiceProvider.GetRequiredService<ISettingsService>();
+        var current = await settingsSvc.GetAsync();
+        if (current.IsFailure)
+        {
+            return;
+        }
+
+        var dto = current.Value;
+        if (dto.OrdersPrintTemplateId == templateId)
+        {
+            return;
+        }
+
+        dto.OrdersPrintTemplateId = templateId;
+        await settingsSvc.SaveAsync(dto);
     }
 
     private async Task LoadOrderDetailAsync()

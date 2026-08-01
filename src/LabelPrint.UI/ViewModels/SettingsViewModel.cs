@@ -52,6 +52,8 @@ public partial class SettingsViewModel : PageViewModelBase
     [ObservableProperty] private string? _databasePath;
     [ObservableProperty] private string? _backupPath;
     [ObservableProperty] private string _defaultBackupDirectory = string.Empty;
+    private Guid? _ordersPrintTemplateId;
+    private Guid? _markingPrintTemplateId;
     [ObservableProperty] private string? _statusMessage;
     [ObservableProperty] private string _updateStatus = string.Empty;
     [ObservableProperty] private LabelDateTimeMode _labelDateTimeMode = LabelDateTimeMode.Realtime;
@@ -103,6 +105,8 @@ public partial class SettingsViewModel : PageViewModelBase
                 DatabasePath = dto.DatabasePath;
                 BackupPath = dto.BackupPath;
                 DefaultBackupDirectory = dto.DefaultBackupDirectory;
+                _ordersPrintTemplateId = dto.OrdersPrintTemplateId;
+                _markingPrintTemplateId = dto.MarkingPrintTemplateId;
                 StatusMessage = "Загружено";
 
                 var updates = scope.ServiceProvider.GetRequiredService<IUpdateChecker>();
@@ -139,6 +143,8 @@ public partial class SettingsViewModel : PageViewModelBase
             LabelDateTimeMode = LabelDateTimeMode,
             ManualLabelDateTime = new DateTimeOffset(
                 (ManualLabelDate ?? DateTime.Today).Date.Add(ManualLabelTime ?? TimeSpan.Zero)),
+            OrdersPrintTemplateId = _ordersPrintTemplateId,
+            MarkingPrintTemplateId = _markingPrintTemplateId,
             DatabasePath = DatabasePath,
             BackupPath = BackupPath,
             DefaultBackupDirectory = DefaultBackupDirectory

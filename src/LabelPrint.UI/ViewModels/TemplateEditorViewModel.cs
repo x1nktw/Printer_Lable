@@ -47,6 +47,11 @@ public partial class TemplateEditorViewModel : PageViewModelBase
         {
             VariableDefinitions.Add(new TemplateVariableItemViewModel(variable, InsertVariable));
         }
+
+        foreach (var family in BuildAvailableFontFamilies())
+        {
+            AvailableFontFamilies.Add(family);
+        }
     }
 
     public ObservableCollection<CanvasElementViewModel> Elements { get; } = new();
@@ -57,6 +62,44 @@ public partial class TemplateEditorViewModel : PageViewModelBase
 
     public ObservableCollection<SnapGuideViewModel> SnapGuides { get; } = new();
 
+    public ObservableCollection<string> AvailableFontFamilies { get; } = new();
+
+    private static IEnumerable<string> BuildAvailableFontFamilies()
+    {
+        var set = new SortedSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Inter",
+            "Arial",
+            "Segoe UI",
+            "Times New Roman",
+            "Courier New",
+            "Consolas",
+            "Verdana",
+            "Tahoma",
+            "Georgia",
+            "Comic Sans MS",
+            "Impact",
+            "Roboto",
+            "Calibri"
+        };
+
+        try
+        {
+            foreach (var font in Avalonia.Media.FontManager.Current.SystemFonts)
+            {
+                if (!string.IsNullOrWhiteSpace(font.Name))
+                {
+                    set.Add(font.Name);
+                }
+            }
+        }
+        catch
+        {
+            // System font enumeration is best-effort; curated list remains.
+        }
+
+        return set;
+    }
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private double _widthMm = 58;
     [ObservableProperty] private double _heightMm = 40;
@@ -305,22 +348,156 @@ public partial class TemplateEditorViewModel : PageViewModelBase
     }
 
     [RelayCommand]
-    private void AlignLeft() => Align(TemplateAlignmentHelper.AlignLeft);
+    private void AlignLeft()
+    {
+        if (TrySetTextHorizontalAlign(TextHorizontalAlign.Left))
+        {
+            return;
+        }
+
+        Align(bounds =>
+        {
+            if (bounds.Count == 1)
+            {
+                TemplateAlignmentHelper.AlignToCanvasLeft(bounds);
+            }
+            else
+            {
+                TemplateAlignmentHelper.AlignLeft(bounds);
+            }
+        });
+    }
 
     [RelayCommand]
-    private void AlignCenterHorizontal() => Align(TemplateAlignmentHelper.AlignCenterHorizontal);
+    private void AlignCenterHorizontal()
+    {
+        if (TrySetTextHorizontalAlign(TextHorizontalAlign.Center))
+        {
+            return;
+        }
+
+        Align(bounds =>
+        {
+            if (bounds.Count == 1)
+            {
+                TemplateAlignmentHelper.AlignToCanvasCenterHorizontal(bounds, WidthMm);
+            }
+            else
+            {
+                TemplateAlignmentHelper.AlignCenterHorizontal(bounds);
+            }
+        });
+    }
 
     [RelayCommand]
-    private void AlignRight() => Align(TemplateAlignmentHelper.AlignRight);
+    private void AlignRight()
+    {
+        if (TrySetTextHorizontalAlign(TextHorizontalAlign.Right))
+        {
+            return;
+        }
+
+        Align(bounds =>
+        {
+            if (bounds.Count == 1)
+            {
+                TemplateAlignmentHelper.AlignToCanvasRight(bounds, WidthMm);
+            }
+            else
+            {
+                TemplateAlignmentHelper.AlignRight(bounds);
+            }
+        });
+    }
 
     [RelayCommand]
-    private void AlignTop() => Align(TemplateAlignmentHelper.AlignTop);
+    private void AlignTop()
+    {
+        if (TrySetTextVerticalAlign(TextVerticalAlign.Top))
+        {
+            return;
+        }
+
+        Align(bounds =>
+        {
+            if (bounds.Count == 1)
+            {
+                TemplateAlignmentHelper.AlignToCanvasTop(bounds);
+            }
+            else
+            {
+                TemplateAlignmentHelper.AlignTop(bounds);
+            }
+        });
+    }
 
     [RelayCommand]
-    private void AlignCenterVertical() => Align(TemplateAlignmentHelper.AlignCenterVertical);
+    private void AlignCenterVertical()
+    {
+        if (TrySetTextVerticalAlign(TextVerticalAlign.Middle))
+        {
+            return;
+        }
+
+        Align(bounds =>
+        {
+            if (bounds.Count == 1)
+            {
+                TemplateAlignmentHelper.AlignToCanvasCenterVertical(bounds, HeightMm);
+            }
+            else
+            {
+                TemplateAlignmentHelper.AlignCenterVertical(bounds);
+            }
+        });
+    }
 
     [RelayCommand]
-    private void AlignBottom() => Align(TemplateAlignmentHelper.AlignBottom);
+    private void AlignBottom()
+    {
+        if (TrySetTextVerticalAlign(TextVerticalAlign.Bottom))
+        {
+            return;
+        }
+
+        Align(bounds =>
+        {
+            if (bounds.Count == 1)
+            {
+                TemplateAlignmentHelper.AlignToCanvasBottom(bounds, HeightMm);
+            }
+            else
+            {
+                TemplateAlignmentHelper.AlignBottom(bounds);
+            }
+        });
+    }
+
+    private bool TrySetTextHorizontalAlign(TextHorizontalAlign align)
+    {
+        if (SelectedElements.Count != 1 || Selected is not { IsText: true, IsLocked: false })
+        {
+            return false;
+        }
+
+        RecordUndo();
+        Selected.HorizontalAlign = align;
+        RefreshDirtyState();
+        return true;
+    }
+
+    private bool TrySetTextVerticalAlign(TextVerticalAlign align)
+    {
+        if (SelectedElements.Count != 1 || Selected is not { IsText: true, IsLocked: false })
+        {
+            return false;
+        }
+
+        RecordUndo();
+        Selected.VerticalAlign = align;
+        RefreshDirtyState();
+        return true;
+    }
 
     public void SelectElement(CanvasElementViewModel element, bool addToSelection)
     {
@@ -530,6 +707,24 @@ public partial class TemplateEditorViewModel : PageViewModelBase
         RefreshOverflowState();
     }
 
+    private void EnsureFontFamilyListed(string? family)
+    {
+        if (string.IsNullOrWhiteSpace(family))
+        {
+            return;
+        }
+
+        if (AvailableFontFamilies.Any(f => f.Equals(family, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        var insertAt = AvailableFontFamilies
+            .TakeWhile(f => string.Compare(f, family, StringComparison.OrdinalIgnoreCase) < 0)
+            .Count();
+        AvailableFontFamilies.Insert(insertAt, family);
+    }
+
     private void SetSelection(IReadOnlyList<CanvasElementViewModel> items)
     {
         foreach (var item in SelectedElements.ToList())
@@ -698,6 +893,7 @@ public partial class TemplateEditorViewModel : PageViewModelBase
 
             foreach (var el in document.Elements.OrderBy(e => e.Z))
             {
+                EnsureFontFamilyListed(el.Font?.Family);
                 Elements.Add(CreateElementViewModel(el));
             }
 
@@ -798,6 +994,8 @@ public partial class CanvasElementViewModel : ObservableObject
         FontFamily = document.Font?.Family ?? "Arial";
         FontSizePt = document.Font?.SizePt ?? 10;
         IsBold = document.Font?.Bold ?? false;
+        HorizontalAlign = document.Font?.HorizontalAlign ?? TextHorizontalAlign.Left;
+        VerticalAlign = document.Font?.VerticalAlign ?? TextVerticalAlign.Top;
         Symbology = document.Symbology;
         StrokeThickness = document.StrokeThickness;
         Filled = document.Filled;
@@ -827,6 +1025,8 @@ public partial class CanvasElementViewModel : ObservableObject
     [ObservableProperty] private string _fontFamily;
     [ObservableProperty] private double _fontSizePt;
     [ObservableProperty] private bool _isBold;
+    [ObservableProperty] private TextHorizontalAlign _horizontalAlign = TextHorizontalAlign.Left;
+    [ObservableProperty] private TextVerticalAlign _verticalAlign = TextVerticalAlign.Top;
     [ObservableProperty] private BarcodeSymbology? _symbology;
     [ObservableProperty] private double _strokeThickness;
     [ObservableProperty] private bool _filled;
@@ -857,6 +1057,27 @@ public partial class CanvasElementViewModel : ObservableObject
     public bool IsRectangle => Type is TemplateElementType.Rectangle or TemplateElementType.Line;
     public bool IsEllipse => Type is TemplateElementType.Ellipse;
     public bool IsQrCode => Type is TemplateElementType.QrCode;
+
+    public Avalonia.Media.TextAlignment TextAlignment => HorizontalAlign switch
+    {
+        TextHorizontalAlign.Center => Avalonia.Media.TextAlignment.Center,
+        TextHorizontalAlign.Right => Avalonia.Media.TextAlignment.Right,
+        _ => Avalonia.Media.TextAlignment.Left
+    };
+
+    public Avalonia.Layout.VerticalAlignment TextVerticalAlignment => VerticalAlign switch
+    {
+        TextVerticalAlign.Middle => Avalonia.Layout.VerticalAlignment.Center,
+        TextVerticalAlign.Bottom => Avalonia.Layout.VerticalAlignment.Bottom,
+        _ => Avalonia.Layout.VerticalAlignment.Top
+    };
+
+    public Avalonia.Layout.HorizontalAlignment BlockHorizontalAlignment => HorizontalAlign switch
+    {
+        TextHorizontalAlign.Center => Avalonia.Layout.HorizontalAlignment.Center,
+        TextHorizontalAlign.Right => Avalonia.Layout.HorizontalAlignment.Right,
+        _ => Avalonia.Layout.HorizontalAlignment.Left
+    };
 
     partial void OnXMmChanged(double value) { NotifyScaleChanged(); Changed?.Invoke(); }
     partial void OnYMmChanged(double value) { NotifyScaleChanged(); Changed?.Invoke(); }
@@ -898,6 +1119,20 @@ public partial class CanvasElementViewModel : ObservableObject
     }
     partial void OnNameChanged(string value) => Changed?.Invoke();
     partial void OnIsBoldChanged(bool value) => Changed?.Invoke();
+    partial void OnFontFamilyChanged(string value) => Changed?.Invoke();
+    partial void OnHorizontalAlignChanged(TextHorizontalAlign value)
+    {
+        OnPropertyChanged(nameof(TextAlignment));
+        OnPropertyChanged(nameof(BlockHorizontalAlignment));
+        Changed?.Invoke();
+    }
+
+    partial void OnVerticalAlignChanged(TextVerticalAlign value)
+    {
+        OnPropertyChanged(nameof(TextVerticalAlignment));
+        Changed?.Invoke();
+    }
+
     partial void OnIsLockedChanged(bool value) => Changed?.Invoke();
     partial void OnGroupIdChanged(string? value) => Changed?.Invoke();
 
@@ -953,7 +1188,14 @@ public partial class CanvasElementViewModel : ObservableObject
         Rotation = Rotation,
         Z = z,
         IsLocked = IsLocked,
-        Font = new TemplateFont { Family = FontFamily, SizePt = FontSizePt, Bold = IsBold },
+        Font = new TemplateFont
+        {
+            Family = FontFamily,
+            SizePt = FontSizePt,
+            Bold = IsBold,
+            HorizontalAlign = HorizontalAlign,
+            VerticalAlign = VerticalAlign
+        },
         Symbology = Symbology,
         StrokeThickness = StrokeThickness,
         Filled = Filled,

@@ -1,52 +1,95 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:LabelPrint.UI.ViewModels"
+             xmlns:controls="using:LabelPrint.UI.Controls"
              x:Class="LabelPrint.UI.Views.Pages.TemplateEditorPageView"
              x:DataType="vm:TemplateEditorViewModel"
              KeyDown="OnKeyDown">
+  <UserControl.Styles>
+    <Style Selector="TextBox, NumericUpDown, ComboBox, Button, ListBox">
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{DynamicResource TextControlBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="NumericUpDown:focus /template/ ButtonSpinner /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{DynamicResource TextControlBorderBrush}" />
+    </Style>
+    <Style Selector="ComboBox:focus /template/ Border#Background">
+      <Setter Property="BorderBrush" Value="{DynamicResource TextControlBorderBrush}" />
+    </Style>
+  </UserControl.Styles>
   <DockPanel Margin="4">
-    <StackPanel DockPanel.Dock="Top" Spacing="8">
-      <StackPanel Orientation="Horizontal" Spacing="12">
-        <Button Content="← Назад" Command="{Binding BackCommand}" MinWidth="100" Padding="12,6" />
-        <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center" />
-        <TextBlock Text="• есть изменения" Foreground="#E0A800" VerticalAlignment="Center"
-                   IsVisible="{Binding HasUnsavedChanges}" />
-      </StackPanel>
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <TextBox Watermark="Название" Text="{Binding Name}" Width="220" MinHeight="32" />
-        <NumericUpDown Value="{Binding WidthMm}" Minimum="10" Maximum="200" Width="150" MinHeight="32" FormatString="0.#" Increment="1" />
-        <TextBlock Text="×" VerticalAlignment="Center" />
-        <NumericUpDown Value="{Binding HeightMm}" Minimum="10" Maximum="200" Width="150" MinHeight="32" FormatString="0.#" Increment="1" />
-        <TextBlock Text="мм" VerticalAlignment="Center" />
-        <Slider Width="140" Minimum="0.5" Maximum="2.5" Value="{Binding Zoom}" VerticalAlignment="Center" />
-        <CheckBox Content="Snap" IsChecked="{Binding SnapEnabled}" VerticalAlignment="Center" />
-        <CheckBox Content="Сетка" IsChecked="{Binding ShowGrid}" VerticalAlignment="Center" />
-        <CheckBox Content="Превью" IsChecked="{Binding IsPreviewMode}" VerticalAlignment="Center" />
-        <Button Content="↶" ToolTip.Tip="Undo (Ctrl+Z)" Command="{Binding UndoCommand}" MinWidth="36" />
-        <Button Content="↷" ToolTip.Tip="Redo (Ctrl+Y)" Command="{Binding RedoCommand}" MinWidth="36" />
-        <Button Content="Сохранить" Command="{Binding SaveCommand}" MinWidth="100" />
-      </StackPanel>
-      <StackPanel Orientation="Horizontal" Spacing="6">
-        <Button Content="Текст" Command="{Binding AddTextCommand}" />
-        <Button Content="Цена" Command="{Binding AddPriceCommand}" />
-        <Button Content="Штрихкод" Command="{Binding AddBarcodeCommand}" />
-        <Button Content="QR" Command="{Binding AddQrCodeCommand}" />
-        <Button Content="Прямоуг." Command="{Binding AddRectangleCommand}" />
-        <Button Content="Эллипс" Command="{Binding AddEllipseCommand}" />
-        <Button Content="Линия" Command="{Binding AddLineCommand}" />
-        <Button Content="Дублировать" Command="{Binding DuplicateSelectedCommand}" />
-        <Button Content="Удалить" Command="{Binding DeleteSelectedCommand}" />
-        <Button Content="Группа" Command="{Binding GroupSelectedCommand}" />
-        <Button Content="Разгруп." Command="{Binding UngroupSelectedCommand}" />
-      </StackPanel>
+    <StackPanel DockPanel.Dock="Top" Spacing="6">
+      <DockPanel LastChildFill="True">
+        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="12">
+          <Button Content="← Назад" Command="{Binding BackCommand}" MinWidth="100" Padding="12,6" />
+          <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <TextBlock Text="• есть изменения" Foreground="#E0A800" VerticalAlignment="Center"
+                     IsVisible="{Binding HasUnsavedChanges}" />
+        </StackPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" Margin="12,0,0,0">
+          <Button Content="↶" ToolTip.Tip="Отменить (Ctrl+Z)" Command="{Binding UndoCommand}" MinWidth="36" Padding="8,4" />
+          <Button Content="↷" ToolTip.Tip="Повторить (Ctrl+Y)" Command="{Binding RedoCommand}" MinWidth="36" Padding="8,4" />
+          <Button Content="Сохранить" Command="{Binding SaveCommand}" Padding="12,4" FontWeight="SemiBold" />
+        </StackPanel>
+        <Border />
+      </DockPanel>
+
+      <WrapPanel Orientation="Horizontal">
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,16,4">
+          <TextBlock Text="Название" VerticalAlignment="Center" Opacity="0.7" />
+          <TextBox Watermark="Название шаблона" Text="{Binding Name}"
+                   Width="180" Height="28" MinHeight="28" Padding="8,2"
+                   VerticalContentAlignment="Center" />
+          <TextBlock Text="Размер" VerticalAlignment="Center" Opacity="0.7" Margin="4,0,0,0" />
+          <controls:PlusMinusNumeric Value="{Binding WidthMm}" Minimum="10" Maximum="200" Increment="1"
+                                     FormatString="0.#" FieldWidth="56" ToolTip.Tip="Ширина, мм" />
+          <TextBlock Text="×" VerticalAlignment="Center" />
+          <controls:PlusMinusNumeric Value="{Binding HeightMm}" Minimum="10" Maximum="200" Increment="1"
+                                     FormatString="0.#" FieldWidth="56" ToolTip.Tip="Высота, мм" />
+          <TextBlock Text="мм" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,4">
+          <TextBlock Text="Масштаб" VerticalAlignment="Center" Opacity="0.7" />
+          <Slider Width="110" Minimum="0.5" Maximum="2.5" Value="{Binding Zoom}" VerticalAlignment="Center"
+                  ToolTip.Tip="Масштаб холста" />
+          <CheckBox Content="Привязка" IsChecked="{Binding SnapEnabled}" VerticalAlignment="Center"
+                    ToolTip.Tip="Привязка к сетке при перемещении" />
+          <CheckBox Content="Сетка" IsChecked="{Binding ShowGrid}" VerticalAlignment="Center" />
+          <CheckBox Content="Превью" IsChecked="{Binding IsPreviewMode}" VerticalAlignment="Center"
+                    ToolTip.Tip="Подставить значения переменных" />
+        </StackPanel>
+      </WrapPanel>
+
+      <WrapPanel Orientation="Horizontal">
+        <TextBlock Text="Добавить:" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,6,4" />
+        <Button Content="Текст" Command="{Binding AddTextCommand}" Margin="0,0,6,4" Padding="10,4"
+                ToolTip.Tip="Добавить текстовый блок" />
+        <Button Content="Цена" Command="{Binding AddPriceCommand}" Margin="0,0,6,4" Padding="10,4"
+                ToolTip.Tip="Добавить поле цены" />
+        <Button Content="Штрихкод" Command="{Binding AddBarcodeCommand}" Margin="0,0,6,4" Padding="10,4" />
+        <Button Content="QR" Command="{Binding AddQrCodeCommand}" Margin="0,0,6,4" Padding="10,4" />
+        <Button Content="Прямоугольник" Command="{Binding AddRectangleCommand}" Margin="0,0,6,4" Padding="10,4" />
+        <Button Content="Эллипс" Command="{Binding AddEllipseCommand}" Margin="0,0,6,4" Padding="10,4" />
+        <Button Content="Линия" Command="{Binding AddLineCommand}" Margin="0,0,6,4" Padding="10,4" />
+        <TextBlock Text="|" VerticalAlignment="Center" Opacity="0.35" Margin="4,0,10,4" />
+        <Button Content="Дублировать" Command="{Binding DuplicateSelectedCommand}" Margin="0,0,6,4" Padding="10,4" />
+        <Button Content="Удалить" Command="{Binding DeleteSelectedCommand}" Margin="0,0,6,4" Padding="10,4" />
+        <Button Content="Группа" Command="{Binding GroupSelectedCommand}" Margin="0,0,6,4" Padding="10,4" />
+        <Button Content="Разгруппировать" Command="{Binding UngroupSelectedCommand}" Margin="0,0,6,4" Padding="10,4" />
+      </WrapPanel>
+
       <StackPanel Orientation="Horizontal" Spacing="4">
-        <TextBlock Text="Выравн.:" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,4,0" />
-        <Button Content="←" Command="{Binding AlignLeftCommand}" MinWidth="32" />
-        <Button Content="↔" Command="{Binding AlignCenterHorizontalCommand}" MinWidth="32" />
-        <Button Content="→" Command="{Binding AlignRightCommand}" MinWidth="32" />
-        <Button Content="↑" Command="{Binding AlignTopCommand}" MinWidth="32" />
-        <Button Content="↕" Command="{Binding AlignCenterVerticalCommand}" MinWidth="32" />
-        <Button Content="↓" Command="{Binding AlignBottomCommand}" MinWidth="32" />
+        <TextBlock Text="Выравнивание:" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,4,0"
+                   ToolTip.Tip="Текст: внутри блока. Несколько элементов / не текст: на холсте." />
+        <Button Content="←" Command="{Binding AlignLeftCommand}" MinWidth="32" Height="28" ToolTip.Tip="Влево" />
+        <Button Content="↔" Command="{Binding AlignCenterHorizontalCommand}" MinWidth="32" Height="28" ToolTip.Tip="По центру горизонтально" />
+        <Button Content="→" Command="{Binding AlignRightCommand}" MinWidth="32" Height="28" ToolTip.Tip="Вправо" />
+        <Button Content="↑" Command="{Binding AlignTopCommand}" MinWidth="32" Height="28" ToolTip.Tip="Сверху / к верху" />
+        <Button Content="↕" Command="{Binding AlignCenterVerticalCommand}" MinWidth="32" Height="28" ToolTip.Tip="По центру вертикально" />
+        <Button Content="↓" Command="{Binding AlignBottomCommand}" MinWidth="32" Height="28" ToolTip.Tip="Снизу / к низу" />
       </StackPanel>
       <TextBlock Text="{Binding StatusMessage}" Opacity="0.7" />
     </StackPanel>
@@ -67,23 +110,73 @@
       </StackPanel>
     </Border>
 
-    <Border DockPanel.Dock="Right" Width="280" Margin="12,12,0,0" Padding="12"
+    <Border DockPanel.Dock="Right" Width="320" Margin="12,12,0,0" Padding="12"
             Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" CornerRadius="8">
-      <StackPanel Spacing="8" IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
-        <TextBlock Text="Свойства" FontWeight="SemiBold" />
-        <TextBlock Text="(несколько выбрано)" Opacity="0.6" IsVisible="{Binding HasMultiSelection}" />
-        <TextBox Watermark="Имя" Text="{Binding Selected.Name}" MinHeight="32" />
-        <TextBox Watermark="Контент" Text="{Binding Selected.Content}" MinHeight="32" />
-        <TextBox Watermark="ValueBinding" Text="{Binding Selected.ValueBinding}" MinHeight="32" />
-        <NumericUpDown Value="{Binding Selected.XMm}" FormatString="0.##" Width="150" MinHeight="32" HorizontalAlignment="Left" />
-        <NumericUpDown Value="{Binding Selected.YMm}" FormatString="0.##" Width="150" MinHeight="32" HorizontalAlignment="Left" />
-        <NumericUpDown Value="{Binding Selected.WidthMm}" FormatString="0.##" Width="150" MinHeight="32" HorizontalAlignment="Left" />
-        <NumericUpDown Value="{Binding Selected.HeightMm}" FormatString="0.##" Width="150" MinHeight="32" HorizontalAlignment="Left" />
-        <NumericUpDown Value="{Binding Selected.Rotation}" FormatString="0.#" Minimum="-360" Maximum="360" Width="150" MinHeight="32" HorizontalAlignment="Left" />
-        <NumericUpDown Value="{Binding Selected.FontSizePt}" FormatString="0.##" Width="150" MinHeight="32" HorizontalAlignment="Left" />
-        <CheckBox Content="Жирный" IsChecked="{Binding Selected.IsBold}" />
-        <CheckBox Content="Замок" IsChecked="{Binding Selected.IsLocked}" />
-      </StackPanel>
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="6" IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <TextBlock Text="Свойства" FontWeight="SemiBold" />
+          <TextBlock Text="(несколько выбрано)" Opacity="0.6" IsVisible="{Binding HasMultiSelection}" />
+
+          <TextBlock Text="Имя элемента" Opacity="0.7" FontSize="12" />
+          <TextBox Text="{Binding Selected.Name}" Height="28" MinHeight="28" Padding="8,2" />
+
+          <TextBlock Text="Содержимое" Opacity="0.7" FontSize="12" />
+          <TextBox Text="{Binding Selected.Content}" Height="28" MinHeight="28" Padding="8,2" />
+
+          <TextBlock Text="Переменная" Opacity="0.7" FontSize="12" />
+          <TextBox Watermark="например ProductName" Text="{Binding Selected.ValueBinding}"
+                   Height="28" MinHeight="28" Padding="8,2" />
+
+          <TextBlock Text="Перемещение (X / Y), мм" Opacity="0.7" FontSize="12" Margin="0,6,0,0" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <controls:PlusMinusNumeric Value="{Binding Selected.XMm}" Increment="0.5" FormatString="0.##"
+                                       FieldWidth="56" ToolTip.Tip="Позиция X" />
+            <controls:PlusMinusNumeric Value="{Binding Selected.YMm}" Increment="0.5" FormatString="0.##"
+                                       FieldWidth="56" ToolTip.Tip="Позиция Y" />
+          </StackPanel>
+
+          <TextBlock Text="Размер (Ш × В), мм" Opacity="0.7" FontSize="12" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <controls:PlusMinusNumeric Value="{Binding Selected.WidthMm}" Minimum="1" Increment="0.5"
+                                       FormatString="0.##" FieldWidth="56" ToolTip.Tip="Ширина" />
+            <controls:PlusMinusNumeric Value="{Binding Selected.HeightMm}" Minimum="1" Increment="0.5"
+                                       FormatString="0.##" FieldWidth="56" ToolTip.Tip="Высота" />
+          </StackPanel>
+
+          <TextBlock Text="Поворот, °" Opacity="0.7" FontSize="12" />
+          <controls:PlusMinusNumeric Value="{Binding Selected.Rotation}" Minimum="-360" Maximum="360"
+                                     Increment="1" FormatString="0.#" FieldWidth="72"
+                                     HorizontalAlignment="Left" />
+
+          <StackPanel Spacing="6" IsVisible="{Binding Selected.IsText}">
+            <TextBlock Text="Шрифт" Opacity="0.7" FontSize="12" Margin="0,6,0,0" />
+            <ComboBox ItemsSource="{Binding AvailableFontFamilies}"
+                      SelectedItem="{Binding Selected.FontFamily}"
+                      MinHeight="32"
+                      HorizontalAlignment="Stretch"
+                      ToolTip.Tip="Семейство шрифта" />
+
+            <TextBlock Text="Размер шрифта, pt" Opacity="0.7" FontSize="12" />
+            <controls:PlusMinusNumeric Value="{Binding Selected.FontSizePt}" Minimum="4" Maximum="120"
+                                       Increment="1" FormatString="0.##" FieldWidth="72"
+                                       HorizontalAlignment="Left" />
+
+            <CheckBox Content="Жирный" IsChecked="{Binding Selected.IsBold}" />
+
+            <TextBlock Text="Выравнивание текста в блоке" Opacity="0.7" FontSize="12" />
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <Button Content="←" Command="{Binding AlignLeftCommand}" MinWidth="32" ToolTip.Tip="По левому краю" />
+              <Button Content="↔" Command="{Binding AlignCenterHorizontalCommand}" MinWidth="32" ToolTip.Tip="По центру" />
+              <Button Content="→" Command="{Binding AlignRightCommand}" MinWidth="32" ToolTip.Tip="По правому краю" />
+              <Button Content="↑" Command="{Binding AlignTopCommand}" MinWidth="32" ToolTip.Tip="Сверху" />
+              <Button Content="↕" Command="{Binding AlignCenterVerticalCommand}" MinWidth="32" ToolTip.Tip="Посередине" />
+              <Button Content="↓" Command="{Binding AlignBottomCommand}" MinWidth="32" ToolTip.Tip="Снизу" />
+            </StackPanel>
+          </StackPanel>
+
+          <CheckBox Content="Замок (не двигать)" IsChecked="{Binding Selected.IsLocked}" Margin="0,8,0,0" />
+        </StackPanel>
+      </ScrollViewer>
     </Border>
 
     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
@@ -130,8 +223,13 @@
                   </Border.RenderTransform>
                   <Panel>
                     <TextBlock Text="{Binding PreviewText}" FontSize="{Binding FontSizePx}"
+                               FontFamily="{Binding FontFamily}"
                                Classes.bold="{Binding IsBold}"
-                               TextWrapping="Wrap" IsVisible="{Binding IsText}" Margin="2">
+                               TextWrapping="Wrap"
+                               TextAlignment="{Binding TextAlignment}"
+                               HorizontalAlignment="{Binding BlockHorizontalAlignment}"
+                               VerticalAlignment="{Binding TextVerticalAlignment}"
+                               IsVisible="{Binding IsText}" Margin="2">
                       <TextBlock.Styles>
                         <Style Selector="TextBlock.bold">
                           <Setter Property="FontWeight" Value="Bold" />

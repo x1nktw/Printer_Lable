@@ -5,7 +5,7 @@
         xmlns:dto="using:LabelPrint.Application.DTOs"
         x:Class="LabelPrint.UI.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/app-icon.ico"
         Title="LabelPrint Pro"
         Width="1480"
         Height="900"

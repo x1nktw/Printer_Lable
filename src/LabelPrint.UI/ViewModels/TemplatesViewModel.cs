@@ -136,15 +136,15 @@ public partial class TemplatesViewModel : PageViewModelBase
             return;
         }
 
-        if (Selected.IsSystemPreset)
+        if (Selected.IsInUse)
         {
-            StatusMessage = "Системную заготовку нельзя удалить. Создайте копию.";
+            StatusMessage = "Шаблон выбран в Заказах или Маркировке и его нельзя удалить.";
             return;
         }
 
         var confirmed = await _dialogs.ConfirmAsync(
             "Удаление шаблона",
-            $"Удалить шаблон «{Selected.Name}»? Его можно будет восстановить только из архива (в следующих версиях).",
+            $"Удалить шаблон «{Selected.Name}»?",
             confirmText: "Удалить",
             cancelText: "Отмена");
 
