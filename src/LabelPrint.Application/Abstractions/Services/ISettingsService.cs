@@ -1,0 +1,55 @@
+using LabelPrint.Application.Common;
+using LabelPrint.Domain.Enums;
+
+namespace LabelPrint.Application.Abstractions.Services;
+
+/// <summary>
+/// Application settings service.
+/// </summary>
+public interface ISettingsService
+{
+    Task<Result<SettingsDto>> GetAsync(CancellationToken cancellationToken = default);
+
+    Task<Result> SaveAsync(SettingsDto dto, CancellationToken cancellationToken = default);
+}
+
+/// <summary>Settings DTO for UI.</summary>
+public sealed class SettingsDto
+{
+    public AppTheme Theme { get; set; }
+
+    public AppLanguage Language { get; set; }
+
+    public bool AutoPrintOrders { get; set; }
+
+    public bool AutoRefreshOrders { get; set; }
+
+    public int OrdersRefreshIntervalSeconds { get; set; }
+
+    public string? FrontPadSecret { get; set; }
+
+    public string FrontPadBaseUrl { get; set; } = string.Empty;
+
+    public string? FrontPadWebhookListenUrl { get; set; }
+
+    public double DefaultLabelWidthMm { get; set; }
+
+    public double DefaultLabelHeightMm { get; set; }
+
+    public int MaxPrintRetries { get; set; }
+
+    public bool AutoBackupEnabled { get; set; }
+
+    public LabelDateTimeMode LabelDateTimeMode { get; set; } = LabelDateTimeMode.Realtime;
+
+    public DateTimeOffset? ManualLabelDateTime { get; set; }
+
+    /// <summary>Optional override for SQLite database file path.</summary>
+    public string? DatabasePath { get; set; }
+
+    /// <summary>Optional override for pre-migration backup directory.</summary>
+    public string? BackupPath { get; set; }
+
+    /// <summary>Effective backup directory (configured or default next to database).</summary>
+    public string DefaultBackupDirectory { get; set; } = string.Empty;
+}

@@ -1,0 +1,159 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LabelPrint.UI.ViewModels"
+             x:Class="LabelPrint.UI.Views.Pages.TemplateEditorPageView"
+             x:DataType="vm:TemplateEditorViewModel"
+             KeyDown="OnKeyDown">
+  <DockPanel Margin="4">
+    <StackPanel DockPanel.Dock="Top" Spacing="8">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <Button Content="← Назад" Command="{Binding BackCommand}" MinWidth="100" Padding="12,6" />
+        <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center" />
+        <TextBlock Text="• есть изменения" Foreground="#E0A800" VerticalAlignment="Center"
+                   IsVisible="{Binding HasUnsavedChanges}" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBox Watermark="Название" Text="{Binding Name}" Width="220" MinHeight="32" />
+        <NumericUpDown Value="{Binding WidthMm}" Minimum="10" Maximum="200" Width="150" MinHeight="32" FormatString="0.#" Increment="1" />
+        <TextBlock Text="×" VerticalAlignment="Center" />
+        <NumericUpDown Value="{Binding HeightMm}" Minimum="10" Maximum="200" Width="150" MinHeight="32" FormatString="0.#" Increment="1" />
+        <TextBlock Text="мм" VerticalAlignment="Center" />
+        <Slider Width="140" Minimum="0.5" Maximum="2.5" Value="{Binding Zoom}" VerticalAlignment="Center" />
+        <CheckBox Content="Snap" IsChecked="{Binding SnapEnabled}" VerticalAlignment="Center" />
+        <CheckBox Content="Сетка" IsChecked="{Binding ShowGrid}" VerticalAlignment="Center" />
+        <CheckBox Content="Превью" IsChecked="{Binding IsPreviewMode}" VerticalAlignment="Center" />
+        <Button Content="↶" ToolTip.Tip="Undo (Ctrl+Z)" Command="{Binding UndoCommand}" MinWidth="36" />
+        <Button Content="↷" ToolTip.Tip="Redo (Ctrl+Y)" Command="{Binding RedoCommand}" MinWidth="36" />
+        <Button Content="Сохранить" Command="{Binding SaveCommand}" MinWidth="100" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button Content="Текст" Command="{Binding AddTextCommand}" />
+        <Button Content="Цена" Command="{Binding AddPriceCommand}" />
+        <Button Content="Штрихкод" Command="{Binding AddBarcodeCommand}" />
+        <Button Content="QR" Command="{Binding AddQrCodeCommand}" />
+        <Button Content="Прямоуг." Command="{Binding AddRectangleCommand}" />
+        <Button Content="Эллипс" Command="{Binding AddEllipseCommand}" />
+        <Button Content="Линия" Command="{Binding AddLineCommand}" />
+        <Button Content="Дублировать" Command="{Binding DuplicateSelectedCommand}" />
+        <Button Content="Удалить" Command="{Binding DeleteSelectedCommand}" />
+        <Button Content="Группа" Command="{Binding GroupSelectedCommand}" />
+        <Button Content="Разгруп." Command="{Binding UngroupSelectedCommand}" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="4">
+        <TextBlock Text="Выравн.:" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,4,0" />
+        <Button Content="←" Command="{Binding AlignLeftCommand}" MinWidth="32" />
+        <Button Content="↔" Command="{Binding AlignCenterHorizontalCommand}" MinWidth="32" />
+        <Button Content="→" Command="{Binding AlignRightCommand}" MinWidth="32" />
+        <Button Content="↑" Command="{Binding AlignTopCommand}" MinWidth="32" />
+        <Button Content="↕" Command="{Binding AlignCenterVerticalCommand}" MinWidth="32" />
+        <Button Content="↓" Command="{Binding AlignBottomCommand}" MinWidth="32" />
+      </StackPanel>
+      <TextBlock Text="{Binding StatusMessage}" Opacity="0.7" />
+    </StackPanel>
+
+    <Border DockPanel.Dock="Left" Width="200" Margin="0,12,8,0" Padding="10"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" CornerRadius="8">
+      <StackPanel Spacing="6">
+        <TextBlock Text="Переменные" FontWeight="SemiBold" />
+        <ListBox ItemsSource="{Binding VariableDefinitions}" MinHeight="120" MaxHeight="320">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:TemplateVariableItemViewModel">
+              <Button Content="{Binding DisplayName}" Command="{Binding InsertCommand}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="8,4"
+                      ToolTip.Tip="{Binding Key}" />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </StackPanel>
+    </Border>
+
+    <Border DockPanel.Dock="Right" Width="280" Margin="12,12,0,0" Padding="12"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" CornerRadius="8">
+      <StackPanel Spacing="8" IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <TextBlock Text="Свойства" FontWeight="SemiBold" />
+        <TextBlock Text="(несколько выбрано)" Opacity="0.6" IsVisible="{Binding HasMultiSelection}" />
+        <TextBox Watermark="Имя" Text="{Binding Selected.Name}" MinHeight="32" />
+        <TextBox Watermark="Контент" Text="{Binding Selected.Content}" MinHeight="32" />
+        <TextBox Watermark="ValueBinding" Text="{Binding Selected.ValueBinding}" MinHeight="32" />
+        <NumericUpDown Value="{Binding Selected.XMm}" FormatString="0.##" Width="150" MinHeight="32" HorizontalAlignment="Left" />
+        <NumericUpDown Value="{Binding Selected.YMm}" FormatString="0.##" Width="150" MinHeight="32" HorizontalAlignment="Left" />
+        <NumericUpDown Value="{Binding Selected.WidthMm}" FormatString="0.##" Width="150" MinHeight="32" HorizontalAlignment="Left" />
+        <NumericUpDown Value="{Binding Selected.HeightMm}" FormatString="0.##" Width="150" MinHeight="32" HorizontalAlignment="Left" />
+        <NumericUpDown Value="{Binding Selected.Rotation}" FormatString="0.#" Minimum="-360" Maximum="360" Width="150" MinHeight="32" HorizontalAlignment="Left" />
+        <NumericUpDown Value="{Binding Selected.FontSizePt}" FormatString="0.##" Width="150" MinHeight="32" HorizontalAlignment="Left" />
+        <CheckBox Content="Жирный" IsChecked="{Binding Selected.IsBold}" />
+        <CheckBox Content="Замок" IsChecked="{Binding Selected.IsLocked}" />
+      </StackPanel>
+    </Border>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
+      <Border Background="#C8C8C8" Padding="24">
+        <Grid x:Name="DesignSurfaceHost"
+              Width="{Binding CanvasWidthPx}"
+              Height="{Binding CanvasHeightPx}"
+              Background="White"
+              PointerPressed="OnCanvasPointerPressed"
+              PointerMoved="OnCanvasPointerMoved"
+              PointerReleased="OnCanvasPointerReleased">
+          <Canvas x:Name="GridCanvas" IsHitTestVisible="False" />
+          <Canvas x:Name="GuideCanvas" IsHitTestVisible="False" />
+          <ItemsControl ItemsSource="{Binding Elements}" x:Name="DesignSurface">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <Canvas />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.Styles>
+              <Style Selector="ItemsControl > ContentPresenter">
+                <Setter Property="Canvas.Left" Value="{Binding LeftPx}" />
+                <Setter Property="Canvas.Top" Value="{Binding TopPx}" />
+              </Style>
+            </ItemsControl.Styles>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:CanvasElementViewModel">
+                <Border Width="{Binding WidthPx}" Height="{Binding HeightPx}"
+                        Classes.selected="{Binding IsSelected}" Classes.overflow="{Binding IsOverflow}"
+                        BorderBrush="#888888" BorderThickness="1" Background="#18000000"
+                        Tag="{Binding}" PointerPressed="OnElementPointerPressed"
+                        RenderTransformOrigin="0.5,0.5">
+                  <Border.Styles>
+                    <Style Selector="Border.selected">
+                      <Setter Property="BorderBrush" Value="#0078D4" />
+                      <Setter Property="BorderThickness" Value="2" />
+                    </Style>
+                    <Style Selector="Border.overflow">
+                      <Setter Property="BorderBrush" Value="#E81123" />
+                    </Style>
+                  </Border.Styles>
+                  <Border.RenderTransform>
+                    <RotateTransform Angle="{Binding Rotation}" />
+                  </Border.RenderTransform>
+                  <Panel>
+                    <TextBlock Text="{Binding PreviewText}" FontSize="{Binding FontSizePx}"
+                               Classes.bold="{Binding IsBold}"
+                               TextWrapping="Wrap" IsVisible="{Binding IsText}" Margin="2">
+                      <TextBlock.Styles>
+                        <Style Selector="TextBlock.bold">
+                          <Setter Property="FontWeight" Value="Bold" />
+                        </Style>
+                      </TextBlock.Styles>
+                    </TextBlock>
+                    <Border Background="#222" IsVisible="{Binding IsBarcode}">
+                      <TextBlock Text="{Binding PreviewText}" Foreground="White" FontSize="10"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    </Border>
+                    <Rectangle Stroke="#111" StrokeThickness="1.5" Fill="Transparent"
+                               IsVisible="{Binding IsRectangle}" />
+                    <Ellipse Stroke="#111" StrokeThickness="1.5" Fill="Transparent"
+                             IsVisible="{Binding IsEllipse}" />
+                  </Panel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Canvas x:Name="RubberBandCanvas" IsHitTestVisible="False" />
+        </Grid>
+      </Border>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

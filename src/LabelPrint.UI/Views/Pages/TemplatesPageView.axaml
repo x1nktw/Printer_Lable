@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LabelPrint.UI.ViewModels"
+             x:Class="LabelPrint.UI.Views.Pages.TemplatesPageView"
+             x:DataType="vm:TemplatesViewModel">
+  <DockPanel Margin="4">
+    <StackPanel DockPanel.Dock="Top" Spacing="10">
+      <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBox Watermark="Поиск" Text="{Binding SearchText}" Width="240" />
+        <Button Content="Найти" Command="{Binding LoadCommand}" />
+        <Button Content="Изменить" Command="{Binding EditSelectedCommand}" />
+        <Button Content="Копия" Command="{Binding DuplicateSelectedCommand}" />
+        <Button Content="JSON ↓" Command="{Binding ExportSelectedJsonCommand}" ToolTip.Tip="Экспорт JSON шаблона" />
+        <Button Content="Удалить" Command="{Binding DeleteSelectedCommand}" />
+      </StackPanel>
+      <Border Padding="10" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBox Watermark="Название" Text="{Binding NewName}" Width="200" MinHeight="32" />
+          <NumericUpDown Value="{Binding NewWidth}"
+                         Minimum="10" Maximum="200"
+                         Width="150" MinWidth="150" MinHeight="32"
+                         FormatString="0.#"
+                         Increment="1" />
+          <TextBlock Text="×" VerticalAlignment="Center" />
+          <NumericUpDown Value="{Binding NewHeight}"
+                         Minimum="10" Maximum="200"
+                         Width="150" MinWidth="150" MinHeight="32"
+                         FormatString="0.#"
+                         Increment="1" />
+          <TextBlock Text="мм" VerticalAlignment="Center" Opacity="0.7" />
+          <Button Content="Создать" Command="{Binding CreateCommand}" />
+        </StackPanel>
+      </Border>
+      <TextBlock Text="{Binding StatusMessage}" Opacity="0.7" />
+    </StackPanel>
+
+    <DataGrid ItemsSource="{Binding Templates}"
+              SelectedItem="{Binding Selected}"
+              AutoGenerateColumns="False"
+              IsReadOnly="True"
+              CanUserResizeColumns="True"
+              Margin="0,12,0,0">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Название"
+                            Binding="{Binding Name}"
+                            Width="*"
+                            MinWidth="180" />
+        <DataGridTextColumn Header="Ширина, мм"
+                            Binding="{Binding WidthMm, StringFormat=\{0:0.#\}}"
+                            Width="130"
+                            MinWidth="120" />
+        <DataGridTextColumn Header="Высота, мм"
+                            Binding="{Binding HeightMm, StringFormat=\{0:0.#\}}"
+                            Width="130"
+                            MinWidth="120" />
+        <DataGridCheckBoxColumn Header="Системный"
+                                Binding="{Binding IsSystemPreset}"
+                                Width="120"
+                                MinWidth="110" />
+        <DataGridTextColumn Header="Версия"
+                            Binding="{Binding SchemaVersion}"
+                            Width="100"
+                            MinWidth="90" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

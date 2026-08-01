@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "LabelPrint FrontPad Bridge",
+  "version": "1.2.1",
+  "description": "Перехватывает сохранение заказа FrontPad (order.php) и отправляет состав в LabelPrint Pro.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "*://*.frontpad.ru/*",
+    "*://frontpad.ru/*",
+    "http://127.0.0.1/*",
+    "http://localhost/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "LabelPrint FrontPad Bridge"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.frontpad.ru/*", "*://frontpad.ru/*"],
+      "js": ["injected.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": ["*://*.frontpad.ru/*", "*://frontpad.ru/*"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LabelPrint.UI.ViewModels"
+             xmlns:dto="using:LabelPrint.Application.DTOs"
+             xmlns:svc="using:LabelPrint.Application.Abstractions.Services"
+             x:Class="LabelPrint.UI.Views.Pages.RawMaterialsPageView"
+             x:DataType="vm:RawMaterialsViewModel">
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="10">
+      <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold" />
+      <TextBlock Text="Маркировка сырья: название, дата и время. Дата по умолчанию из Настроек; можно задать вручную."
+                 Opacity="0.75"
+                 TextWrapping="Wrap" />
+      <TextBlock Text="{Binding StatusMessage}" Opacity="0.7" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <Grid ColumnDefinitions="280,*" Margin="0,12,0,0">
+      <DockPanel Grid.Column="0" Margin="0,0,12,0">
+        <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,8">
+          <TextBox Watermark="Поиск" Text="{Binding SearchText}" MinHeight="32" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Обновить" Command="{Binding LoadCommand}" />
+            <Button Content="Создать примеры" Command="{Binding SeedSamplesCommand}" />
+          </StackPanel>
+        </StackPanel>
+        <ListBox ItemsSource="{Binding Items}"
+                 SelectedItem="{Binding SelectedItem}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="dto:ProductListItemDto">
+              <TextBlock Text="{Binding Name}" />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+
+      <StackPanel Grid.Column="1" Spacing="12" MaxWidth="420">
+        <TextBlock Text="Печать" FontWeight="SemiBold" FontSize="16" />
+        <TextBox Watermark="Название сырья"
+                 Text="{Binding CustomName}"
+                 MinHeight="36" />
+        <ComboBox ItemsSource="{Binding Printers}"
+                  SelectedItem="{Binding SelectedPrinter}"
+                  PlaceholderText="Принтер"
+                  MinHeight="32">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="svc:PrinterListItemDto">
+              <TextBlock Text="{Binding Name}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <CheckBox Content="Своя дата/время" IsChecked="{Binding UseCustomLabelDateTime}" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <CalendarDatePicker SelectedDate="{Binding LabelDate}"
+                              IsEnabled="{Binding UseCustomLabelDateTime}"
+                              Width="160" />
+          <TimePicker SelectedTime="{Binding LabelTime}"
+                      IsEnabled="{Binding UseCustomLabelDateTime}"
+                      Width="140"
+                      ClockIdentifier="24HourClock" />
+        </StackPanel>
+        <Button Content="Печать этикетки"
+                Command="{Binding PrintCommand}"
+                HorizontalAlignment="Left"
+                Padding="16,10"
+                FontWeight="SemiBold" />
+      </StackPanel>
+    </Grid>
+  </DockPanel>
+</UserControl>

@@ -1,0 +1,70 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LabelPrint.UI.ViewModels"
+             xmlns:enums="using:LabelPrint.Domain.Enums"
+             x:Class="LabelPrint.UI.Views.Pages.PrintersPageView"
+             x:DataType="vm:PrintersViewModel">
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Spacing="12">
+      <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Обновить" Command="{Binding LoadCommand}" />
+        <Button Content="Добавить виртуальный" Command="{Binding NewVirtualPrinterCommand}" />
+        <Button Content="Изменить" Command="{Binding EditSelectedCommand}" />
+        <Button Content="По умолчанию" Command="{Binding SetDefaultCommand}" />
+        <Button Content="Отключить" Command="{Binding ArchiveSelectedCommand}" />
+      </StackPanel>
+      <TextBlock Text="{Binding StatusMessage}" Opacity="0.7" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <Border DockPanel.Dock="Bottom"
+            IsVisible="{Binding IsEditorOpen}"
+            Padding="12"
+            Margin="0,12,0,0"
+            CornerRadius="8"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+      <StackPanel Spacing="8" MaxWidth="640">
+        <TextBlock Text="Настройки принтера" FontWeight="SemiBold" />
+        <TextBox Watermark="Название" Text="{Binding EditName}" />
+        <ComboBox ItemsSource="{Binding ProtocolOptions}"
+                  SelectedItem="{Binding EditProtocol}"
+                  HorizontalAlignment="Stretch" />
+        <TextBox Watermark="Подключение (очередь Windows, host:port для TSPL, папка для File)"
+                 Text="{Binding EditConnectionString}" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <NumericUpDown Value="{Binding EditPaperWidthMm}" Minimum="10" Maximum="300"
+                         Width="150" MinWidth="150" FormatString="0.#" Increment="1" />
+          <TextBlock Text="мм ширина ленты" VerticalAlignment="Center" Opacity="0.7" />
+          <NumericUpDown Value="{Binding EditDpi}" Minimum="72" Maximum="600"
+                         Width="120" MinWidth="120" Increment="1" />
+          <TextBlock Text="DPI" VerticalAlignment="Center" Opacity="0.7" />
+        </StackPanel>
+        <CheckBox Content="Повернуть 90° (макет 40×58 на ленте 58 мм / горизонтальные этикетки)"
+                  IsChecked="{Binding EditRotate90}" />
+        <TextBlock Text="Если печать уезжает на 2 этикетки — включите поворот или укажите реальную ширину ленты (часто 58)."
+                   Opacity="0.7" TextWrapping="Wrap" FontSize="12" />
+        <CheckBox Content="Принтер по умолчанию" IsChecked="{Binding EditIsDefault}" />
+        <TextBox Watermark="Примечания" Text="{Binding EditNotes}" AcceptsReturn="True" MinHeight="48" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Content="Сохранить" Command="{Binding SaveCommand}" />
+          <Button Content="Отмена" Command="{Binding CancelEditCommand}" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <DataGrid ItemsSource="{Binding Printers}"
+              SelectedItem="{Binding Selected}"
+              AutoGenerateColumns="False"
+              IsReadOnly="True"
+              GridLinesVisibility="Horizontal"
+              Margin="0,12,0,0">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" MinWidth="160" />
+        <DataGridTextColumn Header="Протокол" Binding="{Binding Protocol}" Width="110" />
+        <DataGridTextColumn Header="Подключение" Binding="{Binding ConnectionString}" Width="200" MinWidth="160" />
+        <DataGridTextColumn Header="DPI" Binding="{Binding Dpi}" Width="80" />
+        <DataGridCheckBoxColumn Header="По умолчанию" Binding="{Binding IsDefault}" Width="120" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</UserControl>

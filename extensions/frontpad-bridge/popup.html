@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>LabelPrint Bridge</title>
+  <style>
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      margin: 0;
+      padding: 12px;
+      width: 340px;
+      color: #1a1a1a;
+      background: #f7f5f2;
+    }
+    h1 { font-size: 14px; margin: 0 0 8px; }
+    .status {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .err { color: #a32020; margin-top: 6px; font-size: 12px; word-break: break-word; }
+    .dbg { margin-top: 6px; font-size: 11px; opacity: 0.75; word-break: break-all; }
+    .row { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+    label { font-size: 13px; }
+    button {
+      cursor: pointer;
+      border: 1px solid #bbb;
+      background: #fff;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+    button.primary { background: #1f4b3a; color: #fff; border-color: #1f4b3a; }
+    .meta { margin-top: 8px; font-size: 11px; opacity: 0.7; }
+  </style>
+</head>
+<body>
+  <h1>LabelPrint ← FrontPad <span style="opacity:.5">v1.1</span></h1>
+  <div class="status" id="status">Загрузка…</div>
+  <div class="err" id="error"></div>
+  <div class="dbg" id="debug"></div>
+  <div class="row">
+    <label><input type="checkbox" id="enabled" /> Мост включён</label>
+  </div>
+  <div class="row">
+    <button class="primary" id="options">Настройки</button>
+    <button id="test">Тест webhook</button>
+    <button id="refresh">Обновить</button>
+  </div>
+  <div class="meta" id="meta"></div>
+  <script src="popup.js"></script>
+</body>
+</html>

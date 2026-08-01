@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>LabelPrint FrontPad Bridge — настройки</title>
+  <style>
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      max-width: 640px;
+      margin: 24px auto;
+      padding: 0 16px;
+      color: #1a1a1a;
+      background: #f7f5f2;
+      line-height: 1.45;
+    }
+    label { display: block; font-weight: 600; margin-bottom: 6px; }
+    input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .hint { font-size: 13px; opacity: 0.75; margin: 8px 0 16px; }
+    button {
+      cursor: pointer;
+      background: #1f4b3a;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 14px;
+      font-size: 14px;
+    }
+    #msg { margin-top: 12px; font-size: 13px; }
+    code { background: #eee; padding: 1px 4px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <h1>LabelPrint FrontPad Bridge</h1>
+  <p>
+    Расширение перехватывает сохранение заказа на сайте FrontPad (<code>order.php</code>)
+    и отправляет JSON с позициями на локальный webhook LabelPrint Pro.
+  </p>
+
+  <label for="webhookUrl">URL webhook LabelPrint</label>
+  <input id="webhookUrl" type="text" spellcheck="false"
+         placeholder="http://127.0.0.1:8765/" />
+  <p class="hint">
+    Должен совпадать с полем «Webhook listen URL» в настройках LabelPrint.
+    Приложение должно быть запущено.
+  </p>
+
+  <label><input type="checkbox" id="enabled" /> Мост включён</label>
+  <p class="hint">Выключите, чтобы временно не слать заказы.</p>
+
+  <button id="save">Сохранить</button>
+  <div id="msg"></div>
+
+  <h2>Установка</h2>
+  <ol>
+    <li>Chrome/Edge → <code>chrome://extensions</code> / <code>edge://extensions</code></li>
+    <li>Режим разработчика → «Загрузить распакованное»</li>
+    <li>Папка <code>extensions/frontpad-bridge</code> в репозитории LabelPrint</li>
+    <li>Откройте FrontPad, сохраните заказ — статус смотрите в иконке расширения</li>
+  </ol>
+
+  <script src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LabelPrint.UI.ViewModels"
+             x:Class="LabelPrint.UI.Views.Pages.HomePageView"
+             x:DataType="vm:HomeViewModel">
+  <StackPanel Spacing="12" Margin="8">
+    <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold" />
+    <TextBlock Text="{Binding VersionLabel}" FontSize="16" Opacity="0.85" />
+    <TextBlock Text="{Binding UpdateMessage}" TextWrapping="Wrap" Opacity="0.7" MaxWidth="720" />
+    <TextBlock Text="{Binding Subtitle}" TextWrapping="Wrap" Opacity="0.75" MaxWidth="720" />
+  </StackPanel>
+</UserControl>
