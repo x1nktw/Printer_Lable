@@ -29,11 +29,13 @@ public interface IOrderService
         Guid orderId,
         IReadOnlyList<Guid> orderItemIds,
         Guid? printerId = null,
+        Guid? templateId = null,
         CancellationToken cancellationToken = default);
 
     Task<Result<IReadOnlyList<Guid>>> PrintAllItemsAsync(
         Guid orderId,
         Guid? printerId = null,
+        Guid? templateId = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

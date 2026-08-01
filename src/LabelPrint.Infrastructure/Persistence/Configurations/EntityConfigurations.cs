@@ -247,3 +247,17 @@ internal sealed class AppSettingsConfiguration : IEntityTypeConfiguration<AppSet
         builder.Property(x => x.FrontPadSecret).HasMaxLength(256);
     }
 }
+
+internal sealed class AddonConfiguration : IEntityTypeConfiguration<Addon>
+{
+    public void Configure(EntityTypeBuilder<Addon> builder)
+    {
+        builder.ToTable("Addons");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Name).HasMaxLength(128).IsRequired();
+        builder.Property(x => x.MatchAliases).HasMaxLength(512);
+        builder.Property(x => x.IconKey).HasMaxLength(64).IsRequired();
+        builder.HasIndex(x => x.Name);
+        builder.HasIndex(x => x.IsArchived);
+    }
+}

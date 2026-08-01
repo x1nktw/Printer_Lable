@@ -124,6 +124,14 @@ public sealed class SkiaLabelRenderService : ILabelRenderService
             return;
         }
 
+        var iconKeysRaw = LookupVariable(variables, "AddonIconKeys");
+        var iconKeys = string.IsNullOrWhiteSpace(iconKeysRaw)
+            ? Array.Empty<string>()
+            : iconKeysRaw.Replace("\r\n", "\n")
+                .Split('\n', StringSplitOptions.None)
+                .Select(s => s.Trim())
+                .ToArray();
+
         var font = element.Font ?? new TemplateFont { Family = "Inter", SizePt = 8, Bold = true };
         var typeface = LabelAssets.ResolveTypeface(font.Family, font.Bold);
         var titleSize = (float)(Math.Max(8, font.SizePt) * dpi / 72d);
@@ -164,7 +172,9 @@ public sealed class SkiaLabelRenderService : ILabelRenderService
             }
 
             var addon = addons[i];
-            var iconKey = LabelAssets.ResolveAddonIconKey(addon);
+            var iconKey = i < iconKeys.Length && !string.IsNullOrWhiteSpace(iconKeys[i])
+                ? iconKeys[i]
+                : LabelAssets.ResolveAddonIconKey(addon);
             using var icon = LabelAssets.TryLoadIcon(iconKey);
             if (icon is not null)
             {

@@ -37,6 +37,8 @@ public sealed class LabelPrintDbContext : DbContext
 
     public DbSet<AppSettings> AppSettings => Set<AppSettings>();
 
+    public DbSet<Addon> Addons => Set<Addon>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(LabelPrintDbContext).Assembly);

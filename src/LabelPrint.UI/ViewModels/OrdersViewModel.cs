@@ -76,13 +76,13 @@ public partial class OrdersViewModel : PageViewModelBase
 
     public ObservableCollection<OrderListItemDto> Orders { get; } = new();
     public ObservableCollection<OrderItemRowVm> ItemRows { get; } = new();
+    public ObservableCollection<TemplateListItemDto> Templates { get; } = new();
 
     [ObservableProperty] private string? _searchText;
     [ObservableProperty] private OrderListItemDto? _selectedOrder;
     [ObservableProperty] private OrderItemRowVm? _selectedItem;
+    [ObservableProperty] private TemplateListItemDto? _selectedTemplate;
     [ObservableProperty] private string? _statusMessage;
-    [ObservableProperty] private string _bannerMessage = "Кухонные заказы — FrontPad Bridge → webhook / JSON-inbox.";
-    [ObservableProperty] private string? _inboxPath;
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private OrderStatus? _statusFilter;
     [ObservableProperty] private OrderDetailDto? _selectedOrderDetail;
@@ -102,13 +102,7 @@ public partial class OrdersViewModel : PageViewModelBase
             IsBusy = true;
             using var scope = _scopeFactory.CreateScope();
             var service = scope.ServiceProvider.GetRequiredService<IOrderService>();
-
-            var statusResult = await service.GetProviderStatusAsync();
-            if (statusResult.IsSuccess)
-            {
-                BannerMessage = statusResult.Value.BannerMessage;
-                InboxPath = statusResult.Value.InboxPath;
-            }
+            await LoadTemplatesAsync(scope);
 
             var result = await service.SearchAsync(SearchText, StatusFilter, skip: 0, take: PageSize);
             Orders.Clear();
@@ -255,7 +249,9 @@ public partial class OrdersViewModel : PageViewModelBase
         {
             using var scope = _scopeFactory.CreateScope();
             var service = scope.ServiceProvider.GetRequiredService<IOrderService>();
-            var result = await service.PrintAllItemsAsync(SelectedOrder.Id);
+            var result = await service.PrintAllItemsAsync(
+                SelectedOrder.Id,
+                templateId: SelectedTemplate?.Id);
             StatusMessage = result.IsFailure
                 ? result.Error
                 : $"В очередь: {result.Value.Count} заданий";
@@ -278,7 +274,10 @@ public partial class OrdersViewModel : PageViewModelBase
         {
             using var scope = _scopeFactory.CreateScope();
             var service = scope.ServiceProvider.GetRequiredService<IOrderService>();
-            var result = await service.PrintItemsAsync(SelectedOrder.Id, itemIds);
+            var result = await service.PrintItemsAsync(
+                SelectedOrder.Id,
+                itemIds,
+                templateId: SelectedTemplate?.Id);
             StatusMessage = result.IsFailure
                 ? result.Error
                 : $"В очередь: {result.Value.Count} заданий";
@@ -288,6 +287,27 @@ public partial class OrdersViewModel : PageViewModelBase
         {
             StatusMessage = ex.Message;
         }
+    }
+
+    private async Task LoadTemplatesAsync(IServiceScope scope)
+    {
+        var templates = scope.ServiceProvider.GetRequiredService<ITemplateService>();
+        var result = await templates.SearchAsync(null, includeArchived: false, skip: 0, take: 200);
+        Templates.Clear();
+        if (result.IsFailure)
+        {
+            return;
+        }
+
+        foreach (var item in result.Value.Items)
+        {
+            Templates.Add(item);
+        }
+
+        SelectedTemplate ??= Templates.FirstOrDefault(t =>
+                                t.Name.Contains("Кухня чек", StringComparison.OrdinalIgnoreCase)
+                                || t.Name.Contains("Кухня", StringComparison.OrdinalIgnoreCase))
+                            ?? Templates.FirstOrDefault();
     }
 
     private async Task LoadOrderDetailAsync()
@@ -340,10 +360,10 @@ public sealed partial class OrderItemRowVm : ObservableObject
 
     public string MatchLabel => Item.MatchStatus switch
     {
-        OrderItemMatchStatus.MatchedBySku => "SKU",
+        OrderItemMatchStatus.MatchedBySku => "Артикул",
         OrderItemMatchStatus.MatchedByBarcode => "Штрихкод",
         OrderItemMatchStatus.MatchedByName => "Название",
-        _ => "Нет"
+        _ => "—"
     };
 
     public bool IsPrinted => Item.IsPrinted;

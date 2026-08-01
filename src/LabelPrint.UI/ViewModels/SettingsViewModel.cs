@@ -1,21 +1,44 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using LabelPrint.Application.Abstractions;
 using LabelPrint.Application.Abstractions.Services;
 using LabelPrint.Domain.Enums;
+using LabelPrint.UI.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LabelPrint.UI.ViewModels;
 
 public partial class SettingsViewModel : PageViewModelBase
 {
-    private readonly IServiceScopeFactory _scopeFactory;
+    public const int TemplatesTabIndex = 1;
 
-    public SettingsViewModel(IServiceScopeFactory scopeFactory)
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IUiDialogService _dialogs;
+
+    public SettingsViewModel(
+        IServiceProvider services,
+        IServiceScopeFactory scopeFactory,
+        IUserSession session,
+        IUiDialogService dialogs)
     {
         _scopeFactory = scopeFactory;
+        _dialogs = dialogs;
         Title = "Настройки";
+        IsAdministrator = session.CurrentUserRole == UserRole.Administrator;
+        SelectedTabIndex = IsAdministrator ? 0 : TemplatesTabIndex;
+        Printers = services.GetRequiredService<PrintersViewModel>();
+        Queue = services.GetRequiredService<QueueViewModel>();
+        History = services.GetRequiredService<HistoryViewModel>();
+        Templates = new TemplatesViewModel(_scopeFactory, _dialogs);
     }
 
+    public PrintersViewModel Printers { get; }
+    public QueueViewModel Queue { get; }
+    public HistoryViewModel History { get; }
+    public TemplatesViewModel Templates { get; }
+
+    [ObservableProperty] private bool _isAdministrator;
+    [ObservableProperty] private int _selectedTabIndex;
     [ObservableProperty] private AppTheme _theme = AppTheme.Dark;
     [ObservableProperty] private AppLanguage _language = AppLanguage.Russian;
     [ObservableProperty] private bool _autoPrintOrders;
@@ -41,46 +64,59 @@ public partial class SettingsViewModel : PageViewModelBase
 
     public bool IsManualLabelDateTime => LabelDateTimeMode == LabelDateTimeMode.Manual;
 
+    public void BindTemplateEditor(Action<Guid> openEditor) => Templates.BindOpenEditor(openEditor);
+
+    public void ShowTemplatesTab() => SelectedTabIndex = TemplatesTabIndex;
+
     partial void OnLabelDateTimeModeChanged(LabelDateTimeMode value) =>
         OnPropertyChanged(nameof(IsManualLabelDateTime));
 
     [RelayCommand]
     private async Task LoadAsync()
     {
-        using var scope = _scopeFactory.CreateScope();
-        var settings = scope.ServiceProvider.GetRequiredService<ISettingsService>();
-        var result = await settings.GetAsync();
-        if (result.IsFailure)
+        if (IsAdministrator)
         {
-            StatusMessage = result.Error;
-            return;
+            using var scope = _scopeFactory.CreateScope();
+            var settings = scope.ServiceProvider.GetRequiredService<ISettingsService>();
+            var result = await settings.GetAsync();
+            if (result.IsFailure)
+            {
+                StatusMessage = result.Error;
+            }
+            else
+            {
+                var dto = result.Value;
+                Theme = dto.Theme;
+                Language = dto.Language;
+                AutoPrintOrders = dto.AutoPrintOrders;
+                AutoRefreshOrders = dto.AutoRefreshOrders;
+                OrdersRefreshIntervalSeconds = dto.OrdersRefreshIntervalSeconds;
+                FrontPadWebhookListenUrl = dto.FrontPadWebhookListenUrl;
+                DefaultLabelWidthMm = dto.DefaultLabelWidthMm;
+                DefaultLabelHeightMm = dto.DefaultLabelHeightMm;
+                MaxPrintRetries = dto.MaxPrintRetries;
+                AutoBackupEnabled = dto.AutoBackupEnabled;
+                LabelDateTimeMode = dto.LabelDateTimeMode;
+                var manual = (dto.ManualLabelDateTime ?? DateTimeOffset.Now).LocalDateTime;
+                ManualLabelDate = manual.Date;
+                ManualLabelTime = manual.TimeOfDay;
+                DatabasePath = dto.DatabasePath;
+                BackupPath = dto.BackupPath;
+                DefaultBackupDirectory = dto.DefaultBackupDirectory;
+                StatusMessage = "Загружено";
+
+                var updates = scope.ServiceProvider.GetRequiredService<IUpdateChecker>();
+                var updateResult = await updates.CheckAsync();
+                UpdateStatus = updateResult.IsSuccess
+                    ? $"v{updateResult.Value.CurrentVersion} — {updateResult.Value.Message}"
+                    : updateResult.Error ?? "Не удалось проверить обновления.";
+            }
         }
 
-        var dto = result.Value;
-        Theme = dto.Theme;
-        Language = dto.Language;
-        AutoPrintOrders = dto.AutoPrintOrders;
-        AutoRefreshOrders = dto.AutoRefreshOrders;
-        OrdersRefreshIntervalSeconds = dto.OrdersRefreshIntervalSeconds;
-        FrontPadWebhookListenUrl = dto.FrontPadWebhookListenUrl;
-        DefaultLabelWidthMm = dto.DefaultLabelWidthMm;
-        DefaultLabelHeightMm = dto.DefaultLabelHeightMm;
-        MaxPrintRetries = dto.MaxPrintRetries;
-        AutoBackupEnabled = dto.AutoBackupEnabled;
-        LabelDateTimeMode = dto.LabelDateTimeMode;
-        var manual = (dto.ManualLabelDateTime ?? DateTimeOffset.Now).LocalDateTime;
-        ManualLabelDate = manual.Date;
-        ManualLabelTime = manual.TimeOfDay;
-        DatabasePath = dto.DatabasePath;
-        BackupPath = dto.BackupPath;
-        DefaultBackupDirectory = dto.DefaultBackupDirectory;
-        StatusMessage = "Загружено";
-
-        var updates = scope.ServiceProvider.GetRequiredService<IUpdateChecker>();
-        var updateResult = await updates.CheckAsync();
-        UpdateStatus = updateResult.IsSuccess
-            ? $"v{updateResult.Value.CurrentVersion} — {updateResult.Value.Message}"
-            : updateResult.Error ?? "Не удалось проверить обновления.";
+        await Templates.LoadCommand.ExecuteAsync(null);
+        await Printers.LoadCommand.ExecuteAsync(null);
+        await Queue.LoadCommand.ExecuteAsync(null);
+        await History.LoadCommand.ExecuteAsync(null);
     }
 
     [RelayCommand]

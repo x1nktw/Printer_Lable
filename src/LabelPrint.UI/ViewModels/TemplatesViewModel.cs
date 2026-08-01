@@ -11,7 +11,7 @@ public partial class TemplatesViewModel : PageViewModelBase
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IUiDialogService _dialogs;
-    private readonly Action<Guid>? _openEditor;
+    private Action<Guid>? _openEditor;
 
     public TemplatesViewModel(
         IServiceScopeFactory scopeFactory,
@@ -23,6 +23,8 @@ public partial class TemplatesViewModel : PageViewModelBase
         _openEditor = openEditor;
         Title = "Шаблоны";
     }
+
+    public void BindOpenEditor(Action<Guid> openEditor) => _openEditor = openEditor;
 
     public ObservableCollection<TemplateListItemDto> Templates { get; } = new();
 

@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 
 namespace LabelPrint.UI.Services;
 
@@ -71,6 +72,32 @@ public sealed class AvaloniaUiDialogService : IUiDialogService
         dialog.Content = BuildContent(message, okButton, cancelButton);
         await dialog.ShowDialog(owner);
         return confirmed;
+    }
+
+    /// <inheritdoc />
+    public async Task<string?> PickPngFileAsync(string title = "Выберите PNG-иконку")
+    {
+        var owner = GetMainWindow();
+        if (owner is null)
+        {
+            return null;
+        }
+
+        var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = title,
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("PNG")
+                {
+                    Patterns = ["*.png"],
+                    MimeTypes = ["image/png"]
+                }
+            ]
+        });
+
+        return files.Count > 0 ? files[0].TryGetLocalPath() : null;
     }
 
     private static Window CreateDialog(string title) => new()

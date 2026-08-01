@@ -151,7 +151,8 @@ public sealed class ProductService : IProductService
         bool includeArchived,
         int skip,
         int take,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? excludeCategoryId = null)
     {
         if (take <= 0 || take > 500)
         {
@@ -164,7 +165,7 @@ public sealed class ProductService : IProductService
         }
 
         var (items, total) = await _unitOfWork.Products.SearchAsync(
-            search, categoryId, includeArchived, skip, take, cancellationToken);
+            search, categoryId, includeArchived, skip, take, cancellationToken, excludeCategoryId);
 
         var dtos = items.Select(p => new ProductListItemDto
         {

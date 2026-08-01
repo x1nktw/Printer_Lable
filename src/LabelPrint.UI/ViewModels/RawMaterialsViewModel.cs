@@ -15,17 +15,19 @@ public partial class RawMaterialsViewModel : PageViewModelBase
     public RawMaterialsViewModel(IServiceScopeFactory scopeFactory)
     {
         _scopeFactory = scopeFactory;
-        Title = "Сырьё";
+        Title = "Маркировка";
     }
 
     public ObservableCollection<ProductListItemDto> Items { get; } = new();
     public ObservableCollection<PrinterListItemDto> Printers { get; } = new();
+    public ObservableCollection<TemplateListItemDto> Templates { get; } = new();
 
     [ObservableProperty] private string? _searchText;
     [ObservableProperty] private ProductListItemDto? _selectedItem;
     [ObservableProperty] private string _customName = string.Empty;
     [ObservableProperty] private string? _statusMessage;
     [ObservableProperty] private PrinterListItemDto? _selectedPrinter;
+    [ObservableProperty] private TemplateListItemDto? _selectedTemplate;
     [ObservableProperty] private bool _useCustomLabelDateTime;
     [ObservableProperty] private DateTime? _labelDate = DateTime.Today;
     [ObservableProperty] private TimeSpan? _labelTime = DateTime.Now.TimeOfDay;
@@ -83,9 +85,31 @@ public partial class RawMaterialsViewModel : PageViewModelBase
             SelectedPrinter ??= Printers.FirstOrDefault(p => p.IsDefault) ?? Printers.FirstOrDefault();
         }
 
+        await LoadTemplatesAsync(scope);
+
         StatusMessage = Items.Count == 0
-            ? "Нет товаров в категории «Сырьё». Добавьте в Каталоге или «Создать примеры»."
-            : $"Сырьё: {Items.Count}";
+            ? "Нет товаров в категории «Сырьё». Добавьте в Каталог → Маркировка или «Создать примеры»."
+            : $"Позиций: {Items.Count}";
+    }
+
+    private async Task LoadTemplatesAsync(IServiceScope scope)
+    {
+        var templates = scope.ServiceProvider.GetRequiredService<ITemplateService>();
+        var result = await templates.SearchAsync(null, includeArchived: false, skip: 0, take: 200);
+        Templates.Clear();
+        if (result.IsFailure)
+        {
+            return;
+        }
+
+        foreach (var item in result.Value.Items)
+        {
+            Templates.Add(item);
+        }
+
+        SelectedTemplate ??= Templates.FirstOrDefault(t =>
+                                t.Name.Contains("Сырьё", StringComparison.OrdinalIgnoreCase))
+                            ?? Templates.FirstOrDefault();
     }
 
     [RelayCommand]
@@ -173,7 +197,8 @@ public partial class RawMaterialsViewModel : PageViewModelBase
             SelectedPrinter?.Id,
             copies: 1,
             labelDateTimeOverride: overrideDt,
-            productId: SelectedItem?.Id);
+            productId: SelectedItem?.Id,
+            templateId: SelectedTemplate?.Id);
         StatusMessage = result.IsFailure
             ? result.Error
             : $"Напечатано: {name} (задание {result.Value})";

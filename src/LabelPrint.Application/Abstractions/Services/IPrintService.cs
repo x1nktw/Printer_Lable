@@ -26,6 +26,7 @@ public interface IPrintService
         int copies = 1,
         DateTimeOffset? labelDateTimeOverride = null,
         Guid? productId = null,
+        Guid? templateId = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -35,5 +36,6 @@ public interface IPrintService
         Guid orderItemId,
         Guid? printerId = null,
         int copies = 1,
+        Guid? templateId = null,
         CancellationToken cancellationToken = default);
 }

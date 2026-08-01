@@ -194,6 +194,7 @@ public sealed class OrderService : IOrderService
         Guid orderId,
         IReadOnlyList<Guid> orderItemIds,
         Guid? printerId = null,
+        Guid? templateId = null,
         CancellationToken cancellationToken = default)
     {
         if (orderItemIds.Count == 0)
@@ -216,7 +217,8 @@ public sealed class OrderService : IOrderService
                 continue;
             }
 
-            var result = await _printService.PrintOrderItemAsync(itemId, printerId, cancellationToken: cancellationToken);
+            var result = await _printService.PrintOrderItemAsync(
+                itemId, printerId, templateId: templateId, cancellationToken: cancellationToken);
             if (result.IsFailure)
             {
                 return Result.Failure<IReadOnlyList<Guid>>(result.Error!);
@@ -232,6 +234,7 @@ public sealed class OrderService : IOrderService
     public async Task<Result<IReadOnlyList<Guid>>> PrintAllItemsAsync(
         Guid orderId,
         Guid? printerId = null,
+        Guid? templateId = null,
         CancellationToken cancellationToken = default)
     {
         var order = await _unitOfWork.Orders.GetByIdAsync(orderId, cancellationToken);
@@ -241,7 +244,7 @@ public sealed class OrderService : IOrderService
         }
 
         var ids = order.Items.Select(i => i.Id).ToList();
-        return await PrintItemsAsync(orderId, ids, printerId, cancellationToken);
+        return await PrintItemsAsync(orderId, ids, printerId, templateId, cancellationToken);
     }
 
     private static OrderListItemDto MapListItem(Domain.Entities.Order order)

@@ -39,7 +39,8 @@ internal sealed class ProductRepository : IProductRepository
         bool includeArchived,
         int skip,
         int take,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? excludeCategoryId = null)
     {
         var query = _db.Products.AsNoTracking().Include(p => p.Category).AsQueryable();
 
@@ -51,6 +52,10 @@ internal sealed class ProductRepository : IProductRepository
         if (categoryId is not null)
         {
             query = query.Where(p => p.CategoryId == categoryId);
+        }
+        else if (excludeCategoryId is not null)
+        {
+            query = query.Where(p => p.CategoryId != excludeCategoryId);
         }
 
         if (!string.IsNullOrWhiteSpace(search))

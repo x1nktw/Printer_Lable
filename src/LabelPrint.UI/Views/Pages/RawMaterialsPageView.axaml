@@ -48,6 +48,16 @@
             </DataTemplate>
           </ComboBox.ItemTemplate>
         </ComboBox>
+        <ComboBox ItemsSource="{Binding Templates}"
+                  SelectedItem="{Binding SelectedTemplate}"
+                  PlaceholderText="Шаблон"
+                  MinHeight="32">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="svc:TemplateListItemDto">
+              <TextBlock Text="{Binding Name}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
         <CheckBox Content="Своя дата/время" IsChecked="{Binding UseCustomLabelDateTime}" />
         <StackPanel Orientation="Horizontal" Spacing="8">
           <CalendarDatePicker SelectedDate="{Binding LabelDate}"

@@ -17,6 +17,8 @@
 
 Webhook URL: **Настройки** → FrontPad Bridge.
 
+Иконки добавок на кухонной этикетке настраиваются в **Каталог → Добавки** (название как в FrontPad + иконка; без записи остаётся кружок).
+
 ### Установка Bridge
 
 См. [extensions/frontpad-bridge/README.md](../extensions/frontpad-bridge/README.md): загрузить распакованное в Chrome/Edge, обновить после правок, перезагрузить вкладку FrontPad.

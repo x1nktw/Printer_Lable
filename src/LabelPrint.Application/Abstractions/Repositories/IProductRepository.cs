@@ -25,7 +25,8 @@ public interface IProductRepository
         bool includeArchived,
         int skip,
         int take,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        Guid? excludeCategoryId = null);
 
     Task AddAsync(Product product, CancellationToken cancellationToken = default);
 

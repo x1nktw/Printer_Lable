@@ -27,5 +27,6 @@ public interface IProductService
         bool includeArchived,
         int skip,
         int take,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        Guid? excludeCategoryId = null);
 }

@@ -26,44 +26,6 @@ internal static class LabelAssets
                ?? (bold ? InterBold.Value : InterRegular.Value);
     }
 
-    public static SKBitmap? TryLoadIcon(string name)
-    {
-        var key = NormalizeIconKey(name);
-        lock (IconGate)
-        {
-            if (IconCache.TryGetValue(key, out var cached))
-            {
-                return cached.Copy();
-            }
-
-            var asm = typeof(LabelAssets).Assembly;
-            var resource = asm.GetManifestResourceNames()
-                .FirstOrDefault(n => n.EndsWith($".{key}.png", StringComparison.OrdinalIgnoreCase)
-                                     || n.EndsWith($"icons.{key}.png", StringComparison.OrdinalIgnoreCase));
-            if (resource is null)
-            {
-                return null;
-            }
-
-            using var stream = asm.GetManifestResourceStream(resource);
-            if (stream is null)
-            {
-                return null;
-            }
-
-            using var ms = new MemoryStream();
-            stream.CopyTo(ms);
-            var bitmap = SKBitmap.Decode(ms.ToArray());
-            if (bitmap is null)
-            {
-                return null;
-            }
-
-            IconCache[key] = bitmap;
-            return bitmap.Copy();
-        }
-    }
-
     public static string ResolveAddonIconKey(string addonText)
     {
         var t = addonText.ToLowerInvariant();
@@ -83,6 +45,77 @@ internal static class LabelAssets
         }
 
         return "bullet";
+    }
+
+    /// <summary>
+    /// Loads an icon from embedded resources or
+    /// <c>%LocalAppData%\LabelPrintPro\addon-icons\{key}.png</c>.
+    /// </summary>
+    public static SKBitmap? TryLoadIcon(string name)
+    {
+        var key = NormalizeIconKey(name);
+        lock (IconGate)
+        {
+            if (IconCache.TryGetValue(key, out var cached))
+            {
+                return cached.Copy();
+            }
+
+            var bitmap = TryDecodeEmbedded(key) ?? TryDecodeCustomFile(key);
+            if (bitmap is null)
+            {
+                return null;
+            }
+
+            IconCache[key] = bitmap;
+            return bitmap.Copy();
+        }
+    }
+
+    public static string AddonIconsDirectory
+    {
+        get
+        {
+            var dir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "LabelPrintPro",
+                "addon-icons");
+            Directory.CreateDirectory(dir);
+            return dir;
+        }
+    }
+
+    private static SKBitmap? TryDecodeEmbedded(string key)
+    {
+        var asm = typeof(LabelAssets).Assembly;
+        var resource = asm.GetManifestResourceNames()
+            .FirstOrDefault(n => n.EndsWith($".{key}.png", StringComparison.OrdinalIgnoreCase)
+                                 || n.EndsWith($"icons.{key}.png", StringComparison.OrdinalIgnoreCase));
+        if (resource is null)
+        {
+            return null;
+        }
+
+        using var stream = asm.GetManifestResourceStream(resource);
+        if (stream is null)
+        {
+            return null;
+        }
+
+        using var ms = new MemoryStream();
+        stream.CopyTo(ms);
+        return SKBitmap.Decode(ms.ToArray());
+    }
+
+    private static SKBitmap? TryDecodeCustomFile(string key)
+    {
+        var path = Path.Combine(AddonIconsDirectory, $"{key}.png");
+        if (!File.Exists(path))
+        {
+            return null;
+        }
+
+        return SKBitmap.Decode(path);
     }
 
     private static string NormalizeIconKey(string name)

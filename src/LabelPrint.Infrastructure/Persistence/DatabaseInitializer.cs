@@ -117,8 +117,37 @@ public sealed class DatabaseInitializer
 
         await EnsureSystemTemplatesAsync(cancellationToken);
         await EnsureRawMaterialsSeedAsync(cancellationToken);
+        await EnsureAddonsSeedAsync(cancellationToken);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task EnsureAddonsSeedAsync(CancellationToken cancellationToken)
+    {
+        if (await _dbContext.Addons.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        _dbContext.Addons.AddRange(
+            new Addon
+            {
+                Name = "Халапеньо",
+                MatchAliases = "халапень,перец,chili,jalap,острый",
+                IconKey = "pepper"
+            },
+            new Addon
+            {
+                Name = "Сыр",
+                MatchAliases = "cheese",
+                IconKey = "cheese"
+            },
+            new Addon
+            {
+                Name = "Лук",
+                MatchAliases = "onion",
+                IconKey = "onion"
+            });
     }
 
     private async Task EnsureSystemTemplatesAsync(CancellationToken cancellationToken)

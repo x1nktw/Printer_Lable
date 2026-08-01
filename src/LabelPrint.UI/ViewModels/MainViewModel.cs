@@ -34,12 +34,8 @@ public partial class MainViewModel : ViewModelBase
         {
             new("home", "Главная"),
             new("catalog", "Каталог"),
-            new("raw", "Сырьё"),
-            new("templates", "Шаблоны"),
+            new("raw", "Маркировка"),
             new("orders", "Заказы"),
-            new("printers", "Принтеры"),
-            new("queue", "Очередь печати"),
-            new("history", "История"),
             new("settings", "Настройки")
         };
 
@@ -168,20 +164,12 @@ public partial class MainViewModel : ViewModelBase
             return;
         }
 
-        if (key == "settings" && _session.CurrentUserRole != UserRole.Administrator)
-        {
-            CurrentPage = new PlaceholderViewModel(key, "Настройки",
-                "Раздел доступен только администратору.");
-            _currentNavKey = key;
-            return;
-        }
-
         if (CurrentPage is TemplateEditorViewModel editor)
         {
             if (!await editor.TryLeaveAsync())
             {
                 _suppressNav = true;
-                SelectedNavItem = NavItems.First(n => n.Key == "templates");
+                SelectedNavItem = NavItems.First(n => n.Key == "settings");
                 _suppressNav = false;
                 return;
             }
@@ -212,14 +200,9 @@ public partial class MainViewModel : ViewModelBase
                 await raw.LoadCommand.ExecuteAsync(null);
                 break;
             }
-            case "templates":
-                await OpenTemplatesAsync();
-                break;
             case "settings":
             {
-                var settings = new SettingsViewModel(_scopeFactory);
-                CurrentPage = settings;
-                await settings.LoadCommand.ExecuteAsync(null);
+                CurrentPage = await OpenSettingsAsync();
                 break;
             }
             case "orders":
@@ -229,38 +212,23 @@ public partial class MainViewModel : ViewModelBase
                 await orders.LoadCommand.ExecuteAsync(null);
                 break;
             }
-            case "printers":
-            {
-                var printers = _services.GetRequiredService<PrintersViewModel>();
-                CurrentPage = printers;
-                await printers.LoadCommand.ExecuteAsync(null);
-                break;
-            }
-            case "queue":
-            {
-                var queue = _services.GetRequiredService<QueueViewModel>();
-                CurrentPage = queue;
-                await queue.LoadCommand.ExecuteAsync(null);
-                break;
-            }
-            case "history":
-            {
-                var history = _services.GetRequiredService<HistoryViewModel>();
-                CurrentPage = history;
-                await history.LoadCommand.ExecuteAsync(null);
-                break;
-            }
             default:
                 CurrentPage = new PlaceholderViewModel(key, "Раздел", "Страница в разработке.");
                 break;
         }
     }
 
-    private async Task OpenTemplatesAsync()
+    private async Task<SettingsViewModel> OpenSettingsAsync(bool showTemplates = false)
     {
-        var templates = new TemplatesViewModel(_scopeFactory, _dialogs, OpenTemplateEditor);
-        CurrentPage = templates;
-        await templates.LoadCommand.ExecuteAsync(null);
+        var settings = _services.GetRequiredService<SettingsViewModel>();
+        settings.BindTemplateEditor(OpenTemplateEditor);
+        if (showTemplates)
+        {
+            settings.ShowTemplatesTab();
+        }
+
+        await settings.LoadCommand.ExecuteAsync(null);
+        return settings;
     }
 
     private async void OpenTemplateEditor(Guid templateId)
@@ -271,16 +239,16 @@ public partial class MainViewModel : ViewModelBase
             templateId,
             async () =>
             {
-                _currentNavKey = "templates";
+                _currentNavKey = "settings";
                 _suppressNav = true;
-                SelectedNavItem = NavItems.First(n => n.Key == "templates");
+                SelectedNavItem = NavItems.First(n => n.Key == "settings");
                 _suppressNav = false;
-                await OpenTemplatesAsync();
+                CurrentPage = await OpenSettingsAsync(showTemplates: true);
             });
 
         CurrentPage = editor;
         await editor.LoadCommand.ExecuteAsync(null);
-        _currentNavKey = "templates";
+        _currentNavKey = "settings";
     }
 }
 
@@ -297,7 +265,7 @@ public partial class HomeViewModel : PageViewModelBase
     }
 
     public string Subtitle { get; } =
-        "LabelPrint Pro — каталог, шаблоны и печать. Войдите как Администратор или Оператор, чтобы начать работу.";
+        "LabelPrint Pro — каталог, заказы и печать. Войдите как Администратор или Оператор, чтобы начать работу.";
 
     [ObservableProperty] private string _versionLabel = "LabelPrint Pro";
     [ObservableProperty] private string _updateMessage = "Проверка обновлений…";

@@ -1,77 +1,130 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:LabelPrint.UI.ViewModels"
+             xmlns:svc="using:LabelPrint.Application.Abstractions.Services"
              x:Class="LabelPrint.UI.Views.Pages.OrdersPageView"
              x:DataType="vm:OrdersViewModel">
   <DockPanel Margin="8">
     <StackPanel DockPanel.Dock="Top" Spacing="12">
       <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold" />
-      <Border Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
-              Padding="10"
-              CornerRadius="6">
-        <StackPanel Spacing="4">
-          <TextBlock Text="{Binding BannerMessage}" TextWrapping="Wrap" FontWeight="SemiBold" />
-          <TextBlock Text="{Binding InboxPath, StringFormat=Inbox: {0}}" Opacity="0.7" TextWrapping="Wrap" FontSize="12" />
-        </StackPanel>
-      </Border>
 
-      <StackPanel Orientation="Horizontal" Spacing="8">
+      <WrapPanel>
         <TextBox Watermark="Поиск № / клиент"
                  Text="{Binding SearchText}"
                  Width="220"
-                 MinHeight="32" />
-        <Button Content="Обновить" Command="{Binding LoadCommand}" />
+                 MinHeight="32"
+                 Margin="0,0,8,8" />
+        <Button Content="Обновить" Command="{Binding LoadCommand}" Margin="0,0,8,8" />
         <Button Content="Inbox" Command="{Binding SyncInboxOnlyCommand}"
-                ToolTip.Tip="Подтянуть JSON из inbox" />
+                ToolTip.Tip="Подтянуть JSON из inbox"
+                Margin="0,0,8,8" />
         <Button Content="Пример" Command="{Binding CreateSampleCommand}"
-                ToolTip.Tip="JSON с составом в inbox" />
-        <Button Content="Печать выбранных" Command="{Binding PrintSelectedItemsCommand}" />
-        <Button Content="Печать всех" Command="{Binding PrintAllItemsCommand}" />
-      </StackPanel>
+                ToolTip.Tip="JSON с составом в inbox"
+                Margin="0,0,8,8" />
+        <ComboBox ItemsSource="{Binding Templates}"
+                  SelectedItem="{Binding SelectedTemplate}"
+                  PlaceholderText="Шаблон"
+                  MinWidth="180"
+                  MinHeight="32"
+                  Margin="0,0,8,8">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="svc:TemplateListItemDto">
+              <TextBlock Text="{Binding Name}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <Button Content="Печать выбранных" Command="{Binding PrintSelectedItemsCommand}" Margin="0,0,8,8" />
+        <Button Content="Печать всех" Command="{Binding PrintAllItemsCommand}" Margin="0,0,8,8" />
+      </WrapPanel>
       <TextBlock Text="{Binding StatusMessage}" Opacity="0.7" TextWrapping="Wrap" />
     </StackPanel>
 
-    <Grid ColumnDefinitions="*,*" Margin="0,12,0,0">
-      <DataGrid Grid.Column="0"
-                ItemsSource="{Binding Orders}"
-                SelectedItem="{Binding SelectedOrder}"
-                AutoGenerateColumns="False"
-                IsReadOnly="True"
-                CanUserResizeColumns="True"
-                GridLinesVisibility="Horizontal"
-                Margin="0,0,8,0">
-        <DataGrid.Columns>
-          <DataGridTextColumn Header="№" Binding="{Binding Number}" Width="90" MinWidth="70" />
-          <DataGridTextColumn Header="Статус" Binding="{Binding StatusLabel}" Width="120" MinWidth="100" />
-          <DataGridTextColumn Header="Клиент" Binding="{Binding CustomerName}" Width="*" MinWidth="120" />
-          <DataGridTextColumn Header="Поз." Binding="{Binding ItemCount}" Width="60" />
-          <DataGridTextColumn Header="Сопост." Binding="{Binding MatchedItemCount}" Width="80" />
-          <DataGridTextColumn Header="Сумма" Binding="{Binding TotalAmount, StringFormat=\{0:0.##\}}" Width="90" />
-        </DataGrid.Columns>
-      </DataGrid>
+    <Grid ColumnDefinitions="*,12,*" Margin="0,12,0,0">
+      <!-- Заказы -->
+      <Border Grid.Column="0"
+              CornerRadius="8"
+              BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+              BorderThickness="1"
+              ClipToBounds="True">
+        <DockPanel>
+          <Border DockPanel.Dock="Top"
+                  Padding="12,10"
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+            <TextBlock Text="Заказы" FontWeight="SemiBold" />
+          </Border>
+          <DataGrid Name="OrdersGrid"
+                    ItemsSource="{Binding Orders}"
+                    SelectedItem="{Binding SelectedOrder}"
+                    AutoGenerateColumns="False"
+                    IsReadOnly="True"
+                    CanUserResizeColumns="True"
+                    CanUserSortColumns="False"
+                    HeadersVisibility="Column"
+                    GridLinesVisibility="Horizontal"
+                    BorderThickness="0">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Номер" Binding="{Binding Number}" Width="SizeToHeader" />
+              <DataGridTextColumn Header="Статус" Binding="{Binding StatusLabel}" Width="SizeToHeader" />
+              <DataGridTextColumn Header="Клиент" Binding="{Binding CustomerName}" Width="*" MinWidth="120" />
+              <DataGridTextColumn Header="Позиции" Binding="{Binding ItemCount}" Width="SizeToHeader" />
+              <DataGridTextColumn Header="В каталоге" Binding="{Binding MatchedItemCount}" Width="SizeToHeader" />
+              <DataGridTextColumn Header="Сумма" Binding="{Binding TotalAmount, StringFormat=\{0:0.##\}}" Width="SizeToHeader" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </Border>
 
-      <DockPanel Grid.Column="1">
-        <TextBlock DockPanel.Dock="Top"
-                   Text="Позиции заказа"
-                   FontWeight="SemiBold"
-                   Margin="0,0,0,8" />
-        <DataGrid ItemsSource="{Binding ItemRows}"
-                  SelectedItem="{Binding SelectedItem}"
-                  AutoGenerateColumns="False"
-                  IsReadOnly="False"
-                  CanUserResizeColumns="True"
-                  GridLinesVisibility="Horizontal">
-          <DataGrid.Columns>
-            <DataGridCheckBoxColumn Header="✓" Binding="{Binding IsSelected}" Width="40" />
-            <DataGridTextColumn Header="N/M" Binding="{Binding PositionLabel}" Width="60" IsReadOnly="True" />
-            <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" MinWidth="120" IsReadOnly="True" />
-            <DataGridTextColumn Header="SKU" Binding="{Binding Sku}" Width="90" IsReadOnly="True" />
-            <DataGridTextColumn Header="Кол-во" Binding="{Binding Quantity}" Width="70" IsReadOnly="True" />
-            <DataGridTextColumn Header="Сопост." Binding="{Binding MatchLabel}" Width="90" IsReadOnly="True" />
-            <DataGridCheckBoxColumn Header="Печать" Binding="{Binding IsPrinted}" Width="70" IsReadOnly="True" />
-          </DataGrid.Columns>
-        </DataGrid>
-      </DockPanel>
+      <!-- Позиции -->
+      <Border Grid.Column="2"
+              CornerRadius="8"
+              BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+              BorderThickness="1"
+              ClipToBounds="True">
+        <DockPanel>
+          <Border DockPanel.Dock="Top"
+                  Padding="12,10"
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+            <TextBlock Text="Позиции заказа" FontWeight="SemiBold" />
+          </Border>
+          <DataGrid Name="ItemsGrid"
+                    ItemsSource="{Binding ItemRows}"
+                    SelectedItem="{Binding SelectedItem}"
+                    AutoGenerateColumns="False"
+                    IsReadOnly="True"
+                    CanUserResizeColumns="True"
+                    CanUserSortColumns="False"
+                    HeadersVisibility="Column"
+                    GridLinesVisibility="Horizontal"
+                    BorderThickness="0">
+            <DataGrid.Columns>
+              <DataGridTemplateColumn Header=" " Width="48" MinWidth="48">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate x:DataType="vm:OrderItemRowVm">
+                    <CheckBox IsChecked="{Binding IsSelected}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTextColumn Header="Позиция" Binding="{Binding PositionLabel}" Width="SizeToHeader" />
+              <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" MinWidth="140" />
+              <DataGridTextColumn Header="Артикул" Binding="{Binding Sku}" Width="SizeToHeader" />
+              <DataGridTextColumn Header="Количество" Binding="{Binding Quantity}" Width="SizeToHeader" />
+              <DataGridTextColumn Header="Связь" Binding="{Binding MatchLabel}" Width="SizeToHeader" />
+              <DataGridTemplateColumn Header="Готово" Width="SizeToHeader" MinWidth="70">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate x:DataType="vm:OrderItemRowVm">
+                    <CheckBox IsChecked="{Binding IsPrinted}"
+                              IsEnabled="False"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </Border>
     </Grid>
   </DockPanel>
 </UserControl>

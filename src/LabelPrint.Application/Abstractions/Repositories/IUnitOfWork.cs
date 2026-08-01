@@ -27,5 +27,7 @@ public interface IUnitOfWork
 
     IOrderRepository Orders { get; }
 
+    IAddonRepository Addons { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

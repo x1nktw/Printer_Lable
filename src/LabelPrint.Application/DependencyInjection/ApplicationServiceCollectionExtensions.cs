@@ -38,6 +38,8 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<OrderSyncService>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<ILabelDateTimeService, LabelDateTimeService>();
+        services.AddScoped<IAddonService, AddonService>();
+        services.AddScoped<IAddonIconResolver, AddonIconResolver>();
         services.AddSingleton<Queue.PrintQueueWorker>();
         services.AddSingleton<Queue.KitchenOrderPollWorker>();
         services.AddScoped<IVariableResolver, VariableResolver>();

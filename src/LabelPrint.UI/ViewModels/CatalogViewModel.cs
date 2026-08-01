@@ -2,37 +2,42 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LabelPrint.Application.Abstractions.Services;
 using LabelPrint.Application.DTOs;
-using LabelPrint.Domain.Entities;
 using LabelPrint.Domain.Enums;
+using LabelPrint.UI.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.ObjectModel;
-using System.Text;
 
 namespace LabelPrint.UI.ViewModels;
 
 public partial class CatalogViewModel : PageViewModelBase
 {
     private const int PageSize = 100;
+    private const string RawCategoryName = "Сырьё";
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IUiDialogService _dialogs;
     private int _loadedCount;
     private int _totalCount;
+    private Guid? _rawCategoryId;
+    private Guid? _editDefaultTemplateId;
+    private Guid? _editOrderItemTemplateId;
 
-    public CatalogViewModel(IServiceScopeFactory scopeFactory)
+    public CatalogViewModel(IServiceScopeFactory scopeFactory, IUiDialogService dialogs)
     {
         _scopeFactory = scopeFactory;
+        _dialogs = dialogs;
         Title = "Каталог";
     }
 
     public ObservableCollection<ProductListItemDto> Products { get; } = new();
-    public ObservableCollection<CategoryNodeVm> Categories { get; } = new();
     public ObservableCollection<CategoryOptionVm> CategoryOptions { get; } = new();
     public ObservableCollection<CustomFieldEditVm> CustomFields { get; } = new();
     public ObservableCollection<CustomFieldDefinitionDto> FieldDefinitions { get; } = new();
-    public ObservableCollection<PrinterListItemDto> Printers { get; } = new();
+    public ObservableCollection<AddonListItemDto> Addons { get; } = new();
+    public ObservableCollection<string> IconKeys { get; } = new();
 
+    [ObservableProperty] private int _selectedSectionIndex;
     [ObservableProperty] private string? _searchText;
     [ObservableProperty] private ProductListItemDto? _selectedProduct;
-    [ObservableProperty] private CategoryNodeVm? _selectedCategory;
     [ObservableProperty] private string? _statusMessage;
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private bool _canLoadMore;
@@ -44,17 +49,32 @@ public partial class CatalogViewModel : PageViewModelBase
     [ObservableProperty] private CategoryOptionVm? _editCategoryOption;
     [ObservableProperty] private bool _isEditorOpen;
     [ObservableProperty] private Guid? _editingId;
-    [ObservableProperty] private string _newCategoryName = string.Empty;
     [ObservableProperty] private string _newFieldName = string.Empty;
     [ObservableProperty] private bool _newFieldRequired;
     [ObservableProperty] private bool _showFieldManager;
     [ObservableProperty] private CustomFieldDefinitionDto? _selectedFieldDefinition;
-    [ObservableProperty] private PrinterListItemDto? _selectedPrinter;
-    [ObservableProperty] private bool _useCustomLabelDateTime;
-    [ObservableProperty] private DateTime? _labelDate = DateTime.Today;
-    [ObservableProperty] private TimeSpan? _labelTime = DateTime.Now.TimeOfDay;
+    [ObservableProperty] private AddonListItemDto? _selectedAddon;
+    [ObservableProperty] private bool _isAddonEditorOpen;
+    [ObservableProperty] private Guid? _editingAddonId;
+    [ObservableProperty] private string _editAddonName = string.Empty;
+    [ObservableProperty] private string? _editAddonAliases;
+    [ObservableProperty] private string _editAddonIconKey = "bullet";
 
-    partial void OnSelectedCategoryChanged(CategoryNodeVm? value) => _ = ReloadProductsAsync();
+    public bool IsProductsSection => SelectedSectionIndex == 0;
+    public bool IsRawSection => SelectedSectionIndex == 1;
+    public bool IsAddonsSection => SelectedSectionIndex == 2;
+    public bool IsProductCatalogSection => SelectedSectionIndex is 0 or 1;
+
+    partial void OnSelectedSectionIndexChanged(int value)
+    {
+        OnPropertyChanged(nameof(IsProductsSection));
+        OnPropertyChanged(nameof(IsRawSection));
+        OnPropertyChanged(nameof(IsAddonsSection));
+        OnPropertyChanged(nameof(IsProductCatalogSection));
+        IsEditorOpen = false;
+        IsAddonEditorOpen = false;
+        _ = ReloadForSectionAsync();
+    }
 
     partial void OnEditCategoryOptionChanged(CategoryOptionVm? value) => EditCategoryId = value?.Id;
 
@@ -64,7 +84,7 @@ public partial class CatalogViewModel : PageViewModelBase
     [RelayCommand]
     private async Task LoadMoreAsync()
     {
-        if (IsBusy || !CanLoadMore)
+        if (IsBusy || !CanLoadMore || !IsProductCatalogSection)
         {
             return;
         }
@@ -76,12 +96,23 @@ public partial class CatalogViewModel : PageViewModelBase
     private async Task NewProductAsync()
     {
         EditingId = null;
+        _editDefaultTemplateId = null;
+        _editOrderItemTemplateId = null;
         EditName = string.Empty;
         EditSku = string.Empty;
         EditBarcode = null;
         EditPrice = 0;
-        EditCategoryId = SelectedCategory?.Id;
-        EditCategoryOption = CategoryOptions.FirstOrDefault(c => c.Id == EditCategoryId);
+        if (IsRawSection)
+        {
+            EditCategoryId = _rawCategoryId;
+            EditCategoryOption = CategoryOptions.FirstOrDefault(c => c.Id == _rawCategoryId);
+        }
+        else
+        {
+            EditCategoryId = null;
+            EditCategoryOption = CategoryOptions.FirstOrDefault(c => c.Id is null);
+        }
+
         await LoadCustomFieldEditorsAsync(null);
         IsEditorOpen = true;
     }
@@ -111,6 +142,8 @@ public partial class CatalogViewModel : PageViewModelBase
         EditPrice = dto.PriceAmount;
         EditCategoryId = dto.CategoryId;
         EditCategoryOption = CategoryOptions.FirstOrDefault(c => c.Id == EditCategoryId);
+        _editDefaultTemplateId = dto.DefaultTemplateId;
+        _editOrderItemTemplateId = dto.OrderItemTemplateId;
         await LoadCustomFieldEditorsAsync(dto.CustomFieldValues);
         IsEditorOpen = true;
     }
@@ -127,7 +160,9 @@ public partial class CatalogViewModel : PageViewModelBase
             Sku = EditSku,
             Barcode = EditBarcode,
             PriceAmount = EditPrice ?? 0,
-            CategoryId = EditCategoryId,
+            CategoryId = IsRawSection ? _rawCategoryId : EditCategoryId,
+            DefaultTemplateId = _editDefaultTemplateId,
+            OrderItemTemplateId = _editOrderItemTemplateId,
             CustomFieldValues = CustomFields.ToDictionary(f => f.DefinitionId, f => f.Value)
         };
 
@@ -174,193 +209,6 @@ public partial class CatalogViewModel : PageViewModelBase
     }
 
     [RelayCommand]
-    private async Task PrintSelectedAsync()
-    {
-        if (SelectedProduct is null)
-        {
-            StatusMessage = "Выберите товар для печати.";
-            return;
-        }
-
-        using var scope = _scopeFactory.CreateScope();
-        var printService = scope.ServiceProvider.GetRequiredService<IPrintService>();
-        var printerId = SelectedPrinter?.Id;
-        DateTimeOffset? overrideDt = null;
-        if (UseCustomLabelDateTime)
-        {
-            var date = (LabelDate ?? DateTime.Today).Date;
-            var time = LabelTime ?? TimeSpan.Zero;
-            overrideDt = new DateTimeOffset(date.Add(time));
-        }
-
-        var result = await printService.PrintProductAsync(
-            SelectedProduct.Id,
-            printerId,
-            copies: 1,
-            labelDateTimeOverride: overrideDt);
-        if (result.IsFailure)
-        {
-            StatusMessage = result.Error?.Contains("No active printer", StringComparison.OrdinalIgnoreCase) == true
-                ? "Нет принтера. Добавьте виртуальный принтер в разделе «Принтеры»."
-                : result.Error;
-            return;
-        }
-
-        StatusMessage = $"Задание {result.Value} добавлено в очередь печати.";
-    }
-
-    [RelayCommand]
-    private async Task CreateCategoryAsync()
-    {
-        if (string.IsNullOrWhiteSpace(NewCategoryName))
-        {
-            StatusMessage = "Укажите название категории.";
-            return;
-        }
-
-        using var scope = _scopeFactory.CreateScope();
-        var categories = scope.ServiceProvider.GetRequiredService<ICategoryService>();
-        var result = await categories.CreateAsync(NewCategoryName, SelectedCategory?.Id);
-        if (result.IsFailure)
-        {
-            StatusMessage = result.Error;
-            return;
-        }
-
-        NewCategoryName = string.Empty;
-        StatusMessage = "Категория создана";
-        await LoadCategoriesAsync();
-    }
-
-    [RelayCommand]
-    private async Task ArchiveCategoryAsync()
-    {
-        if (SelectedCategory is null || SelectedCategory.Id is null)
-        {
-            StatusMessage = "Выберите категорию.";
-            return;
-        }
-
-        using var scope = _scopeFactory.CreateScope();
-        var categories = scope.ServiceProvider.GetRequiredService<ICategoryService>();
-        var result = await categories.ArchiveAsync(SelectedCategory.Id.Value);
-        StatusMessage = result.IsFailure ? result.Error : "Категория в архиве";
-        SelectedCategory = Categories.FirstOrDefault();
-        await LoadCategoriesAsync();
-        await ReloadProductsAsync();
-    }
-
-    [RelayCommand]
-    private async Task ExportLabelPngAsync()
-    {
-        if (SelectedProduct is null)
-        {
-            StatusMessage = "Выберите товар для экспорта.";
-            return;
-        }
-
-        using var scope = _scopeFactory.CreateScope();
-        var export = scope.ServiceProvider.GetRequiredService<IExportService>();
-        var result = await export.RenderProductLabelPngAsync(SelectedProduct.Id);
-        if (result.IsFailure)
-        {
-            StatusMessage = result.Error;
-            return;
-        }
-
-        var path = WriteExportFile($"label_{SelectedProduct.Sku}", ".png", result.Value);
-        StatusMessage = $"PNG: {path}";
-    }
-
-    [RelayCommand]
-    private async Task ExportLabelPdfAsync()
-    {
-        if (SelectedProduct is null)
-        {
-            StatusMessage = "Выберите товар для экспорта.";
-            return;
-        }
-
-        using var scope = _scopeFactory.CreateScope();
-        var export = scope.ServiceProvider.GetRequiredService<IExportService>();
-        var result = await export.RenderProductLabelPdfAsync(SelectedProduct.Id);
-        if (result.IsFailure)
-        {
-            StatusMessage = result.Error;
-            return;
-        }
-
-        var path = WriteExportFile($"label_{SelectedProduct.Sku}", ".pdf", result.Value);
-        StatusMessage = $"PDF: {path}";
-    }
-
-    private static string WriteExportFile(string prefix, string extension, byte[] content)
-    {
-        var dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "LabelPrintPro",
-            "exports");
-        Directory.CreateDirectory(dir);
-        var path = Path.Combine(dir, $"{prefix}_{DateTime.Now:yyyyMMdd_HHmmss}{extension}");
-        File.WriteAllBytes(path, content);
-        return path;
-    }
-
-    [RelayCommand]
-    private async Task ExportCsvAsync()
-    {
-        using var scope = _scopeFactory.CreateScope();
-        var csv = scope.ServiceProvider.GetRequiredService<IProductCsvService>();
-        var result = await csv.ExportAsync();
-        if (result.IsFailure)
-        {
-            StatusMessage = result.Error;
-            return;
-        }
-
-        var dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "LabelPrintPro",
-            "exports");
-        Directory.CreateDirectory(dir);
-        var path = Path.Combine(dir, $"products_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
-        await File.WriteAllTextAsync(path, result.Value, Encoding.UTF8);
-        StatusMessage = $"Экспорт: {path}";
-    }
-
-    [RelayCommand]
-    private async Task ImportCsvAsync()
-    {
-        var dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "LabelPrintPro",
-            "exports");
-        Directory.CreateDirectory(dir);
-        var latest = Directory.GetFiles(dir, "*.csv")
-            .Select(f => new FileInfo(f))
-            .OrderByDescending(f => f.LastWriteTimeUtc)
-            .FirstOrDefault();
-        if (latest is null)
-        {
-            StatusMessage = $"Нет CSV в {dir}. Положите файл туда и повторите импорт.";
-            return;
-        }
-
-        var text = await File.ReadAllTextAsync(latest.FullName, Encoding.UTF8);
-        using var scope = _scopeFactory.CreateScope();
-        var csv = scope.ServiceProvider.GetRequiredService<IProductCsvService>();
-        var result = await csv.ImportAsync(text);
-        if (result.IsFailure)
-        {
-            StatusMessage = result.Error;
-            return;
-        }
-
-        StatusMessage = $"Импортировано из {latest.Name}: {result.Value} строк";
-        await ReloadProductsAsync();
-    }
-
-    [RelayCommand]
     private async Task CreateCustomFieldAsync()
     {
         if (string.IsNullOrWhiteSpace(NewFieldName))
@@ -402,31 +250,211 @@ public partial class CatalogViewModel : PageViewModelBase
     [RelayCommand]
     private void ToggleFieldManager() => ShowFieldManager = !ShowFieldManager;
 
-    private async Task ReloadAllAsync()
+    [RelayCommand]
+    private void NewAddon()
     {
-        await LoadCategoriesAsync();
-        await LoadFieldDefinitionsAsync();
-        await LoadPrintersAsync();
-        await ReloadProductsAsync();
+        EditingAddonId = null;
+        EditAddonName = string.Empty;
+        EditAddonAliases = null;
+        EditAddonIconKey = IconKeys.FirstOrDefault() ?? "bullet";
+        IsAddonEditorOpen = true;
     }
 
-    private async Task LoadPrintersAsync()
+    [RelayCommand]
+    private void EditSelectedAddon()
     {
-        using var scope = _scopeFactory.CreateScope();
-        var service = scope.ServiceProvider.GetRequiredService<IPrinterService>();
-        var result = await service.ListAsync(includeInactive: false);
-        Printers.Clear();
-        if (result.IsFailure)
+        if (SelectedAddon is null)
         {
             return;
         }
 
-        foreach (var printer in result.Value)
+        EditingAddonId = SelectedAddon.Id;
+        EditAddonName = SelectedAddon.Name;
+        EditAddonAliases = SelectedAddon.MatchAliases;
+        EditAddonIconKey = SelectedAddon.IconKey;
+        if (!IconKeys.Contains(EditAddonIconKey, StringComparer.OrdinalIgnoreCase))
         {
-            Printers.Add(printer);
+            IconKeys.Add(EditAddonIconKey);
         }
 
-        SelectedPrinter ??= Printers.FirstOrDefault(p => p.IsDefault) ?? Printers.FirstOrDefault();
+        IsAddonEditorOpen = true;
+    }
+
+    [RelayCommand]
+    private void CancelAddonEdit() => IsAddonEditorOpen = false;
+
+    [RelayCommand]
+    private async Task SaveAddonAsync()
+    {
+        var dto = new AddonUpsertDto
+        {
+            Name = EditAddonName,
+            MatchAliases = EditAddonAliases,
+            IconKey = EditAddonIconKey
+        };
+
+        using var scope = _scopeFactory.CreateScope();
+        var addons = scope.ServiceProvider.GetRequiredService<IAddonService>();
+        if (EditingAddonId is Guid id)
+        {
+            var update = await addons.UpdateAsync(id, dto);
+            if (update.IsFailure)
+            {
+                StatusMessage = update.Error;
+                return;
+            }
+        }
+        else
+        {
+            var create = await addons.CreateAsync(dto);
+            if (create.IsFailure)
+            {
+                StatusMessage = create.Error;
+                return;
+            }
+        }
+
+        IsAddonEditorOpen = false;
+        StatusMessage = "Добавка сохранена";
+        await LoadAddonsAsync();
+    }
+
+    [RelayCommand]
+    private async Task ArchiveSelectedAddonAsync()
+    {
+        if (SelectedAddon is null)
+        {
+            return;
+        }
+
+        using var scope = _scopeFactory.CreateScope();
+        var addons = scope.ServiceProvider.GetRequiredService<IAddonService>();
+        var result = await addons.ArchiveAsync(SelectedAddon.Id);
+        StatusMessage = result.IsFailure ? result.Error : "Добавка архивирована";
+        await LoadAddonsAsync();
+    }
+
+    [RelayCommand]
+    private async Task ImportAddonIconAsync()
+    {
+        var path = await _dialogs.PickPngFileAsync();
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return;
+        }
+
+        var dir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "LabelPrintPro",
+            "addon-icons");
+        Directory.CreateDirectory(dir);
+
+        var stem = Path.GetFileNameWithoutExtension(path);
+        stem = string.Join("_", stem.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+        if (string.IsNullOrWhiteSpace(stem))
+        {
+            stem = Guid.NewGuid().ToString("N")[..8];
+        }
+
+        var target = Path.Combine(dir, $"{stem}.png");
+        File.Copy(path, target, overwrite: true);
+        if (!IconKeys.Contains(stem, StringComparer.OrdinalIgnoreCase))
+        {
+            IconKeys.Add(stem);
+        }
+
+        EditAddonIconKey = stem;
+        StatusMessage = $"Иконка импортирована: {stem}.png";
+    }
+
+    private async Task ReloadAllAsync()
+    {
+        await LoadCategoriesAsync();
+        await LoadFieldDefinitionsAsync();
+        await LoadIconKeysAsync();
+        await ReloadForSectionAsync();
+    }
+
+    private async Task ReloadForSectionAsync()
+    {
+        if (IsAddonsSection)
+        {
+            await LoadAddonsAsync();
+            return;
+        }
+
+        if (IsRawSection)
+        {
+            await EnsureRawCategorySelectedAsync();
+        }
+
+        await ReloadProductsAsync();
+    }
+
+    private async Task EnsureRawCategorySelectedAsync()
+    {
+        await LoadCategoriesAsync();
+        if (_rawCategoryId is not null)
+        {
+            return;
+        }
+
+        using var scope = _scopeFactory.CreateScope();
+        var categories = scope.ServiceProvider.GetRequiredService<ICategoryService>();
+        var created = await categories.CreateAsync(RawCategoryName, parentId: null);
+        if (created.IsSuccess)
+        {
+            await LoadCategoriesAsync();
+        }
+    }
+
+    private async Task LoadAddonsAsync()
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<IAddonService>();
+        var result = await service.ListAsync();
+        Addons.Clear();
+        if (result.IsFailure)
+        {
+            StatusMessage = result.Error;
+            return;
+        }
+
+        foreach (var item in result.Value)
+        {
+            Addons.Add(item);
+        }
+
+        StatusMessage = $"Добавок: {Addons.Count}";
+    }
+
+    private async Task LoadIconKeysAsync()
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<IAddonService>();
+        IconKeys.Clear();
+        foreach (var key in service.BuiltInIconKeys)
+        {
+            IconKeys.Add(key);
+        }
+
+        var dir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "LabelPrintPro",
+            "addon-icons");
+        if (Directory.Exists(dir))
+        {
+            foreach (var file in Directory.GetFiles(dir, "*.png"))
+            {
+                var stem = Path.GetFileNameWithoutExtension(file);
+                if (!IconKeys.Contains(stem, StringComparer.OrdinalIgnoreCase))
+                {
+                    IconKeys.Add(stem);
+                }
+            }
+        }
+
+        await Task.CompletedTask;
     }
 
     private async Task ReloadProductsAsync()
@@ -448,13 +476,15 @@ public partial class CatalogViewModel : PageViewModelBase
             IsBusy = true;
             using var scope = _scopeFactory.CreateScope();
             var products = scope.ServiceProvider.GetRequiredService<IProductService>();
-            var categoryId = SelectedCategory?.Id;
+            Guid? categoryId = IsRawSection ? _rawCategoryId : null;
+            Guid? excludeCategoryId = IsProductsSection ? _rawCategoryId : null;
             var result = await products.SearchAsync(
                 SearchText,
                 categoryId,
                 includeArchived: false,
                 skip: append ? _loadedCount : 0,
-                take: PageSize);
+                take: PageSize,
+                excludeCategoryId: excludeCategoryId);
             if (result.IsFailure)
             {
                 StatusMessage = result.Error;
@@ -488,7 +518,6 @@ public partial class CatalogViewModel : PageViewModelBase
         using var scope = _scopeFactory.CreateScope();
         var categories = scope.ServiceProvider.GetRequiredService<ICategoryService>();
         var result = await categories.GetTreeAsync();
-        Categories.Clear();
         CategoryOptions.Clear();
         CategoryOptions.Add(new CategoryOptionVm(null, "(без категории)"));
 
@@ -498,15 +527,13 @@ public partial class CatalogViewModel : PageViewModelBase
             return;
         }
 
-        Categories.Add(new CategoryNodeVm(null, "Все товары", 0));
-        foreach (var node in BuildTree(result.Value))
-        {
-            Categories.Add(node);
-        }
-
         foreach (var c in result.Value.OrderBy(c => c.Name))
         {
             CategoryOptions.Add(new CategoryOptionVm(c.Id, c.Name));
+            if (c.Name.Equals(RawCategoryName, StringComparison.OrdinalIgnoreCase))
+            {
+                _rawCategoryId = c.Id;
+            }
         }
     }
 
@@ -538,39 +565,6 @@ public partial class CatalogViewModel : PageViewModelBase
             CustomFields.Add(new CustomFieldEditVm(def.Id, def.Name, def.IsRequired, value));
         }
     }
-
-    private static IEnumerable<CategoryNodeVm> BuildTree(IReadOnlyList<Category> all)
-    {
-        var lookup = all.ToLookup(c => c.ParentId);
-        IEnumerable<CategoryNodeVm> Walk(Guid? parentId, int depth)
-        {
-            foreach (var c in lookup[parentId].OrderBy(x => x.SortOrder).ThenBy(x => x.Name))
-            {
-                var indent = depth > 0 ? new string(' ', depth * 2) : string.Empty;
-                yield return new CategoryNodeVm(c.Id, indent + c.Name, depth);
-                foreach (var child in Walk(c.Id, depth + 1))
-                {
-                    yield return child;
-                }
-            }
-        }
-
-        return Walk(null, 0);
-    }
-}
-
-public sealed class CategoryNodeVm
-{
-    public CategoryNodeVm(Guid? id, string title, int depth)
-    {
-        Id = id;
-        Title = title;
-        Depth = depth;
-    }
-
-    public Guid? Id { get; }
-    public string Title { get; }
-    public int Depth { get; }
 }
 
 public sealed class CategoryOptionVm

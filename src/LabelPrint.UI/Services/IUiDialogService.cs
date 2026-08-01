@@ -24,4 +24,9 @@ public interface IUiDialogService
     /// Asks a yes/no question. Returns <c>true</c> when the user confirms.
     /// </summary>
     Task<bool> ConfirmAsync(string title, string message, string confirmText = "Да", string cancelText = "Отмена");
+
+    /// <summary>
+    /// Opens a file picker for PNG icons. Returns the selected path or <c>null</c>.
+    /// </summary>
+    Task<string?> PickPngFileAsync(string title = "Выберите PNG-иконку");
 }

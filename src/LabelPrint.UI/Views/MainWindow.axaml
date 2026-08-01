@@ -7,10 +7,10 @@
         x:DataType="vm:MainViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="LabelPrint Pro"
-        Width="1280"
-        Height="800"
-        MinWidth="960"
-        MinHeight="600">
+        Width="1480"
+        Height="900"
+        MinWidth="1200"
+        MinHeight="720">
 
   <Panel>
     <Grid ColumnDefinitions="240,*" IsEnabled="{Binding IsSignedIn}">

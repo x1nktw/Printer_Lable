@@ -312,6 +312,32 @@ internal sealed class UserRepository : IUserRepository
             .ToListAsync(cancellationToken);
 }
 
+internal sealed class AddonRepository : IAddonRepository
+{
+    private readonly LabelPrintDbContext _db;
+
+    public AddonRepository(LabelPrintDbContext db) => _db = db;
+
+    public async Task<IReadOnlyList<Addon>> ListAsync(bool includeArchived = false, CancellationToken cancellationToken = default)
+    {
+        var query = _db.Addons.AsNoTracking().AsQueryable();
+        if (!includeArchived)
+        {
+            query = query.Where(a => !a.IsArchived);
+        }
+
+        return await query.OrderBy(a => a.Name).ToListAsync(cancellationToken);
+    }
+
+    public Task<Addon?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        _db.Addons.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
+
+    public async Task AddAsync(Addon addon, CancellationToken cancellationToken = default) =>
+        await _db.Addons.AddAsync(addon, cancellationToken);
+
+    public void Update(Addon addon) => _db.Addons.Update(addon);
+}
+
 public sealed class UnitOfWork : IUnitOfWork
 {
     private readonly LabelPrintDbContext _db;
@@ -329,6 +355,7 @@ public sealed class UnitOfWork : IUnitOfWork
         Settings = new AppSettingsRepository(db);
         Users = new UserRepository(db);
         Orders = new OrderRepository(db);
+        Addons = new AddonRepository(db);
     }
 
     public IProductRepository Products { get; }
@@ -350,6 +377,8 @@ public sealed class UnitOfWork : IUnitOfWork
     public IUserRepository Users { get; }
 
     public IOrderRepository Orders { get; }
+
+    public IAddonRepository Addons { get; }
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
         _db.SaveChangesAsync(cancellationToken);

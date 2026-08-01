@@ -22,6 +22,7 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
     private readonly IVariableResolver _variableResolver;
     private readonly IPrinterGateway _printerGateway;
     private readonly ILabelDateTimeService _labelDateTime;
+    private readonly IAddonIconResolver _addonIcons;
     private readonly PrintQueueOptions _queueOptions;
     private readonly ILogger<PrintService> _logger;
 
@@ -31,6 +32,7 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
         IVariableResolver variableResolver,
         IPrinterGateway printerGateway,
         ILabelDateTimeService labelDateTime,
+        IAddonIconResolver addonIcons,
         IOptions<PrintQueueOptions> queueOptions,
         ILogger<PrintService> logger)
     {
@@ -39,6 +41,7 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
         _variableResolver = variableResolver;
         _printerGateway = printerGateway;
         _labelDateTime = labelDateTime;
+        _addonIcons = addonIcons;
         _queueOptions = queueOptions.Value;
         _logger = logger;
     }
@@ -142,6 +145,7 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
         int copies = 1,
         DateTimeOffset? labelDateTimeOverride = null,
         Guid? productId = null,
+        Guid? templateId = null,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(name) && productId is null)
@@ -170,7 +174,12 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
         }
 
         LabelTemplate? template = null;
-        if (product?.DefaultTemplateId is Guid tid)
+        if (templateId is Guid explicitTid)
+        {
+            template = await _unitOfWork.Templates.GetByIdAsync(explicitTid, cancellationToken);
+        }
+
+        if ((template is null || template.IsArchived) && product?.DefaultTemplateId is Guid tid)
         {
             template = await _unitOfWork.Templates.GetByIdAsync(tid, cancellationToken);
         }
@@ -270,6 +279,7 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
         Guid orderItemId,
         Guid? printerId = null,
         int copies = 1,
+        Guid? templateId = null,
         CancellationToken cancellationToken = default)
     {
         if (copies < 1)
@@ -287,29 +297,29 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
             return Result.Failure<Guid>("Order not found.");
         }
         Product? product = null;
-        Guid? templateId = null;
+        Guid? resolvedTemplateId = templateId;
         if (orderItem.ProductId is Guid productId)
         {
             product = await _unitOfWork.Products.GetByIdAsync(productId, cancellationToken);
-            templateId = product?.ResolveOrderItemTemplateId();
+            resolvedTemplateId ??= product?.ResolveOrderItemTemplateId();
         }
         LabelTemplate? template = null;
-        if (templateId is Guid tid)
+        if (resolvedTemplateId is Guid tid)
         {
             template = await _unitOfWork.Templates.GetByIdAsync(tid, cancellationToken);
         }
         if (template is null || template.IsArchived)
         {
             template = await FindKitchenTemplateAsync(cancellationToken);
-            templateId = template?.Id;
+            resolvedTemplateId = template?.Id;
         }
         if (template is null || template.IsArchived)
         {
             var search = await _unitOfWork.Templates.SearchAsync(null, includeArchived: false, skip: 0, take: 1, cancellationToken);
             template = search.Items.FirstOrDefault();
-            templateId = template?.Id;
+            resolvedTemplateId = template?.Id;
         }
-        if (template is null || templateId is null)
+        if (template is null || resolvedTemplateId is null)
         {
             return Result.Failure<Guid>("No label template available. Create a template first.");
         }
@@ -322,7 +332,13 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
             return Result.Failure<Guid>("No active printer configured. Add a printer in the Printers section.");
         }
         var stamp = await BuildDateTimeValuesAsync(null, cancellationToken);
-        var (positionName, addonsSection, addonsList) = SplitPositionNameAndAddons(orderItem);
+        var (positionName, addonsSection, addonsList, addons) = SplitPositionNameAndAddons(orderItem);
+        var iconKeys = new List<string>(addons.Count);
+        foreach (var addon in addons)
+        {
+            iconKeys.Add(await _addonIcons.ResolveIconKeyAsync(addon, cancellationToken));
+        }
+
         var values = new Dictionary<string, string>(stamp, StringComparer.OrdinalIgnoreCase)
         {
             ["OrderNumber"] = order.Number,
@@ -334,7 +350,8 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
             ["Currency"] = product?.PriceCurrency ?? "RUB",
             ["Addons"] = addonsList,
             ["AddonsKitchen"] = addonsList,
-            ["AddonsSection"] = addonsSection
+            ["AddonsSection"] = addonsSection,
+            ["AddonIconKeys"] = string.Join("\n", iconKeys)
         };
         var variableContext = new VariableContext
         {
@@ -348,7 +365,7 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
         var job = new PrintJob
         {
             PrinterId = printer.Id,
-            TemplateId = templateId,
+            TemplateId = resolvedTemplateId.Value,
             ProductId = product?.Id,
             OrderId = order.Id,
             OrderItemId = orderItem.Id,
@@ -524,7 +541,8 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
     /// <summary>
     /// Splits dish name and add-ons for kitchen labels (supports legacy "Name + A, B" and comment payloads).
     /// </summary>
-    internal static (string PositionName, string AddonsSection, string AddonsList) SplitPositionNameAndAddons(OrderItem item)
+    internal static (string PositionName, string AddonsSection, string AddonsList, IReadOnlyList<string> Addons)
+        SplitPositionNameAndAddons(OrderItem item)
     {
         var positionName = item.Name?.Trim() ?? string.Empty;
         var addons = new List<string>();
@@ -566,7 +584,7 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
         var section = addons.Count == 0
             ? string.Empty
             : "ДОБАВКИ:\n" + string.Join("\n", addons.Select(a => "• " + a));
-        return (positionName, section, list);
+        return (positionName, section, list, addons);
     }
 
     private static IReadOnlyDictionary<string, string> DeserializeVariables(string json)

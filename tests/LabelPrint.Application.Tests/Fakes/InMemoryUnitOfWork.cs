@@ -21,6 +21,7 @@ internal sealed class InMemoryUnitOfWork : IUnitOfWork
         Settings = new InMemoryAppSettingsRepository();
         Users = _users;
         Orders = new InMemoryOrderRepository();
+        Addons = new InMemoryAddonRepository();
     }
 
     public IProductRepository Products { get; }
@@ -42,6 +43,8 @@ internal sealed class InMemoryUnitOfWork : IUnitOfWork
     public IUserRepository Users { get; }
 
     public IOrderRepository Orders { get; }
+
+    public IAddonRepository Addons { get; }
 
     public void AddUser(User user) => _users.Add(user);
 
@@ -79,7 +82,8 @@ internal sealed class InMemoryUnitOfWork : IUnitOfWork
             bool includeArchived,
             int skip,
             int take,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            Guid? excludeCategoryId = null)
         {
             IEnumerable<Product> query = _items;
             if (!includeArchived)
@@ -90,6 +94,10 @@ internal sealed class InMemoryUnitOfWork : IUnitOfWork
             if (categoryId is not null)
             {
                 query = query.Where(p => p.CategoryId == categoryId);
+            }
+            else if (excludeCategoryId is not null)
+            {
+                query = query.Where(p => p.CategoryId != excludeCategoryId);
             }
 
             if (!string.IsNullOrWhiteSpace(search))
@@ -519,6 +527,40 @@ internal sealed class InMemoryUnitOfWork : IUnitOfWork
             if (index >= 0)
             {
                 _items[index] = order;
+            }
+        }
+    }
+
+    private sealed class InMemoryAddonRepository : IAddonRepository
+    {
+        private readonly List<Addon> _items = new();
+
+        public Task<IReadOnlyList<Addon>> ListAsync(bool includeArchived = false, CancellationToken cancellationToken = default)
+        {
+            IEnumerable<Addon> query = _items;
+            if (!includeArchived)
+            {
+                query = query.Where(a => !a.IsArchived);
+            }
+
+            return Task.FromResult((IReadOnlyList<Addon>)query.OrderBy(a => a.Name).ToList());
+        }
+
+        public Task<Addon?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(a => a.Id == id));
+
+        public Task AddAsync(Addon addon, CancellationToken cancellationToken = default)
+        {
+            _items.Add(addon);
+            return Task.CompletedTask;
+        }
+
+        public void Update(Addon addon)
+        {
+            var index = _items.FindIndex(a => a.Id == addon.Id);
+            if (index >= 0)
+            {
+                _items[index] = addon;
             }
         }
     }
