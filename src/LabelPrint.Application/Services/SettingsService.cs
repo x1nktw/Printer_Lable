@@ -42,6 +42,7 @@ public sealed class SettingsService : ISettingsService
 
         var settings = await _unitOfWork.Settings.GetAsync(cancellationToken);
         settings.Theme = dto.Theme;
+        settings.AccentColor = NormalizeAccent(dto.AccentColor);
         settings.Language = dto.Language;
         settings.AutoPrintOrders = dto.AutoPrintOrders;
         settings.AutoRefreshOrders = dto.AutoRefreshOrders;
@@ -72,6 +73,7 @@ public sealed class SettingsService : ISettingsService
     private SettingsDto Map(AppSettings s) => new()
     {
         Theme = s.Theme,
+        AccentColor = string.IsNullOrWhiteSpace(s.AccentColor) ? "#10A37F" : s.AccentColor,
         Language = s.Language,
         AutoPrintOrders = s.AutoPrintOrders,
         AutoRefreshOrders = s.AutoRefreshOrders,
@@ -91,6 +93,22 @@ public sealed class SettingsService : ISettingsService
         BackupPath = s.BackupPath,
         DefaultBackupDirectory = ResolveBackupDirectory(s)
     };
+
+    private static string NormalizeAccent(string? hex)
+    {
+        if (string.IsNullOrWhiteSpace(hex))
+        {
+            return "#10A37F";
+        }
+
+        var value = hex.Trim();
+        if (!value.StartsWith('#'))
+        {
+            value = "#" + value;
+        }
+
+        return value.Length is 7 or 9 ? value.ToUpperInvariant() : "#10A37F";
+    }
 
     private string ResolveBackupDirectory(AppSettings settings)
     {

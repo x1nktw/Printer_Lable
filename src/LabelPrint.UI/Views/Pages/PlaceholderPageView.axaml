@@ -3,17 +3,15 @@
              xmlns:vm="using:LabelPrint.UI.ViewModels"
              x:Class="LabelPrint.UI.Views.Pages.PlaceholderPageView"
              x:DataType="vm:PlaceholderViewModel">
-  <StackPanel Spacing="12" Margin="4" MaxWidth="720">
-    <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold" />
+  <StackPanel Spacing="14" Margin="4" MaxWidth="720">
+    <TextBlock Text="{Binding Title}" Classes="page-title" />
     <TextBlock Text="{Binding Message}"
-               Opacity="0.8"
+               Classes="page-subtitle"
                TextWrapping="Wrap"
                LineHeight="22" />
-    <Border Padding="12"
-            CornerRadius="8"
-            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+    <Border Classes="app-card">
       <TextBlock Text="Раздел открыт. Функции появятся по мере реализации этапов — без имитации работы."
-                 Opacity="0.7"
+                 Classes="page-subtitle"
                  TextWrapping="Wrap" />
     </Border>
   </StackPanel>

@@ -1,86 +1,138 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:LabelPrint.UI.ViewModels"
+             xmlns:models="using:LabelPrint.UI.Models"
              xmlns:pages="using:LabelPrint.UI.Views.Pages"
+             xmlns:ui="using:LabelPrint.UI"
              x:Class="LabelPrint.UI.Views.Pages.SettingsPageView"
              x:DataType="vm:SettingsViewModel">
   <DockPanel>
     <TextBlock DockPanel.Dock="Top"
                Text="{Binding Title}"
-               FontSize="28"
-               FontWeight="SemiBold"
-               Margin="4,4,4,12" />
+               Classes="page-title"
+               Margin="4,4,4,16" />
 
     <TabControl SelectedIndex="{Binding SelectedTabIndex}">
       <TabItem Header="Общие" IsVisible="{Binding IsAdministrator}">
         <ScrollViewer>
-          <StackPanel Spacing="12" Margin="4" MaxWidth="640">
-            <TextBlock Text="{Binding StatusMessage}" Opacity="0.7" />
+          <StackPanel Spacing="14" Margin="4" MaxWidth="680">
+            <TextBlock Text="{Binding StatusMessage}" Classes="page-subtitle" />
 
-            <TextBlock Text="Интерфейс" FontWeight="SemiBold" Margin="0,8,0,0" />
-            <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" Width="240" />
-            <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" Width="240" />
+            <Border Classes="app-card">
+              <StackPanel Spacing="10">
+                <TextBlock Text="Интерфейс" Classes="section-title" />
+                <TextBlock Text="Тема" Classes="page-subtitle" />
+                <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" Width="240" />
+                <TextBlock Text="Акцентный цвет" Classes="page-subtitle" Margin="0,4,0,0" />
+                <ListBox ItemsSource="{Binding AccentOptions}"
+                         SelectedItem="{Binding SelectedAccent}"
+                         Classes="accent-picker">
+                  <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel />
+                    </ItemsPanelTemplate>
+                  </ListBox.ItemsPanel>
+                  <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="models:AccentOption">
+                      <Border Classes="accent-swatch"
+                              Classes.selected="{Binding IsSelected}"
+                              Background="{Binding Brush}"
+                              BorderBrush="{Binding OutlineBrush}"
+                              ToolTip.Tip="{Binding Name}" />
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Text="Язык" Classes="page-subtitle" Margin="0,4,0,0" />
+                <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" Width="240" />
+              </StackPanel>
+            </Border>
 
-            <TextBlock Text="Этикетка по умолчанию" FontWeight="SemiBold" Margin="0,8,0,0" />
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <NumericUpDown Value="{Binding DefaultLabelWidthMm}"
-                             Minimum="10" Maximum="200"
-                             Width="150" MinWidth="150" MinHeight="32"
-                             FormatString="0.#" Increment="1" />
-              <TextBlock Text="×" VerticalAlignment="Center" />
-              <NumericUpDown Value="{Binding DefaultLabelHeightMm}"
-                             Minimum="10" Maximum="200"
-                             Width="150" MinWidth="150" MinHeight="32"
-                             FormatString="0.#" Increment="1" />
-              <TextBlock Text="мм" VerticalAlignment="Center" />
-            </StackPanel>
+            <Border Classes="app-card">
+              <StackPanel Spacing="10">
+                <TextBlock Text="Этикетка по умолчанию" Classes="section-title" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <NumericUpDown Value="{Binding DefaultLabelWidthMm}"
+                                 Minimum="10" Maximum="200"
+                                 Width="150" MinWidth="150"
+                                 FormatString="0.#" Increment="1" />
+                  <TextBlock Text="×" VerticalAlignment="Center" Classes="page-subtitle" />
+                  <NumericUpDown Value="{Binding DefaultLabelHeightMm}"
+                                 Minimum="10" Maximum="200"
+                                 Width="150" MinWidth="150"
+                                 FormatString="0.#" Increment="1" />
+                  <TextBlock Text="мм" VerticalAlignment="Center" Classes="page-subtitle" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
 
-            <TextBlock Text="FrontPad Bridge" FontWeight="SemiBold" Margin="0,8,0,0" />
-            <TextBlock Text="Заказы приходят через расширение Bridge на локальный webhook. Shop API FrontPad (get_products / new_order) не используется."
-                       TextWrapping="Wrap"
-                       Opacity="0.75" />
-            <TextBox Watermark="Webhook listen URL (http://127.0.0.1:8765/)" Text="{Binding FrontPadWebhookListenUrl}" />
-            <CheckBox Content="Автообновление заказов" IsChecked="{Binding AutoRefreshOrders}" />
-            <CheckBox Content="Автопечать заказов" IsChecked="{Binding AutoPrintOrders}" />
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="Интервал (сек)" VerticalAlignment="Center" />
-              <NumericUpDown Value="{Binding OrdersRefreshIntervalSeconds}"
-                             Minimum="30" Maximum="3600"
-                             Width="150" MinWidth="150" MinHeight="32"
-                             FormatString="0" Increment="10" />
-            </StackPanel>
+            <Border Classes="app-card">
+              <StackPanel Spacing="10">
+                <TextBlock Text="FrontPad Bridge" Classes="section-title" />
+                <TextBlock Text="Заказы приходят через расширение Bridge на локальный webhook. Shop API FrontPad (get_products / new_order) не используется."
+                           TextWrapping="Wrap"
+                           Classes="page-subtitle" />
+                <TextBox Watermark="Webhook listen URL (http://127.0.0.1:8765/)" Text="{Binding FrontPadWebhookListenUrl}" />
+                <CheckBox Content="Автообновление заказов" IsChecked="{Binding AutoRefreshOrders}" />
+                <CheckBox Content="Автопечать заказов" IsChecked="{Binding AutoPrintOrders}" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="Интервал (сек)" VerticalAlignment="Center" Classes="page-subtitle" />
+                  <NumericUpDown Value="{Binding OrdersRefreshIntervalSeconds}"
+                                 Minimum="30" Maximum="3600"
+                                 Width="150" MinWidth="150"
+                                 FormatString="0" Increment="10" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
 
-            <TextBlock Text="Дата/время на этикетках" FontWeight="SemiBold" Margin="0,8,0,0" />
-            <TextBlock Text="Realtime — текущие дата и время при печати. Ручная — фиксированная метка (можно переопределить при печати в Маркировке)."
-                       TextWrapping="Wrap"
-                       Opacity="0.75" />
-            <ComboBox ItemsSource="{Binding LabelDateTimeModes}"
-                      SelectedItem="{Binding LabelDateTimeMode}"
-                      Width="240" />
-            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsManualLabelDateTime}">
-              <CalendarDatePicker SelectedDate="{Binding ManualLabelDate}" Width="160" />
-              <TimePicker SelectedTime="{Binding ManualLabelTime}" Width="140" ClockIdentifier="24HourClock" />
-            </StackPanel>
+            <Border Classes="app-card">
+              <StackPanel Spacing="10">
+                <TextBlock Text="Дата/время на этикетках" Classes="section-title" />
+                <TextBlock Text="Realtime — текущие дата и время при печати. Ручная — фиксированная метка (можно переопределить при печати в Маркировке)."
+                           TextWrapping="Wrap"
+                           Classes="page-subtitle" />
+                <ComboBox ItemsSource="{Binding LabelDateTimeModes}"
+                          SelectedItem="{Binding LabelDateTimeMode}"
+                          Width="240" />
+                <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsManualLabelDateTime}">
+                  <CalendarDatePicker SelectedDate="{Binding ManualLabelDate}" Width="160" />
+                  <TimePicker SelectedTime="{Binding ManualLabelTime}" Width="140" ClockIdentifier="24HourClock" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
 
-            <TextBlock Text="Система" FontWeight="SemiBold" Margin="0,8,0,0" />
-            <CheckBox Content="Автобэкап БД" IsChecked="{Binding AutoBackupEnabled}" />
-            <TextBox Watermark="Путь к БД (необязательно)" Text="{Binding DatabasePath}" />
-            <TextBox Watermark="Папка бэкапов (необязательно)" Text="{Binding BackupPath}" />
-            <TextBlock Text="{Binding DefaultBackupDirectory, StringFormat=По умолчанию: {0}}"
-                       Opacity="0.7"
-                       TextWrapping="Wrap" />
-            <TextBlock Text="{Binding UpdateStatus}" Opacity="0.7" TextWrapping="Wrap" />
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="Макс. retry печати" VerticalAlignment="Center" />
-              <NumericUpDown Value="{Binding MaxPrintRetries}"
-                             Minimum="0" Maximum="10"
-                             Width="150" MinWidth="150" MinHeight="32"
-                             FormatString="0" />
-            </StackPanel>
+            <Border Classes="app-card">
+              <StackPanel Spacing="10">
+                <TextBlock Text="Система" Classes="section-title" />
+                <CheckBox Content="Автобэкап БД" IsChecked="{Binding AutoBackupEnabled}" />
+                <TextBox Watermark="Путь к БД (необязательно)" Text="{Binding DatabasePath}" />
+                <TextBox Watermark="Папка бэкапов (необязательно)" Text="{Binding BackupPath}" />
+                <TextBlock Text="{Binding DefaultBackupDirectory, StringFormat=По умолчанию: {0}}"
+                           Classes="page-subtitle"
+                           TextWrapping="Wrap" />
+                <TextBlock Text="{Binding UpdateStatus}" Classes="page-subtitle" TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="Макс. retry печати" VerticalAlignment="Center" Classes="page-subtitle" />
+                  <NumericUpDown Value="{Binding MaxPrintRetries}"
+                                 Minimum="0" Maximum="10"
+                                 Width="150" MinWidth="150"
+                                 FormatString="0" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
 
-            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,12,0,0">
-              <Button Content="Сохранить" Command="{Binding SaveCommand}" />
-              <Button Content="Обновить" Command="{Binding LoadCommand}" />
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,8">
+              <Button Classes="accent" Command="{Binding SaveCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.Save}" Stroke="White" />
+                  <TextBlock Text="Сохранить" VerticalAlignment="Center" Foreground="White" />
+                </StackPanel>
+              </Button>
+              <Button Command="{Binding LoadCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.Refresh}" />
+                  <TextBlock Text="Обновить" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
             </StackPanel>
           </StackPanel>
         </ScrollViewer>

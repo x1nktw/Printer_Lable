@@ -1,30 +1,35 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:LabelPrint.UI.ViewModels"
-             xmlns:enums="using:LabelPrint.Domain.Enums"
+             xmlns:ui="using:LabelPrint.UI"
              x:Class="LabelPrint.UI.Views.Pages.PrintersPageView"
              x:DataType="vm:PrintersViewModel">
-  <DockPanel Margin="8">
-    <StackPanel DockPanel.Dock="Top" Spacing="12">
-      <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold" />
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <Button Content="Обновить" Command="{Binding LoadCommand}" />
-        <Button Content="Добавить виртуальный" Command="{Binding NewVirtualPrinterCommand}" />
-        <Button Content="Изменить" Command="{Binding EditSelectedCommand}" />
-        <Button Content="По умолчанию" Command="{Binding SetDefaultCommand}" />
-        <Button Content="Отключить" Command="{Binding ArchiveSelectedCommand}" />
-      </StackPanel>
-      <TextBlock Text="{Binding StatusMessage}" Opacity="0.7" TextWrapping="Wrap" />
+  <DockPanel Margin="4">
+    <StackPanel DockPanel.Dock="Top" Spacing="14" Margin="0,0,0,12">
+      <TextBlock Text="{Binding Title}" Classes="page-title" />
+      <TextBlock Text="{Binding StatusMessage}" Classes="page-subtitle" TextWrapping="Wrap" />
+      <Border Classes="app-card" Padding="12">
+        <WrapPanel>
+          <Button Command="{Binding LoadCommand}" Margin="0,0,8,8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.Refresh}" />
+              <TextBlock Text="Обновить" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Content="Добавить виртуальный" Command="{Binding NewVirtualPrinterCommand}" Margin="0,0,8,8" />
+          <Button Content="Изменить" Command="{Binding EditSelectedCommand}" Margin="0,0,8,8" />
+          <Button Content="По умолчанию" Command="{Binding SetDefaultCommand}" Margin="0,0,8,8" />
+          <Button Content="Отключить" Command="{Binding ArchiveSelectedCommand}" Margin="0,0,8,8" />
+        </WrapPanel>
+      </Border>
     </StackPanel>
 
     <Border DockPanel.Dock="Bottom"
+            Classes="app-card"
             IsVisible="{Binding IsEditorOpen}"
-            Padding="12"
-            Margin="0,12,0,0"
-            CornerRadius="8"
-            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-      <StackPanel Spacing="8" MaxWidth="640">
-        <TextBlock Text="Настройки принтера" FontWeight="SemiBold" />
+            Margin="0,12,0,0">
+      <StackPanel Spacing="10" MaxWidth="640">
+        <TextBlock Text="Настройки принтера" Classes="section-title" />
         <TextBox Watermark="Название" Text="{Binding EditName}" />
         <ComboBox ItemsSource="{Binding ProtocolOptions}"
                   SelectedItem="{Binding EditProtocol}"
@@ -34,47 +39,58 @@
         <StackPanel Orientation="Horizontal" Spacing="8">
           <NumericUpDown Value="{Binding EditPaperWidthMm}" Minimum="10" Maximum="300"
                          Width="150" MinWidth="150" FormatString="0.#" Increment="1" />
-          <TextBlock Text="мм ширина ленты" VerticalAlignment="Center" Opacity="0.7" />
+          <TextBlock Text="мм ширина ленты" VerticalAlignment="Center" Classes="page-subtitle" />
           <NumericUpDown Value="{Binding EditDpi}" Minimum="72" Maximum="600"
                          Width="120" MinWidth="120" Increment="1" />
-          <TextBlock Text="DPI" VerticalAlignment="Center" Opacity="0.7" />
+          <TextBlock Text="DPI" VerticalAlignment="Center" Classes="page-subtitle" />
         </StackPanel>
         <CheckBox Content="Повернуть 90° (макет 40×58 на ленте 58 мм / горизонтальные этикетки)"
                   IsChecked="{Binding EditRotate90}" />
         <TextBlock Text="Если печать уезжает на 2 этикетки — включите поворот или укажите реальную ширину ленты (часто 58)."
-                   Opacity="0.7" TextWrapping="Wrap" FontSize="12" />
+                   Classes="page-subtitle" TextWrapping="Wrap" />
         <StackPanel Orientation="Horizontal" Spacing="8">
           <NumericUpDown Value="{Binding EditPrintOffsetXMm}" Minimum="-20" Maximum="20"
                          Width="120" MinWidth="120" FormatString="0.#" Increment="0.5" />
-          <TextBlock Text="смещ. X мм" VerticalAlignment="Center" Opacity="0.7" />
+          <TextBlock Text="смещ. X мм" VerticalAlignment="Center" Classes="page-subtitle" />
           <NumericUpDown Value="{Binding EditPrintOffsetYMm}" Minimum="-20" Maximum="20"
                          Width="120" MinWidth="120" FormatString="0.#" Increment="0.5" />
-          <TextBlock Text="смещ. Y мм" VerticalAlignment="Center" Opacity="0.7" />
+          <TextBlock Text="смещ. Y мм" VerticalAlignment="Center" Classes="page-subtitle" />
         </StackPanel>
         <TextBlock Text="Windows: если верх обрезан и снизу пусто — уменьшите Y (например −2). Если низ обрезан — увеличьте Y."
-                   Opacity="0.7" TextWrapping="Wrap" FontSize="12" />
+                   Classes="page-subtitle" TextWrapping="Wrap" />
         <CheckBox Content="Принтер по умолчанию" IsChecked="{Binding EditIsDefault}" />
         <TextBox Watermark="Примечания" Text="{Binding EditNotes}" AcceptsReturn="True" MinHeight="48" />
         <StackPanel Orientation="Horizontal" Spacing="8">
-          <Button Content="Сохранить" Command="{Binding SaveCommand}" />
+          <Button Classes="accent" Command="{Binding SaveCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.Save}" Stroke="White" />
+              <TextBlock Text="Сохранить" Foreground="White" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
           <Button Content="Отмена" Command="{Binding CancelEditCommand}" />
         </StackPanel>
       </StackPanel>
     </Border>
 
-    <DataGrid ItemsSource="{Binding Printers}"
-              SelectedItem="{Binding Selected}"
-              AutoGenerateColumns="False"
-              IsReadOnly="True"
-              GridLinesVisibility="Horizontal"
-              Margin="0,12,0,0">
-      <DataGrid.Columns>
-        <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" MinWidth="160" />
-        <DataGridTextColumn Header="Протокол" Binding="{Binding Protocol}" Width="110" />
-        <DataGridTextColumn Header="Подключение" Binding="{Binding ConnectionString}" Width="200" MinWidth="160" />
-        <DataGridTextColumn Header="DPI" Binding="{Binding Dpi}" Width="80" />
-        <DataGridCheckBoxColumn Header="По умолчанию" Binding="{Binding IsDefault}" Width="120" />
-      </DataGrid.Columns>
-    </DataGrid>
+    <Border Classes="app-panel">
+      <DataGrid Classes="app-grid"
+                ItemsSource="{Binding Printers}"
+                SelectedItem="{Binding Selected}"
+                AutoGenerateColumns="False"
+                IsReadOnly="True"
+                CanUserResizeColumns="True"
+                GridLinesVisibility="Horizontal"
+                BorderThickness="0"
+                Background="Transparent"
+                RowBackground="Transparent">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" MinWidth="160" />
+          <DataGridTextColumn Header="Протокол" Binding="{Binding Protocol}" Width="110" />
+          <DataGridTextColumn Header="Подключение" Binding="{Binding ConnectionString}" Width="200" MinWidth="160" />
+          <DataGridTextColumn Header="DPI" Binding="{Binding Dpi}" Width="80" />
+          <DataGridCheckBoxColumn Header="По умолчанию" Binding="{Binding IsDefault}" Width="120" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </Border>
   </DockPanel>
 </UserControl>

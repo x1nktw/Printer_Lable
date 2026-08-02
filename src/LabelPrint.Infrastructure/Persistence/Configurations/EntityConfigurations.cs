@@ -245,6 +245,7 @@ internal sealed class AppSettingsConfiguration : IEntityTypeConfiguration<AppSet
         builder.HasKey(x => x.Id);
         builder.Property(x => x.FrontPadBaseUrl).HasMaxLength(512);
         builder.Property(x => x.FrontPadSecret).HasMaxLength(256);
+        builder.Property(x => x.AccentColor).HasMaxLength(16);
     }
 }
 

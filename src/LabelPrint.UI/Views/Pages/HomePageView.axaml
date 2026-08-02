@@ -1,12 +1,121 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:LabelPrint.UI.ViewModels"
+             xmlns:ui="using:LabelPrint.UI"
              x:Class="LabelPrint.UI.Views.Pages.HomePageView"
              x:DataType="vm:HomeViewModel">
-  <StackPanel Spacing="12" Margin="8">
-    <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold" />
-    <TextBlock Text="{Binding VersionLabel}" FontSize="16" Opacity="0.85" />
-    <TextBlock Text="{Binding UpdateMessage}" TextWrapping="Wrap" Opacity="0.7" MaxWidth="720" />
-    <TextBlock Text="{Binding Subtitle}" TextWrapping="Wrap" Opacity="0.75" MaxWidth="720" />
-  </StackPanel>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="16" Margin="4" MaxWidth="880">
+      <!-- Hero -->
+      <Border Classes="app-card" Padding="28">
+        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+          <Border Grid.RowSpan="2"
+                  Width="88" Height="88"
+                  CornerRadius="18"
+                  ClipToBounds="True"
+                  Margin="0,0,22,0"
+                  BorderBrush="{DynamicResource AppSidebarBorder}"
+                  BorderThickness="1"
+                  VerticalAlignment="Top">
+            <Image Source="/Assets/app-icon.png"
+                   Width="88" Height="88"
+                   Stretch="UniformToFill" />
+          </Border>
+
+          <StackPanel Grid.Column="1"
+                      Spacing="6"
+                      HorizontalAlignment="Left">
+            <TextBlock Text="LabelPrint Pro"
+                       FontSize="28"
+                       FontWeight="SemiBold"
+                       LetterSpacing="-0.4"
+                       HorizontalAlignment="Left"
+                       TextAlignment="Left"
+                       Foreground="{DynamicResource AppPrimaryForeground}" />
+            <TextBlock Text="{Binding VersionLabel}"
+                       Classes="page-subtitle"
+                       FontSize="14"
+                       HorizontalAlignment="Left"
+                       TextAlignment="Left" />
+            <TextBlock Text="{Binding Subtitle}"
+                       TextWrapping="Wrap"
+                       TextAlignment="Left"
+                       HorizontalAlignment="Left"
+                       Classes="page-subtitle"
+                       Margin="0,6,0,0"
+                       MaxWidth="560" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Status -->
+      <Border Classes="app-card">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Статус обновлений" Classes="section-title" />
+          <TextBlock Text="{Binding UpdateMessage}"
+                     TextWrapping="Wrap"
+                     Classes="page-subtitle" />
+        </StackPanel>
+      </Border>
+
+      <!-- Quick sections -->
+      <TextBlock Text="Разделы" Classes="section-title" Margin="2,4,0,0" />
+      <UniformGrid Columns="3" >
+        <Border Classes="app-card" Margin="0,0,10,0" Padding="16">
+          <StackPanel Spacing="10">
+            <Border Width="36" Height="36" CornerRadius="10"
+                    Background="{DynamicResource AppSidebarHover}">
+              <Path Classes="app-icon"
+                    Data="{x:Static ui:AppIcons.Catalog}"
+                    Width="18" Height="18"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Stroke="{DynamicResource AppAccentBrush}" />
+            </Border>
+            <TextBlock Text="Каталог" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppPrimaryForeground}" />
+            <TextBlock Text="Товары, маркировка и добавки для этикеток."
+                       Classes="page-subtitle" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="app-card" Margin="0,0,10,0" Padding="16">
+          <StackPanel Spacing="10">
+            <Border Width="36" Height="36" CornerRadius="10"
+                    Background="{DynamicResource AppSidebarHover}">
+              <Path Classes="app-icon"
+                    Data="{x:Static ui:AppIcons.Orders}"
+                    Width="18" Height="18"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Stroke="{DynamicResource AppAccentBrush}" />
+            </Border>
+            <TextBlock Text="Заказы" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppPrimaryForeground}" />
+            <TextBlock Text="Inbox FrontPad, печать позиций и шаблоны."
+                       Classes="page-subtitle" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="app-card" Padding="16">
+          <StackPanel Spacing="10">
+            <Border Width="36" Height="36" CornerRadius="10"
+                    Background="{DynamicResource AppSidebarHover}">
+              <Path Classes="app-icon"
+                    Data="{x:Static ui:AppIcons.Tag}"
+                    Width="18" Height="18"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Stroke="{DynamicResource AppAccentBrush}" />
+            </Border>
+            <TextBlock Text="Маркировка" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AppPrimaryForeground}" />
+            <TextBlock Text="Печать сырья с датой, временем и сроком годности."
+                       Classes="page-subtitle" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+      </UniformGrid>
+    </StackPanel>
+  </ScrollViewer>
 </UserControl>

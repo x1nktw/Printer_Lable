@@ -3,8 +3,10 @@ using CommunityToolkit.Mvvm.Input;
 using LabelPrint.Application.Abstractions;
 using LabelPrint.Application.Abstractions.Services;
 using LabelPrint.Domain.Enums;
+using LabelPrint.UI.Models;
 using LabelPrint.UI.Services;
 using Microsoft.Extensions.DependencyInjection;
+using System.Collections.ObjectModel;
 
 namespace LabelPrint.UI.ViewModels;
 
@@ -30,16 +32,37 @@ public partial class SettingsViewModel : PageViewModelBase
         Queue = services.GetRequiredService<QueueViewModel>();
         History = services.GetRequiredService<HistoryViewModel>();
         Templates = new TemplatesViewModel(_scopeFactory, _dialogs);
+
+        AccentOptions = new ObservableCollection<AccentOption>(
+        [
+            new("Белый", "#FFFFFF", light: true),
+            new("Жемчужный", "#F5F5F4", light: true),
+            new("Светло-серый", "#E5E7EB", light: true),
+            new("Мятный", "#D1FAE5", light: true),
+            new("Небесный", "#DBEAFE", light: true),
+            new("Лавандовый", "#EDE9FE", light: true),
+            new("Персиковый", "#FFEDD5", light: true),
+            new("ChatGPT", "#10A37F"),
+            new("Синий", "#3B82F6"),
+            new("Бирюзовый", "#14B8A6"),
+            new("Оранжевый", "#F97316"),
+            new("Красный", "#EF4444"),
+            new("Фиолетовый", "#8B5CF6"),
+            new("Розовый", "#EC4899")
+        ]);
     }
 
     public PrintersViewModel Printers { get; }
     public QueueViewModel Queue { get; }
     public HistoryViewModel History { get; }
     public TemplatesViewModel Templates { get; }
+    public ObservableCollection<AccentOption> AccentOptions { get; }
 
     [ObservableProperty] private bool _isAdministrator;
     [ObservableProperty] private int _selectedTabIndex;
     [ObservableProperty] private AppTheme _theme = AppTheme.Dark;
+    [ObservableProperty] private string _accentColor = ThemeApplier.DefaultAccentHex;
+    [ObservableProperty] private AccentOption? _selectedAccent;
     [ObservableProperty] private AppLanguage _language = AppLanguage.Russian;
     [ObservableProperty] private bool _autoPrintOrders;
     [ObservableProperty] private bool _autoRefreshOrders = true;
@@ -73,6 +96,44 @@ public partial class SettingsViewModel : PageViewModelBase
     partial void OnLabelDateTimeModeChanged(LabelDateTimeMode value) =>
         OnPropertyChanged(nameof(IsManualLabelDateTime));
 
+    partial void OnAccentColorChanged(string value)
+    {
+        RefreshAccentSelection();
+        ThemeApplier.ApplyAccent(value);
+    }
+
+    partial void OnThemeChanged(AppTheme value) =>
+        ThemeApplier.Apply(value, AccentColor);
+
+    partial void OnSelectedAccentChanged(AccentOption? value)
+    {
+        if (value is null || string.Equals(AccentColor, value.Hex, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        AccentColor = value.Hex;
+    }
+
+    private void RefreshAccentSelection()
+    {
+        var current = (AccentColor ?? ThemeApplier.DefaultAccentHex).Trim();
+        AccentOption? match = null;
+        foreach (var option in AccentOptions)
+        {
+            option.IsSelected = string.Equals(option.Hex, current, StringComparison.OrdinalIgnoreCase);
+            if (option.IsSelected)
+            {
+                match = option;
+            }
+        }
+
+        if (!ReferenceEquals(SelectedAccent, match))
+        {
+            SelectedAccent = match;
+        }
+    }
+
     [RelayCommand]
     private async Task LoadAsync()
     {
@@ -88,6 +149,10 @@ public partial class SettingsViewModel : PageViewModelBase
             else
             {
                 var dto = result.Value;
+                // Accent first so theme apply does not briefly reset to default.
+                AccentColor = string.IsNullOrWhiteSpace(dto.AccentColor)
+                    ? ThemeApplier.DefaultAccentHex
+                    : dto.AccentColor;
                 Theme = dto.Theme;
                 Language = dto.Language;
                 AutoPrintOrders = dto.AutoPrintOrders;
@@ -108,6 +173,7 @@ public partial class SettingsViewModel : PageViewModelBase
                 _ordersPrintTemplateId = dto.OrdersPrintTemplateId;
                 _markingPrintTemplateId = dto.MarkingPrintTemplateId;
                 StatusMessage = "Загружено";
+                RefreshAccentSelection();
 
                 var updates = scope.ServiceProvider.GetRequiredService<IUpdateChecker>();
                 var updateResult = await updates.CheckAsync();
@@ -131,6 +197,7 @@ public partial class SettingsViewModel : PageViewModelBase
         var result = await settings.SaveAsync(new SettingsDto
         {
             Theme = Theme,
+            AccentColor = AccentColor,
             Language = Language,
             AutoPrintOrders = AutoPrintOrders,
             AutoRefreshOrders = AutoRefreshOrders,
@@ -151,11 +218,9 @@ public partial class SettingsViewModel : PageViewModelBase
         });
 
         StatusMessage = result.IsFailure ? result.Error : "Сохранено";
-        if (result.IsSuccess && Avalonia.Application.Current is { } app)
+        if (result.IsSuccess)
         {
-            app.RequestedThemeVariant = Theme == AppTheme.Light
-                ? Avalonia.Styling.ThemeVariant.Light
-                : Avalonia.Styling.ThemeVariant.Dark;
+            ThemeApplier.Apply(Theme, AccentColor);
         }
 
         if (result.IsSuccess)

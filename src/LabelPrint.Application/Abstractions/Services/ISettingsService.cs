@@ -18,6 +18,9 @@ public sealed class SettingsDto
 {
     public AppTheme Theme { get; set; }
 
+    /// <summary>Fluent accent color hex (#RRGGBB).</summary>
+    public string AccentColor { get; set; } = "#10A37F";
+
     public AppLanguage Language { get; set; }
 
     public bool AutoPrintOrders { get; set; }

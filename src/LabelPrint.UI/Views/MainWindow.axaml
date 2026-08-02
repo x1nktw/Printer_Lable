@@ -3,6 +3,7 @@
         xmlns:vm="using:LabelPrint.UI.ViewModels"
         xmlns:pages="using:LabelPrint.UI.Views.Pages"
         xmlns:dto="using:LabelPrint.Application.DTOs"
+        xmlns:ui="using:LabelPrint.UI"
         x:Class="LabelPrint.UI.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Icon="/Assets/app-icon.ico"
@@ -10,59 +11,158 @@
         Width="1480"
         Height="900"
         MinWidth="1200"
-        MinHeight="720">
+        MinHeight="720"
+        Background="{DynamicResource AppContentBackground}">
 
   <Panel>
-    <Grid ColumnDefinitions="240,*" IsEnabled="{Binding IsSignedIn}">
-      <Border Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
-              BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+    <Grid ColumnDefinitions="Auto,*" IsEnabled="{Binding IsSignedIn}">
+      <!-- Fixed icon rail: content stays left-aligned; width clips text on collapse -->
+      <Border x:Name="SidebarHost"
+              Classes="sidebar-host"
+              Width="{Binding SidebarWidth}"
+              Background="{DynamicResource AppSidebarBackground}"
+              BorderBrush="{DynamicResource AppSidebarBorder}"
               BorderThickness="0,0,1,0"
-              Padding="16">
+              Padding="12,12"
+              ClipToBounds="True">
         <DockPanel>
-          <StackPanel DockPanel.Dock="Top" Spacing="2" Margin="0,0,0,20">
-            <TextBlock Text="LabelPrint"
-                       FontSize="22"
-                       FontWeight="Bold"
-                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-            <TextBlock Text="Pro"
-                       FontSize="13"
-                       Opacity="0.65"
-                       Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-            <TextBlock Text="{Binding CurrentUserLabel}"
-                       Margin="0,12,0,0"
-                       Opacity="0.8"
-                       TextWrapping="Wrap" />
-            <Button Content="Выйти"
-                    Command="{Binding SignOutCommand}"
-                    Margin="0,8,0,0"
-                    HorizontalAlignment="Stretch" />
+          <!-- Brand + logo -->
+          <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,10">
+            <Border Height="40"
+                    Padding="10,0"
+                    Classes="sidebar-row">
+              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <Border Width="22" Height="22"
+                        CornerRadius="6"
+                        ClipToBounds="True"
+                        VerticalAlignment="Center">
+                  <Image Source="/Assets/app-icon.png"
+                         Width="22" Height="22"
+                         Stretch="UniformToFill" />
+                </Border>
+                <StackPanel VerticalAlignment="Center"
+                            Opacity="{Binding SidebarExpandedOpacity}"
+                            IsHitTestVisible="{Binding !IsSidebarCollapsed}">
+                  <StackPanel.Transitions>
+                    <Transitions>
+                      <DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="CubicEaseOut" />
+                    </Transitions>
+                  </StackPanel.Transitions>
+                  <TextBlock Text="LabelPrint"
+                             FontSize="15"
+                             FontWeight="SemiBold"
+                             Foreground="{DynamicResource AppPrimaryForeground}" />
+                  <TextBlock Text="Pro"
+                             FontSize="11"
+                             Foreground="{DynamicResource AppMutedForeground}" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+
+            <Button Classes="sidebar-rail"
+                    Command="{Binding ToggleSidebarCommand}"
+                    ToolTip.Tip="{Binding SidebarToggleTooltip}"
+                    HorizontalAlignment="Stretch"
+                    Height="40"
+                    Padding="10,0">
+              <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Path Classes="app-icon"
+                      Data="{Binding SidebarToggleIcon}"
+                      Width="18" Height="18" />
+                <TextBlock Text="{Binding SidebarToggleTooltip}"
+                           FontSize="13"
+                           VerticalAlignment="Center"
+                           Opacity="{Binding SidebarExpandedOpacity}"
+                           Foreground="{DynamicResource AppMutedForeground}">
+                  <TextBlock.Transitions>
+                    <Transitions>
+                      <DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="CubicEaseOut" />
+                    </Transitions>
+                  </TextBlock.Transitions>
+                </TextBlock>
+              </StackPanel>
+            </Button>
           </StackPanel>
 
+          <!-- Footer: user row + logout — same rail geometry as nav -->
+          <StackPanel DockPanel.Dock="Bottom" Spacing="4" Margin="0,8,0,0">
+            <Border Classes="sidebar-row"
+                    Height="40"
+                    ToolTip.Tip="{Binding CurrentUserLabel}">
+              <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Border Width="18" Height="18"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                  <Path Classes="app-icon"
+                        Data="{x:Static ui:AppIcons.User}"
+                        Width="18" Height="18"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center" />
+                </Border>
+                <TextBlock Classes="nav-title"
+                           Text="{Binding CurrentUserLabel}"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           MaxWidth="170"
+                           Opacity="{Binding SidebarExpandedOpacity}"
+                           Foreground="{DynamicResource AppMutedForeground}">
+                  <TextBlock.Transitions>
+                    <Transitions>
+                      <DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="CubicEaseOut" />
+                    </Transitions>
+                  </TextBlock.Transitions>
+                </TextBlock>
+              </StackPanel>
+            </Border>
+
+            <Button Classes="sidebar-rail"
+                    Command="{Binding SignOutCommand}"
+                    ToolTip.Tip="Выйти"
+                    HorizontalAlignment="Stretch"
+                    Height="40"
+                    Padding="10,0">
+              <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Path Classes="app-icon"
+                      Data="{x:Static ui:AppIcons.LogOut}"
+                      Width="18" Height="18" />
+                <TextBlock Classes="nav-title"
+                           Text="Выйти"
+                           FontSize="13"
+                           VerticalAlignment="Center"
+                           Opacity="{Binding SidebarExpandedOpacity}"
+                           Foreground="{DynamicResource AppPrimaryForeground}">
+                  <TextBlock.Transitions>
+                    <Transitions>
+                      <DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="CubicEaseOut" />
+                    </Transitions>
+                  </TextBlock.Transitions>
+                </TextBlock>
+              </StackPanel>
+            </Button>
+          </StackPanel>
+
+          <!-- Nav: left-aligned icons stay in place while titles clip away -->
           <ListBox ItemsSource="{Binding NavItems}"
                    SelectedItem="{Binding SelectedNavItem}"
-                   Background="Transparent"
-                   BorderThickness="0"
-                   Classes="nav">
-            <ListBox.Styles>
-              <Style Selector="ListBox.nav ListBoxItem">
-                <Setter Property="Padding" Value="10,8" />
-                <Setter Property="Margin" Value="0,2" />
-                <Setter Property="CornerRadius" Value="6" />
-                <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
-              </Style>
-              <Style Selector="ListBox.nav ListBoxItem:selected /template/ ContentPresenter">
-                <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListAccentLowBrush}" />
-                <Setter Property="CornerRadius" Value="6" />
-              </Style>
-              <Style Selector="ListBox.nav ListBoxItem:pointerover /template/ ContentPresenter">
-                <Setter Property="Background" Value="{DynamicResource SystemControlHighlightListLowBrush}" />
-                <Setter Property="CornerRadius" Value="6" />
-              </Style>
-            </ListBox.Styles>
+                   Classes="nav"
+                   Classes.collapsed="{Binding IsSidebarCollapsed}">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:NavItem">
-                <TextBlock Text="{Binding Title}"
-                           Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                <StackPanel Orientation="Horizontal"
+                            Spacing="12"
+                            Height="20"
+                            ToolTip.Tip="{Binding Title}">
+                  <Path Classes="app-icon"
+                        Data="{Binding Icon}"
+                        Width="18" Height="18"
+                        VerticalAlignment="Center" />
+                  <TextBlock Classes="nav-title"
+                             Text="{Binding Title}"
+                             FontSize="13"
+                             VerticalAlignment="Center"
+                             Foreground="{DynamicResource AppPrimaryForeground}" />
+                </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
@@ -70,66 +170,96 @@
       </Border>
 
       <Border Grid.Column="1"
-              Background="{DynamicResource SystemRegionBrush}"
-              Padding="24">
-        <ContentControl Content="{Binding CurrentPage}">
-          <ContentControl.DataTemplates>
-            <DataTemplate DataType="vm:HomeViewModel">
-              <pages:HomePageView />
-            </DataTemplate>
-            <DataTemplate DataType="vm:CatalogViewModel">
-              <pages:CatalogPageView />
-            </DataTemplate>
-            <DataTemplate DataType="vm:RawMaterialsViewModel">
-              <pages:RawMaterialsPageView />
-            </DataTemplate>
-            <DataTemplate DataType="vm:TemplatesViewModel">
-              <pages:TemplatesPageView />
-            </DataTemplate>
-            <DataTemplate DataType="vm:TemplateEditorViewModel">
-              <pages:TemplateEditorPageView />
-            </DataTemplate>
-            <DataTemplate DataType="vm:SettingsViewModel">
-              <pages:SettingsPageView />
-            </DataTemplate>
-            <DataTemplate DataType="vm:PrintersViewModel">
-              <pages:PrintersPageView />
-            </DataTemplate>
-            <DataTemplate DataType="vm:QueueViewModel">
-              <pages:QueuePageView />
-            </DataTemplate>
-            <DataTemplate DataType="vm:HistoryViewModel">
-              <pages:HistoryPageView />
-            </DataTemplate>
-            <DataTemplate DataType="vm:OrdersViewModel">
-              <pages:OrdersPageView />
-            </DataTemplate>
-            <DataTemplate DataType="vm:PlaceholderViewModel">
-              <pages:PlaceholderPageView />
-            </DataTemplate>
-          </ContentControl.DataTemplates>
-        </ContentControl>
+              Background="{DynamicResource AppContentBackground}"
+              Padding="28,24">
+        <Border x:Name="PageHost" Classes="page-host" Opacity="1">
+          <ContentControl Content="{Binding CurrentPage}">
+            <ContentControl.DataTemplates>
+              <DataTemplate DataType="vm:HomeViewModel">
+                <pages:HomePageView />
+              </DataTemplate>
+              <DataTemplate DataType="vm:CatalogViewModel">
+                <pages:CatalogPageView />
+              </DataTemplate>
+              <DataTemplate DataType="vm:RawMaterialsViewModel">
+                <pages:RawMaterialsPageView />
+              </DataTemplate>
+              <DataTemplate DataType="vm:TemplatesViewModel">
+                <pages:TemplatesPageView />
+              </DataTemplate>
+              <DataTemplate DataType="vm:TemplateEditorViewModel">
+                <pages:TemplateEditorPageView />
+              </DataTemplate>
+              <DataTemplate DataType="vm:SettingsViewModel">
+                <pages:SettingsPageView />
+              </DataTemplate>
+              <DataTemplate DataType="vm:PrintersViewModel">
+                <pages:PrintersPageView />
+              </DataTemplate>
+              <DataTemplate DataType="vm:QueueViewModel">
+                <pages:QueuePageView />
+              </DataTemplate>
+              <DataTemplate DataType="vm:HistoryViewModel">
+                <pages:HistoryPageView />
+              </DataTemplate>
+              <DataTemplate DataType="vm:OrdersViewModel">
+                <pages:OrdersPageView />
+              </DataTemplate>
+              <DataTemplate DataType="vm:PlaceholderViewModel">
+                <pages:PlaceholderPageView />
+              </DataTemplate>
+            </ContentControl.DataTemplates>
+          </ContentControl>
+        </Border>
       </Border>
     </Grid>
 
-    <Border IsVisible="{Binding !IsSignedIn}"
-            Background="#CC101010"
+    <Border Classes="login-overlay"
+            Opacity="{Binding LoginOverlayOpacity}"
+            IsHitTestVisible="{Binding !IsSignedIn}"
+            Background="{DynamicResource AppOverlayScrim}"
             ZIndex="100">
-      <Border Width="420"
+      <Border Width="400"
+              Classes="login-card"
               Padding="28"
-              CornerRadius="12"
+              CornerRadius="16"
               HorizontalAlignment="Center"
               VerticalAlignment="Center"
-              Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-        <StackPanel Spacing="12">
-          <TextBlock Text="LabelPrint Pro" FontSize="26" FontWeight="Bold" HorizontalAlignment="Center" />
-          <TextBlock Text="Выберите пользователя смены" Opacity="0.75" HorizontalAlignment="Center" />
+              Background="{DynamicResource AppSidebarBackground}"
+              BorderBrush="{DynamicResource AppSidebarBorder}"
+              BorderThickness="1">
+        <StackPanel Spacing="14">
+          <TextBlock Text="LabelPrint Pro"
+                     FontSize="22"
+                     FontWeight="SemiBold"
+                     HorizontalAlignment="Center"
+                     Foreground="{DynamicResource AppPrimaryForeground}" />
+          <TextBlock Text="Выберите пользователя смены"
+                     HorizontalAlignment="Center"
+                     Classes="page-subtitle" />
           <ListBox ItemsSource="{Binding Users}"
                    SelectedItem="{Binding SelectedLoginUser}"
-                   MaxHeight="180">
+                   MaxHeight="180"
+                   Background="Transparent"
+                   BorderThickness="0">
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="Padding" Value="10,8" />
+                <Setter Property="Margin" Value="0,2" />
+              </Style>
+              <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                <Setter Property="Background" Value="{DynamicResource AppSidebarSelected}" />
+                <Setter Property="CornerRadius" Value="8" />
+              </Style>
+              <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+                <Setter Property="Background" Value="{DynamicResource AppSidebarHover}" />
+                <Setter Property="CornerRadius" Value="8" />
+              </Style>
+            </ListBox.Styles>
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="dto:UserListItemDto">
-                <TextBlock>
+                <TextBlock Foreground="{DynamicResource AppPrimaryForeground}">
                   <Run Text="{Binding Name}" />
                   <Run Text=" — " />
                   <Run Text="{Binding Role}" />
@@ -141,10 +271,17 @@
                    Text="{Binding LoginPin}"
                    PasswordChar="•" />
           <TextBlock Text="{Binding LoginError}" Foreground="#E57373" TextWrapping="Wrap" />
-          <Button Content="Войти"
+          <Button Classes="accent"
                   Command="{Binding SignInCommand}"
                   HorizontalAlignment="Stretch"
-                  Padding="12,8" />
+                  Padding="12,10">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+              <Path Classes="app-icon-sm"
+                    Data="{x:Static ui:AppIcons.LogIn}"
+                    Stroke="White" />
+              <TextBlock Text="Войти" VerticalAlignment="Center" Foreground="White" />
+            </StackPanel>
+          </Button>
         </StackPanel>
       </Border>
     </Border>

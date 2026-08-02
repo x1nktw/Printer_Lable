@@ -2,57 +2,70 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:LabelPrint.UI.ViewModels"
              xmlns:svc="using:LabelPrint.Application.Abstractions.Services"
+             xmlns:ui="using:LabelPrint.UI"
              x:Class="LabelPrint.UI.Views.Pages.OrdersPageView"
              x:DataType="vm:OrdersViewModel">
-  <DockPanel Margin="8">
-    <StackPanel DockPanel.Dock="Top" Spacing="12">
-      <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold" />
+  <DockPanel Margin="4">
+    <StackPanel DockPanel.Dock="Top" Spacing="14" Margin="0,0,0,12">
+      <TextBlock Text="{Binding Title}" Classes="page-title" />
+      <TextBlock Text="{Binding StatusMessage}" Classes="page-subtitle" TextWrapping="Wrap" />
 
-      <WrapPanel>
-        <TextBox Watermark="Поиск № / клиент"
-                 Text="{Binding SearchText}"
-                 Width="220"
-                 MinHeight="32"
-                 Margin="0,0,8,8" />
-        <Button Content="Обновить" Command="{Binding LoadCommand}" Margin="0,0,8,8" />
-        <Button Content="Inbox" Command="{Binding SyncInboxOnlyCommand}"
-                ToolTip.Tip="Подтянуть JSON из inbox"
-                Margin="0,0,8,8" />
-        <Button Content="Пример" Command="{Binding CreateSampleCommand}"
-                ToolTip.Tip="JSON с составом в inbox"
-                Margin="0,0,8,8" />
-        <ComboBox ItemsSource="{Binding Templates}"
-                  SelectedItem="{Binding SelectedTemplate}"
-                  PlaceholderText="Шаблон"
-                  MinWidth="180"
-                  MinHeight="32"
+      <Border Classes="app-card" Padding="12">
+        <WrapPanel>
+          <TextBox Watermark="Поиск № / клиент"
+                   Text="{Binding SearchText}"
+                   Width="240"
+                   Margin="0,0,8,8" />
+          <Button Command="{Binding LoadCommand}" Margin="0,0,8,8" ToolTip.Tip="Обновить список">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.Refresh}" />
+              <TextBlock Text="Обновить" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Command="{Binding SyncInboxOnlyCommand}"
+                  Margin="0,0,8,8"
+                  ToolTip.Tip="Подтянуть JSON из inbox">
+            <TextBlock Text="Inbox" VerticalAlignment="Center" />
+          </Button>
+          <Button Command="{Binding CreateSampleCommand}"
+                  Margin="0,0,8,8"
+                  ToolTip.Tip="JSON с составом в inbox">
+            <TextBlock Text="Пример" VerticalAlignment="Center" />
+          </Button>
+          <ComboBox ItemsSource="{Binding Templates}"
+                    SelectedItem="{Binding SelectedTemplate}"
+                    PlaceholderText="Шаблон"
+                    MinWidth="200"
+                    Margin="0,0,8,8">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="svc:TemplateListItemDto">
+                <TextBlock Text="{Binding Name}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Button Classes="accent"
+                  Command="{Binding PrintSelectedItemsCommand}"
                   Margin="0,0,8,8">
-          <ComboBox.ItemTemplate>
-            <DataTemplate x:DataType="svc:TemplateListItemDto">
-              <TextBlock Text="{Binding Name}" />
-            </DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
-        <Button Content="Печать выбранных" Command="{Binding PrintSelectedItemsCommand}" Margin="0,0,8,8" />
-        <Button Content="Печать всех" Command="{Binding PrintAllItemsCommand}" Margin="0,0,8,8" />
-      </WrapPanel>
-      <TextBlock Text="{Binding StatusMessage}" Opacity="0.7" TextWrapping="Wrap" />
+            <TextBlock Text="Печать выбранных" VerticalAlignment="Center" Foreground="White" />
+          </Button>
+          <Button Command="{Binding PrintAllItemsCommand}" Margin="0,0,8,8">
+            <TextBlock Text="Печать всех" VerticalAlignment="Center" />
+          </Button>
+        </WrapPanel>
+      </Border>
     </StackPanel>
 
-    <Grid ColumnDefinitions="*,12,*" Margin="0,12,0,0">
+    <Grid ColumnDefinitions="*,14,*">
       <!-- Заказы -->
       <Border Grid.Column="0"
-              CornerRadius="8"
-              BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
-              BorderThickness="1"
+              Classes="app-panel"
               ClipToBounds="True">
         <DockPanel>
-          <Border DockPanel.Dock="Top"
-                  Padding="12,10"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-            <TextBlock Text="Заказы" FontWeight="SemiBold" />
+          <Border DockPanel.Dock="Top" Classes="app-panel-header">
+            <TextBlock Text="Заказы" Classes="section-title" />
           </Border>
           <DataGrid Name="OrdersGrid"
+                    Classes="app-grid"
                     ItemsSource="{Binding Orders}"
                     SelectedItem="{Binding SelectedOrder}"
                     AutoGenerateColumns="False"
@@ -61,7 +74,9 @@
                     CanUserSortColumns="False"
                     HeadersVisibility="Column"
                     GridLinesVisibility="Horizontal"
-                    BorderThickness="0">
+                    BorderThickness="0"
+                    Background="Transparent"
+                    RowBackground="Transparent">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Номер" Binding="{Binding Number}" Width="SizeToHeader" />
               <DataGridTextColumn Header="Статус" Binding="{Binding StatusLabel}" Width="SizeToHeader" />
@@ -76,17 +91,14 @@
 
       <!-- Позиции -->
       <Border Grid.Column="2"
-              CornerRadius="8"
-              BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
-              BorderThickness="1"
+              Classes="app-panel"
               ClipToBounds="True">
         <DockPanel>
-          <Border DockPanel.Dock="Top"
-                  Padding="12,10"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-            <TextBlock Text="Позиции заказа" FontWeight="SemiBold" />
+          <Border DockPanel.Dock="Top" Classes="app-panel-header">
+            <TextBlock Text="Позиции заказа" Classes="section-title" />
           </Border>
           <DataGrid Name="ItemsGrid"
+                    Classes="app-grid"
                     ItemsSource="{Binding ItemRows}"
                     SelectedItem="{Binding SelectedItem}"
                     AutoGenerateColumns="False"
@@ -95,7 +107,9 @@
                     CanUserSortColumns="False"
                     HeadersVisibility="Column"
                     GridLinesVisibility="Horizontal"
-                    BorderThickness="0">
+                    BorderThickness="0"
+                    Background="Transparent"
+                    RowBackground="Transparent">
             <DataGrid.Columns>
               <DataGridTemplateColumn Header=" " Width="48" MinWidth="48">
                 <DataGridTemplateColumn.CellTemplate>

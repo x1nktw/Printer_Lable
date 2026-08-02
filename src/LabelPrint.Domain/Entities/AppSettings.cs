@@ -12,6 +12,9 @@ public class AppSettings : EntityBase
 
     public AppTheme Theme { get; set; } = AppTheme.Dark;
 
+    /// <summary>Fluent accent color as #RRGGBB hex (e.g. #10A37F).</summary>
+    public string AccentColor { get; set; } = "#10A37F";
+
     public AppLanguage Language { get; set; } = AppLanguage.Russian;
 
     public bool AutoPrintOrders { get; set; }

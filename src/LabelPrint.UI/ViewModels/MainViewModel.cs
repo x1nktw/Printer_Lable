@@ -2,7 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.ObjectModel;
-using Avalonia.Styling;
+using Avalonia.Media;
 using LabelPrint.Domain.Enums;
 using LabelPrint.Application.Abstractions;
 using LabelPrint.Application.Abstractions.Services;
@@ -32,11 +32,11 @@ public partial class MainViewModel : ViewModelBase
         _session = session;
         NavItems = new ObservableCollection<NavItem>
         {
-            new("home", "Главная"),
-            new("catalog", "Каталог"),
-            new("raw", "Маркировка"),
-            new("orders", "Заказы"),
-            new("settings", "Настройки")
+            new("home", "Главная", AppIcons.Home),
+            new("catalog", "Каталог", AppIcons.Catalog),
+            new("raw", "Маркировка", AppIcons.Tag),
+            new("orders", "Заказы", AppIcons.Orders),
+            new("settings", "Настройки", AppIcons.Settings)
         };
 
         CurrentPage = new HomeViewModel();
@@ -50,11 +50,35 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty] private PageViewModelBase _currentPage;
     [ObservableProperty] private NavItem? _selectedNavItem;
     [ObservableProperty] private bool _isDarkTheme = true;
+    [ObservableProperty] private bool _isSidebarCollapsed;
     [ObservableProperty] private bool _isSignedIn;
     [ObservableProperty] private string _currentUserLabel = "Гость";
     [ObservableProperty] private UserListItemDto? _selectedLoginUser;
     [ObservableProperty] private string? _loginPin;
     [ObservableProperty] private string? _loginError;
+
+    public double SidebarWidth => IsSidebarCollapsed ? 60 : 260;
+    public double SidebarExpandedOpacity => IsSidebarCollapsed ? 0 : 1;
+    public double SidebarCollapsedOpacity => IsSidebarCollapsed ? 1 : 0;
+    public double LoginOverlayOpacity => IsSignedIn ? 0 : 1;
+    public string SidebarToggleTooltip => IsSidebarCollapsed ? "Развернуть меню" : "Свернуть меню";
+    // Same icon either way — hamburger reads clearer than panel glyphs at 18px
+    public Geometry SidebarToggleIcon => AppIcons.PanelLeft;
+
+    partial void OnIsSidebarCollapsedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(SidebarWidth));
+        OnPropertyChanged(nameof(SidebarExpandedOpacity));
+        OnPropertyChanged(nameof(SidebarCollapsedOpacity));
+        OnPropertyChanged(nameof(SidebarToggleIcon));
+        OnPropertyChanged(nameof(SidebarToggleTooltip));
+    }
+
+    partial void OnIsSignedInChanged(bool value) =>
+        OnPropertyChanged(nameof(LoginOverlayOpacity));
+
+    [RelayCommand]
+    private void ToggleSidebar() => IsSidebarCollapsed = !IsSidebarCollapsed;
 
     partial void OnSelectedNavItemChanged(NavItem? value)
     {
@@ -87,6 +111,7 @@ public partial class MainViewModel : ViewModelBase
         LoginPin = null;
         LoginError = null;
         RefreshSessionUi();
+        await ResetToHomeAsync(loadAbout: true);
     }
 
     [RelayCommand]
@@ -95,11 +120,38 @@ public partial class MainViewModel : ViewModelBase
         using var scope = _scopeFactory.CreateScope();
         var auth = scope.ServiceProvider.GetRequiredService<IAuthService>();
         auth.SignOut();
+        ResetToHome(loadAbout: false);
         RefreshSessionUi();
-        _ = NavigateToAsync("home");
+    }
+
+    private void ResetToHome(bool loadAbout)
+    {
+        _currentNavKey = "home";
         _suppressNav = true;
         SelectedNavItem = NavItems[0];
         _suppressNav = false;
+
+        var home = new HomeViewModel(_scopeFactory);
+        CurrentPage = home;
+        if (loadAbout)
+        {
+            _ = home.LoadAboutCommand.ExecuteAsync(null);
+        }
+    }
+
+    private async Task ResetToHomeAsync(bool loadAbout)
+    {
+        _currentNavKey = "home";
+        _suppressNav = true;
+        SelectedNavItem = NavItems[0];
+        _suppressNav = false;
+
+        var home = new HomeViewModel(_scopeFactory);
+        CurrentPage = home;
+        if (loadAbout)
+        {
+            await home.LoadAboutCommand.ExecuteAsync(null);
+        }
     }
 
     private async Task InitializeAsync()
@@ -144,17 +196,11 @@ public partial class MainViewModel : ViewModelBase
         if (result.IsSuccess)
         {
             IsDarkTheme = result.Value.Theme != AppTheme.Light;
+            ThemeApplier.Apply(result.Value.Theme, result.Value.AccentColor);
+            return;
         }
 
-        ApplyTheme(IsDarkTheme);
-    }
-
-    private void ApplyTheme(bool dark)
-    {
-        if (Avalonia.Application.Current is { } app)
-        {
-            app.RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light;
-        }
+        ThemeApplier.Apply(AppTheme.Dark, ThemeApplier.DefaultAccentHex);
     }
 
     private async Task NavigateToAsync(string key)
@@ -252,7 +298,7 @@ public partial class MainViewModel : ViewModelBase
     }
 }
 
-public sealed record NavItem(string Key, string Title);
+public sealed record NavItem(string Key, string Title, Geometry Icon);
 
 public partial class HomeViewModel : PageViewModelBase
 {
@@ -265,7 +311,8 @@ public partial class HomeViewModel : PageViewModelBase
     }
 
     public string Subtitle { get; } =
-        "LabelPrint Pro — каталог, заказы и печать. Войдите как Администратор или Оператор, чтобы начать работу.";
+        "Приложение для каталога товаров, приёма заказов FrontPad и печати этикеток на термопринтерах. " +
+        "Управляйте шаблонами, маркировкой сырья, очередью печати и историей из одного окна.";
 
     [ObservableProperty] private string _versionLabel = "LabelPrint Pro";
     [ObservableProperty] private string _updateMessage = "Проверка обновлений…";

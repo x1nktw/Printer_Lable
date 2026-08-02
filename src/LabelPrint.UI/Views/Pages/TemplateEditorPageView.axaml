@@ -94,10 +94,9 @@
       <TextBlock Text="{Binding StatusMessage}" Opacity="0.7" />
     </StackPanel>
 
-    <Border DockPanel.Dock="Left" Width="200" Margin="0,12,8,0" Padding="10"
-            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" CornerRadius="8">
+    <Border DockPanel.Dock="Left" Width="200" Margin="0,12,8,0" Classes="app-card" Padding="12">
       <StackPanel Spacing="6">
-        <TextBlock Text="Переменные" FontWeight="SemiBold" />
+        <TextBlock Text="Переменные" Classes="section-title" />
         <ListBox ItemsSource="{Binding VariableDefinitions}" MinHeight="120" MaxHeight="320">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:TemplateVariableItemViewModel">
@@ -110,8 +109,7 @@
       </StackPanel>
     </Border>
 
-    <Border DockPanel.Dock="Right" Width="320" Margin="12,12,0,0" Padding="12"
-            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" CornerRadius="8">
+    <Border DockPanel.Dock="Right" Width="320" Margin="12,12,0,0" Classes="app-card" Padding="14">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="6" IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
           <TextBlock Text="Свойства" FontWeight="SemiBold" />

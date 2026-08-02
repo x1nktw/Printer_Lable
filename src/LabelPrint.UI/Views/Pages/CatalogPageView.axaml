@@ -2,59 +2,62 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:LabelPrint.UI.ViewModels"
              xmlns:dto="using:LabelPrint.Application.DTOs"
+             xmlns:ui="using:LabelPrint.UI"
              x:Class="LabelPrint.UI.Views.Pages.CatalogPageView"
              x:DataType="vm:CatalogViewModel">
   <DockPanel Margin="4">
     <StackPanel DockPanel.Dock="Top" Spacing="10" Margin="0,0,0,12">
-      <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold" />
-      <TextBlock Text="{Binding StatusMessage}" Opacity="0.7" TextWrapping="Wrap" />
+      <TextBlock Text="{Binding Title}" Classes="page-title" />
+      <TextBlock Text="{Binding StatusMessage}" Classes="page-subtitle" TextWrapping="Wrap" />
     </StackPanel>
 
     <TabControl SelectedIndex="{Binding SelectedSectionIndex}">
       <TabItem Header="Товары">
         <DockPanel Margin="0,8,0,0">
-          <WrapPanel DockPanel.Dock="Top">
-            <TextBox Watermark="Поиск по названию / артикулу / штрихкоду"
-                     Text="{Binding SearchText}"
-                     MinWidth="220"
-                     Width="260"
-                     MinHeight="32"
-                     Margin="0,0,8,8" />
-            <Button Content="Найти" Command="{Binding LoadCommand}" Margin="0,0,8,8" />
-            <Button Content="Добавить" Command="{Binding NewProductCommand}" Margin="0,0,8,8" />
-            <Button Content="Изменить" Command="{Binding EditSelectedCommand}" Margin="0,0,8,8" />
-            <Button Content="Удалить" Command="{Binding ArchiveSelectedCommand}" Margin="0,0,8,8" />
-            <Button Content="Поля" Command="{Binding ToggleFieldManagerCommand}" Margin="0,0,8,8" />
-          </WrapPanel>
+          <Border DockPanel.Dock="Top" Classes="app-card" Padding="12" Margin="0,0,0,12">
+            <WrapPanel>
+              <TextBox Watermark="Поиск по названию / артикулу / штрихкоду"
+                       Text="{Binding SearchText}"
+                       MinWidth="220" Width="260" Margin="0,0,8,8" />
+              <Button Content="Найти" Command="{Binding LoadCommand}" Margin="0,0,8,8" />
+              <Button Content="Добавить" Command="{Binding NewProductCommand}" Margin="0,0,8,8" />
+              <Button Content="Изменить" Command="{Binding EditSelectedCommand}" Margin="0,0,8,8" />
+              <Button Content="Удалить" Command="{Binding ArchiveSelectedCommand}" Margin="0,0,8,8" />
+              <Button Content="Поля" Command="{Binding ToggleFieldManagerCommand}" Margin="0,0,8,8" />
+            </WrapPanel>
+          </Border>
 
           <Border DockPanel.Dock="Bottom"
+                  Classes="app-card"
                   IsVisible="{Binding IsEditorOpen}"
-                  Padding="12"
-                  Margin="0,12,0,0"
-                  CornerRadius="8"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+                  Margin="0,12,0,0">
             <ScrollViewer MaxHeight="320">
               <StackPanel Spacing="8">
-                <TextBlock Text="Карточка товара" FontWeight="SemiBold" />
+                <TextBlock Text="Карточка товара" Classes="section-title" />
                 <TextBox Watermark="Название" Text="{Binding EditName}" />
                 <TextBox Watermark="Артикул" Text="{Binding EditSku}" />
                 <TextBox Watermark="Штрихкод" Text="{Binding EditBarcode}" />
                 <NumericUpDown Minimum="0" Increment="1" FormatString="0.##"
                                Value="{Binding EditPrice}"
-                               Width="180" MinWidth="180" MinHeight="32"
+                               Width="180" MinWidth="180"
                                HorizontalAlignment="Left" />
                 <ItemsControl ItemsSource="{Binding CustomFields}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:CustomFieldEditVm">
                       <StackPanel Margin="0,4,0,0" Spacing="2">
-                        <TextBlock Text="{Binding DisplayName}" />
+                        <TextBlock Text="{Binding DisplayName}" Classes="page-subtitle" />
                         <TextBox Text="{Binding Value}" />
                       </StackPanel>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Button Content="Сохранить" Command="{Binding SaveCommand}" />
+                  <Button Classes="accent" Command="{Binding SaveCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.Save}" Stroke="White" />
+                      <TextBlock Text="Сохранить" Foreground="White" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
                   <Button Content="Отмена" Command="{Binding CancelEditCommand}" />
                 </StackPanel>
               </StackPanel>
@@ -62,13 +65,11 @@
           </Border>
 
           <Border DockPanel.Dock="Bottom"
+                  Classes="app-card"
                   IsVisible="{Binding ShowFieldManager}"
-                  Padding="12"
-                  Margin="0,12,0,0"
-                  CornerRadius="8"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+                  Margin="0,12,0,0">
             <StackPanel Spacing="8">
-              <TextBlock Text="Пользовательские поля (EAV)" FontWeight="SemiBold" />
+              <TextBlock Text="Пользовательские поля (EAV)" Classes="section-title" />
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <TextBox Watermark="Имя поля" Text="{Binding NewFieldName}" Width="200" />
                 <CheckBox Content="Обязательное" IsChecked="{Binding NewFieldRequired}" VerticalAlignment="Center" />
@@ -76,7 +77,9 @@
               </StackPanel>
               <ListBox ItemsSource="{Binding FieldDefinitions}"
                        SelectedItem="{Binding SelectedFieldDefinition}"
-                       MaxHeight="140">
+                       MaxHeight="140"
+                       Background="Transparent"
+                       BorderThickness="0">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="dto:CustomFieldDefinitionDto">
                     <TextBlock Text="{Binding Name}" />
@@ -94,63 +97,63 @@
                     IsVisible="{Binding CanLoadMore}"
                     HorizontalAlignment="Center"
                     Margin="0,8,0,0" />
-            <DataGrid ItemsSource="{Binding Products}"
-                      SelectedItem="{Binding SelectedProduct}"
-                      AutoGenerateColumns="False"
-                      IsReadOnly="True"
-                      CanUserResizeColumns="True"
-                      GridLinesVisibility="Horizontal">
-              <DataGrid.Columns>
-                <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" MinWidth="160" />
-                <DataGridTextColumn Header="Артикул" Binding="{Binding Sku}" Width="140" />
-                <DataGridTextColumn Header="Штрихкод" Binding="{Binding Barcode}" Width="160" />
-                <DataGridTextColumn Header="Цена" Binding="{Binding PriceAmount}" Width="100" />
-              </DataGrid.Columns>
-            </DataGrid>
+            <Border Classes="app-panel">
+              <DataGrid Classes="app-grid"
+                        ItemsSource="{Binding Products}"
+                        SelectedItem="{Binding SelectedProduct}"
+                        AutoGenerateColumns="False"
+                        IsReadOnly="True"
+                        CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal"
+                        BorderThickness="0"
+                        Background="Transparent"
+                        RowBackground="Transparent">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" MinWidth="160" />
+                  <DataGridTextColumn Header="Артикул" Binding="{Binding Sku}" Width="140" />
+                  <DataGridTextColumn Header="Штрихкод" Binding="{Binding Barcode}" Width="160" />
+                  <DataGridTextColumn Header="Цена" Binding="{Binding PriceAmount}" Width="100" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </Border>
           </DockPanel>
         </DockPanel>
       </TabItem>
 
       <TabItem Header="Маркировка">
         <DockPanel Margin="0,8,0,0">
-          <WrapPanel DockPanel.Dock="Top">
-            <TextBox Watermark="Поиск…"
-                     Text="{Binding SearchText}"
-                     MinWidth="220"
-                     Width="260"
-                     MinHeight="32"
-                     Margin="0,0,8,8" />
-            <Button Content="Найти" Command="{Binding LoadCommand}" Margin="0,0,8,8" />
-            <Button Content="Добавить" Command="{Binding NewProductCommand}" Margin="0,0,8,8" />
-            <Button Content="Изменить" Command="{Binding EditSelectedCommand}" Margin="0,0,8,8" />
-            <Button Content="Удалить" Command="{Binding ArchiveSelectedCommand}" Margin="0,0,8,8" />
-          </WrapPanel>
-          <TextBlock DockPanel.Dock="Top"
-                     Text="Печать — в разделе «Маркировка» меню слева."
-                     Opacity="0.7"
-                     Margin="0,0,0,8"
-                     TextWrapping="Wrap" />
+          <Border DockPanel.Dock="Top" Classes="app-card" Padding="12" Margin="0,0,0,12">
+            <StackPanel Spacing="8">
+              <WrapPanel>
+                <TextBox Watermark="Поиск…" Text="{Binding SearchText}"
+                         MinWidth="220" Width="260" Margin="0,0,8,8" />
+                <Button Content="Найти" Command="{Binding LoadCommand}" Margin="0,0,8,8" />
+                <Button Content="Добавить" Command="{Binding NewProductCommand}" Margin="0,0,8,8" />
+                <Button Content="Изменить" Command="{Binding EditSelectedCommand}" Margin="0,0,8,8" />
+                <Button Content="Удалить" Command="{Binding ArchiveSelectedCommand}" Margin="0,0,8,8" />
+              </WrapPanel>
+              <TextBlock Text="Печать — в разделе «Маркировка» меню слева."
+                         Classes="page-subtitle" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
 
           <Border DockPanel.Dock="Bottom"
+                  Classes="app-card"
                   IsVisible="{Binding IsEditorOpen}"
-                  Padding="12"
-                  Margin="0,12,0,0"
-                  CornerRadius="8"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+                  Margin="0,12,0,0">
             <ScrollViewer MaxHeight="280">
               <StackPanel Spacing="8">
-                <TextBlock Text="Карточка маркировки" FontWeight="SemiBold" />
+                <TextBlock Text="Карточка маркировки" Classes="section-title" />
                 <TextBox Watermark="Название" Text="{Binding EditName}" />
                 <TextBox Watermark="Артикул" Text="{Binding EditSku}" />
-                <TextBlock Text="Срок годности" Opacity="0.7" />
+                <TextBlock Text="Срок годности" Classes="page-subtitle" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <NumericUpDown Minimum="1" Maximum="3650" Increment="1" FormatString="0"
                                  Value="{Binding EditShelfLifeValue}"
-                                 Width="120" MinWidth="120" MinHeight="32" />
+                                 Width="120" MinWidth="120" />
                   <ComboBox ItemsSource="{Binding ShelfLifeUnitOptions}"
                             SelectedItem="{Binding EditShelfLifeUnitOption}"
-                            Width="120"
-                            MinHeight="32">
+                            Width="120">
                     <ComboBox.ItemTemplate>
                       <DataTemplate x:DataType="vm:ShelfLifeUnitOptionVm">
                         <TextBlock Text="{Binding Name}" />
@@ -162,14 +165,16 @@
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:CustomFieldEditVm">
                       <StackPanel Margin="0,4,0,0" Spacing="2">
-                        <TextBlock Text="{Binding DisplayName}" />
+                        <TextBlock Text="{Binding DisplayName}" Classes="page-subtitle" />
                         <TextBox Text="{Binding Value}" />
                       </StackPanel>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Button Content="Сохранить" Command="{Binding SaveCommand}" />
+                  <Button Classes="accent" Command="{Binding SaveCommand}">
+                    <TextBlock Text="Сохранить" Foreground="White" />
+                  </Button>
                   <Button Content="Отмена" Command="{Binding CancelEditCommand}" />
                 </StackPanel>
               </StackPanel>
@@ -183,73 +188,90 @@
                     IsVisible="{Binding CanLoadMore}"
                     HorizontalAlignment="Center"
                     Margin="0,8,0,0" />
-            <DataGrid ItemsSource="{Binding Products}"
-                      SelectedItem="{Binding SelectedRawProduct}"
-                      AutoGenerateColumns="False"
-                      IsReadOnly="True"
-                      CanUserResizeColumns="True"
-                      GridLinesVisibility="Horizontal">
-              <DataGrid.Columns>
-                <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" MinWidth="160" />
-                <DataGridTextColumn Header="Артикул" Binding="{Binding Sku}" Width="140" />
-                <DataGridTextColumn Header="Срок" Binding="{Binding ShelfLifeDisplay}" Width="100" />
-              </DataGrid.Columns>
-            </DataGrid>
+            <Border Classes="app-panel">
+              <DataGrid Classes="app-grid"
+                        ItemsSource="{Binding Products}"
+                        SelectedItem="{Binding SelectedRawProduct}"
+                        AutoGenerateColumns="False"
+                        IsReadOnly="True"
+                        CanUserResizeColumns="True"
+                        GridLinesVisibility="Horizontal"
+                        BorderThickness="0"
+                        Background="Transparent"
+                        RowBackground="Transparent">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" MinWidth="160" />
+                  <DataGridTextColumn Header="Артикул" Binding="{Binding Sku}" Width="140" />
+                  <DataGridTextColumn Header="Срок" Binding="{Binding ShelfLifeDisplay}" Width="100" />
+                </DataGrid.Columns>
+              </DataGrid>
+            </Border>
           </DockPanel>
         </DockPanel>
       </TabItem>
 
       <TabItem Header="Добавки">
         <DockPanel Margin="0,8,0,0">
-          <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,8">
-            <TextBlock Text="Сопоставьте названия добавок из FrontPad с иконками на кухонной этикетке. Без записи останется кружок (bullet)."
-                       TextWrapping="Wrap"
-                       Opacity="0.75" />
-            <WrapPanel>
-              <Button Content="Добавить" Command="{Binding NewAddonCommand}" Margin="0,0,8,8" />
-              <Button Content="Изменить" Command="{Binding EditSelectedAddonCommand}" Margin="0,0,8,8" />
-              <Button Content="Удалить" Command="{Binding ArchiveSelectedAddonCommand}" Margin="0,0,8,8" />
-              <Button Content="Обновить" Command="{Binding LoadCommand}" Margin="0,0,8,8" />
-            </WrapPanel>
-          </StackPanel>
+          <Border DockPanel.Dock="Top" Classes="app-card" Padding="12" Margin="0,0,0,12">
+            <StackPanel Spacing="8">
+              <TextBlock Text="Сопоставьте названия добавок из FrontPad с иконками на кухонной этикетке. Без записи останется кружок (bullet)."
+                         Classes="page-subtitle" TextWrapping="Wrap" />
+              <WrapPanel>
+                <Button Content="Добавить" Command="{Binding NewAddonCommand}" Margin="0,0,8,8" />
+                <Button Content="Изменить" Command="{Binding EditSelectedAddonCommand}" Margin="0,0,8,8" />
+                <Button Content="Удалить" Command="{Binding ArchiveSelectedAddonCommand}" Margin="0,0,8,8" />
+                <Button Command="{Binding LoadCommand}" Margin="0,0,8,8">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.Refresh}" />
+                    <TextBlock Text="Обновить" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </WrapPanel>
+            </StackPanel>
+          </Border>
 
           <Border DockPanel.Dock="Bottom"
+                  Classes="app-card"
                   IsVisible="{Binding IsAddonEditorOpen}"
-                  Padding="12"
-                  Margin="0,12,0,0"
-                  CornerRadius="8"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+                  Margin="0,12,0,0">
             <StackPanel Spacing="8" MaxWidth="520">
-              <TextBlock Text="Добавка и иконка" FontWeight="SemiBold" />
+              <TextBlock Text="Добавка и иконка" Classes="section-title" />
               <TextBox Watermark="Название (как в FrontPad)" Text="{Binding EditAddonName}" />
               <TextBox Watermark="Доп. совпадения через запятую" Text="{Binding EditAddonAliases}" />
-              <TextBlock Text="Иконка" Opacity="0.7" />
+              <TextBlock Text="Иконка" Classes="page-subtitle" />
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <ComboBox ItemsSource="{Binding IconKeys}"
                           SelectedItem="{Binding EditAddonIconKey}"
-                          Width="200"
-                          MinHeight="32" />
+                          Width="200" />
                 <Button Content="Импорт PNG…" Command="{Binding ImportAddonIconCommand}" />
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="Сохранить" Command="{Binding SaveAddonCommand}" />
+                <Button Classes="accent" Command="{Binding SaveAddonCommand}">
+                  <TextBlock Text="Сохранить" Foreground="White" />
+                </Button>
                 <Button Content="Отмена" Command="{Binding CancelAddonEditCommand}" />
               </StackPanel>
             </StackPanel>
           </Border>
 
-          <DataGrid ItemsSource="{Binding Addons}"
-                    SelectedItem="{Binding SelectedAddon}"
-                    AutoGenerateColumns="False"
-                    IsReadOnly="True"
-                    CanUserResizeColumns="True"
-                    GridLinesVisibility="Horizontal">
-            <DataGrid.Columns>
-              <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" MinWidth="160" />
-              <DataGridTextColumn Header="Совпадения" Binding="{Binding MatchAliases}" Width="220" />
-              <DataGridTextColumn Header="Иконка" Binding="{Binding IconKey}" Width="120" />
-            </DataGrid.Columns>
-          </DataGrid>
+          <Border Classes="app-panel">
+            <DataGrid Classes="app-grid"
+                      ItemsSource="{Binding Addons}"
+                      SelectedItem="{Binding SelectedAddon}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserResizeColumns="True"
+                      GridLinesVisibility="Horizontal"
+                      BorderThickness="0"
+                      Background="Transparent"
+                      RowBackground="Transparent">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" MinWidth="160" />
+                <DataGridTextColumn Header="Совпадения" Binding="{Binding MatchAliases}" Width="220" />
+                <DataGridTextColumn Header="Иконка" Binding="{Binding IconKey}" Width="120" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </Border>
         </DockPanel>
       </TabItem>
     </TabControl>
