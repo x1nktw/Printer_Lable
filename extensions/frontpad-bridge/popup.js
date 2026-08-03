@@ -10,19 +10,41 @@ async function load() {
     sentCount: 0,
     webhookUrl: "http://127.0.0.1:8765/",
     hookSeenAt: null,
-    hookHref: null
+    hookHref: null,
+    lastHeartbeatAt: null,
+    lastHeartbeatError: null
   });
 
-  document.getElementById("status").textContent = data.lastStatus || "—";
-  document.getElementById("error").textContent = data.lastError || "";
-  document.getElementById("debug").textContent = data.lastDebug || "";
-  document.getElementById("enabled").checked = !!data.enabled;
+  const statusEl = document.getElementById("status");
+  const errorEl = document.getElementById("error");
+  const debugEl = document.getElementById("debug");
+  const enabledEl = document.getElementById("enabled");
+  const metaEl = document.getElementById("meta");
+  if (!statusEl || !errorEl || !debugEl || !enabledEl || !metaEl) return;
+
+  statusEl.textContent = data.lastStatus || "—";
+  errorEl.textContent = data.lastError || data.lastHeartbeatError || "";
+  debugEl.textContent = data.lastDebug || "";
+  enabledEl.checked = !!data.enabled;
 
   let meta = `Webhook: ${data.webhookUrl} · отправлено: ${data.sentCount || 0}`;
   if (data.lastOrderNumber) meta += ` · последний №${data.lastOrderNumber}`;
-  if (data.hookSeenAt) meta += `\nХук: ${data.hookSeenAt}`;
+  if (data.lastHeartbeatAt) meta += `\nHeartbeat: ${data.lastHeartbeatAt}`;
+  else meta += `\nHeartbeat: ещё не был`;
+  if (data.hookSeenAt) meta += `\nХук FrontPad: ${data.hookSeenAt}`;
   if (data.hookHref) meta += `\n${data.hookHref}`;
-  document.getElementById("meta").textContent = meta;
+  metaEl.textContent = meta;
+}
+
+function pingHeartbeat(thenLoad) {
+  try {
+    chrome.runtime.sendMessage({ type: "ping-heartbeat" }, () => {
+      void chrome.runtime.lastError;
+      if (thenLoad) load();
+    });
+  } catch {
+    if (thenLoad) load();
+  }
 }
 
 document.getElementById("enabled").addEventListener("change", async (e) => {
@@ -31,18 +53,26 @@ document.getElementById("enabled").addEventListener("change", async (e) => {
     lastStatus: e.target.checked ? "Мост включён" : "Пауза: мост выключен",
     lastError: null
   });
-  await load();
+  pingHeartbeat(true);
 });
 
 document.getElementById("options").addEventListener("click", () => {
   chrome.runtime.openOptionsPage();
 });
 
-document.getElementById("refresh").addEventListener("click", load);
+document.getElementById("refresh").addEventListener("click", () => {
+  pingHeartbeat(true);
+});
 
 document.getElementById("test").addEventListener("click", () => {
-  chrome.runtime.sendMessage({ type: "test-webhook" }, () => load());
+  chrome.runtime.sendMessage({ type: "test-webhook" }, () => {
+    void chrome.runtime.lastError;
+    load();
+  });
 });
 
 load();
-chrome.storage.onChanged.addListener(load);
+pingHeartbeat(true);
+chrome.storage.onChanged.addListener(() => {
+  load();
+});

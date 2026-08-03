@@ -40,7 +40,9 @@ internal sealed class ProductRepository : IProductRepository
         int skip,
         int take,
         CancellationToken cancellationToken = default,
-        Guid? excludeCategoryId = null)
+        Guid? excludeCategoryId = null,
+        IReadOnlyCollection<Guid>? categoryIds = null,
+        IReadOnlyCollection<Guid>? excludeCategoryIds = null)
     {
         var query = _db.Products.AsNoTracking().Include(p => p.Category).AsQueryable();
 
@@ -49,13 +51,25 @@ internal sealed class ProductRepository : IProductRepository
             query = query.Where(p => !p.IsArchived);
         }
 
-        if (categoryId is not null)
+        var includeIds = categoryIds?.Count > 0
+            ? categoryIds
+            : categoryId is Guid singleInclude
+                ? new[] { singleInclude }
+                : null;
+
+        var excludeIds = excludeCategoryIds?.Count > 0
+            ? excludeCategoryIds
+            : excludeCategoryId is Guid singleExclude
+                ? new[] { singleExclude }
+                : null;
+
+        if (includeIds is not null)
         {
-            query = query.Where(p => p.CategoryId == categoryId);
+            query = query.Where(p => p.CategoryId != null && includeIds.Contains(p.CategoryId.Value));
         }
-        else if (excludeCategoryId is not null)
+        else if (excludeIds is not null)
         {
-            query = query.Where(p => p.CategoryId != excludeCategoryId);
+            query = query.Where(p => p.CategoryId == null || !excludeIds.Contains(p.CategoryId.Value));
         }
 
         if (!string.IsNullOrWhiteSpace(search))

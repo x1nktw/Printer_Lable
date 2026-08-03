@@ -33,7 +33,7 @@
                                      ToolTip.Tip="Высота, мм" />
           <TextBlock Text="мм" VerticalAlignment="Center" Classes="page-subtitle" />
           <Button Classes="accent" Command="{Binding CreateCommand}">
-            <TextBlock Text="Создать" Foreground="White" />
+            <TextBlock Text="Создать"  />
           </Button>
         </StackPanel>
       </Border>

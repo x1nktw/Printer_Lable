@@ -36,15 +36,22 @@ Plugins.Abstractions ──▶ Domain
 - Unique `Sku` / `Barcode` (индексы БД).
 - `DefaultTemplateId` + `OrderItemTemplateId` (fallback на default).
 - Custom fields — EAV (`CustomFieldDefinition` + `ProductCustomField`), не JSON-blob.
+- Маркировка (0.8.0): категории-корни + подкатегории; `ShelfLife` / единицы; `TemperatureRegime` (переменная печати `TemperatureRegime`).
 
 ## Порты плагинов
 
 | Порт | Назначение |
 |------|------------|
 | `IPrinterGateway` | Печать / статус устройства |
-| `IOrderProvider` | Внешние заказы (FrontPad и др.) |
-| `IVariableProvider` | `{{ProductName}}`, `{{Custom.*}}` |
+| `IOrderProvider` | Внешние заказы (FrontPad Bridge / inbox) |
+| `IVariableProvider` | `{{ProductName}}`, `{{TemperatureRegime}}`, `{{Custom.*}}`, … |
 | `ITemplateElementRenderer` | Кастомные элементы шаблона |
+
+## UI composition (0.8.0)
+
+Сайдбар: Главная · Заказы · Маркировка · Каталог · Настройки.  
+Вкладки **Настройки**: Общие · Принтеры · Очередь · История · Шаблоны.  
+Тема и акцентный цвет — в Общих; акцент красит содержимое контролов, не заливку кнопок.
 
 ## Ошибки
 

@@ -123,8 +123,8 @@
             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,8">
               <Button Classes="accent" Command="{Binding SaveCommand}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.Save}" Stroke="White" />
-                  <TextBlock Text="Сохранить" VerticalAlignment="Center" Foreground="White" />
+                  <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.Save}"  />
+                  <TextBlock Text="Сохранить" VerticalAlignment="Center"  />
                 </StackPanel>
               </Button>
               <Button Command="{Binding LoadCommand}">

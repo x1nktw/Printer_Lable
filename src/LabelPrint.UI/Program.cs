@@ -78,8 +78,14 @@ sealed class Program
 
     private static IConfiguration BuildConfiguration()
     {
+        var baseDir = AppContext.BaseDirectory;
+        var configDir = Path.Combine(baseDir, "config");
+        var contentRoot = File.Exists(Path.Combine(configDir, "appsettings.json"))
+            ? configDir
+            : baseDir;
+
         return new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
+            .SetBasePath(contentRoot)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .Build();
     }

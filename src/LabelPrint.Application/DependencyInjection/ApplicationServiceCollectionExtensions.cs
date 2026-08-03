@@ -50,6 +50,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<IVariableProvider, DateVariableProvider>();
         services.AddScoped<IVariableProvider, TimeVariableProvider>();
         services.AddScoped<IVariableProvider, ExpireDateVariableProvider>();
+        services.AddScoped<IVariableProvider, TemperatureRegimeVariableProvider>();
         services.AddScoped<IVariableProvider, OrderNumberVariableProvider>();
         services.AddScoped<IVariableProvider, PositionNameVariableProvider>();
         services.AddScoped<IVariableProvider, PositionIndexVariableProvider>();

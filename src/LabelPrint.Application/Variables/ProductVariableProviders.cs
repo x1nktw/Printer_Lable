@@ -72,6 +72,22 @@ public sealed class PriceVariableProvider : ProductFieldVariableProvider
 }
 
 /// <summary>
+/// Resolves storage temperature regime for marking labels.
+/// </summary>
+public sealed class TemperatureRegimeVariableProvider : ProductFieldVariableProvider
+{
+    public TemperatureRegimeVariableProvider(IUnitOfWork unitOfWork) : base(unitOfWork)
+    {
+    }
+
+    public override string Key => "TemperatureRegime";
+
+    public override string DisplayName => "Температурный режим";
+
+    protected override string? ResolveFromProduct(Domain.Entities.Product product) => product.TemperatureRegime;
+}
+
+/// <summary>
 /// Base helper for product-scoped variable providers.
 /// </summary>
 public abstract class ProductFieldVariableProvider : IVariableProvider

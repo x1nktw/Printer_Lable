@@ -1,5 +1,7 @@
 # FrontPad → LabelPrint Pro
 
+Совместимо с **LabelPrint Pro 0.8.0** и **FrontPad Bridge 1.3.4**.
+
 ## Shop API
 
 **Не используем.** Методы `get_products`, `new_order` и остальной internet-shop API отключены.  
@@ -9,19 +11,24 @@
 
 ## Поток заказов
 
-1. Расширение **FrontPad Bridge** (`extensions/frontpad-bridge`, версия в `manifest.json`) перехватывает `order.php` в браузере  
+1. Расширение **FrontPad Bridge 1.3.4** (`extensions/frontpad-bridge`) перехватывает `order.php` в браузере  
 2. POST JSON на локальный webhook LabelPrint (`http://127.0.0.1:8765/` по умолчанию)  
-3. Автоимпорт в БД + обновление списка (+ автопечать при включении)
+3. Автоимпорт в БД + обновление списка (+ автопечать при включении)  
+4. Heartbeat Bridge → индикатор на **Главной** («Статус системы»)
 
 Дополнительно: JSON-файлы в inbox (`%LocalAppData%\LabelPrintPro\orders-inbox`) — кнопка **Inbox** / **Пример** на странице **Заказы**.
 
-Webhook URL: **Настройки** → FrontPad Bridge.
+Webhook URL: **Настройки → Общие** → FrontPad Bridge.
 
 Иконки добавок на кухонной этикетке настраиваются в **Каталог → Добавки** (название как в FrontPad + иконка; без записи остаётся кружок).
 
-### Установка Bridge
+### Установка Bridge 1.3.4
 
-См. [extensions/frontpad-bridge/README.md](../extensions/frontpad-bridge/README.md): загрузить распакованное в Chrome/Edge, обновить после правок, перезагрузить вкладку FrontPad.
+В релизе / publish / установщике расширение уже лежит в `extensions/frontpad-bridge/` (рядом с `LabelPrint.UI.exe`).  
+Отдельный артефакт релиза: `frontpad-bridge-1.3.4.zip`.
+
+Chrome/Edge → Режим разработчика → **Загрузить распакованное** → эта папка.  
+См. `INSTALL.txt` и [README расширения](../extensions/frontpad-bridge/README.md).
 
 ### Добавки (модификаторы)
 
@@ -62,6 +69,6 @@ Bridge **склеивает** их в одну позицию заказа:
 
 - Пресет: **Кухня чек 40×58** (вертикаль; ширина ленты в принтере = **40** мм).  
 - Как настроить принтер: [PRINTERS.md](PRINTERS.md).  
-- Дата/время: Настройки → Realtime/ручная; на этикетке — из контекста печати.
+- Дата/время: **Настройки → Общие** → Realtime/ручная; на этикетке — из контекста печати.
 
 Установка расширения: [extensions/frontpad-bridge/README.md](../extensions/frontpad-bridge/README.md).

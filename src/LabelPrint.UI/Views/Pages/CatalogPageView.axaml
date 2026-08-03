@@ -54,8 +54,8 @@
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <Button Classes="accent" Command="{Binding SaveCommand}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                      <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.Save}" Stroke="White" />
-                      <TextBlock Text="Сохранить" Foreground="White" VerticalAlignment="Center" />
+                      <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.Save}"  />
+                      <TextBlock Text="Сохранить"  VerticalAlignment="Center" />
                     </StackPanel>
                   </Button>
                   <Button Content="Отмена" Command="{Binding CancelEditCommand}" />
@@ -127,12 +127,41 @@
               <WrapPanel>
                 <TextBox Watermark="Поиск…" Text="{Binding SearchText}"
                          MinWidth="220" Width="260" Margin="0,0,8,8" />
+                <ComboBox ItemsSource="{Binding FilterMarkingRootOptions}"
+                          SelectedItem="{Binding FilterMarkingRootOption}"
+                          Width="160" Margin="0,0,8,8"
+                          PlaceholderText="Категория">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CategoryOptionVm">
+                      <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <ComboBox ItemsSource="{Binding FilterMarkingSubcategoryOptions}"
+                          SelectedItem="{Binding FilterMarkingSubcategoryOption}"
+                          Width="160" Margin="0,0,8,8"
+                          IsVisible="{Binding HasFilterMarkingSubcategories}"
+                          PlaceholderText="Подкатегория">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CategoryOptionVm">
+                      <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBox Watermark="Новая подкатегория…"
+                         Text="{Binding NewMarkingSubcategoryName}"
+                         Width="180" Margin="0,0,8,8"
+                         IsVisible="{Binding CanAddMarkingSubcategory}" />
+                <Button Content="Добавить подкатегорию"
+                        Command="{Binding AddMarkingSubcategoryCommand}"
+                        Margin="0,0,8,8"
+                        IsVisible="{Binding CanAddMarkingSubcategory}" />
                 <Button Content="Найти" Command="{Binding LoadCommand}" Margin="0,0,8,8" />
                 <Button Content="Добавить" Command="{Binding NewProductCommand}" Margin="0,0,8,8" />
                 <Button Content="Изменить" Command="{Binding EditSelectedCommand}" Margin="0,0,8,8" />
                 <Button Content="Удалить" Command="{Binding ArchiveSelectedCommand}" Margin="0,0,8,8" />
               </WrapPanel>
-              <TextBlock Text="Печать — в разделе «Маркировка» меню слева."
+              <TextBlock Text="Выберите категорию, чтобы видеть/добавлять подкатегории. Печать — в разделе «Маркировка» слева."
                          Classes="page-subtitle" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
@@ -146,6 +175,26 @@
                 <TextBlock Text="Карточка маркировки" Classes="section-title" />
                 <TextBox Watermark="Название" Text="{Binding EditName}" />
                 <TextBox Watermark="Артикул" Text="{Binding EditSku}" />
+                <TextBlock Text="Категория" Classes="page-subtitle" />
+                <ComboBox ItemsSource="{Binding MarkingRootOptions}"
+                          SelectedItem="{Binding EditMarkingRootOption}"
+                          HorizontalAlignment="Stretch">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CategoryOptionVm">
+                      <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <ComboBox ItemsSource="{Binding MarkingSubcategoryOptions}"
+                          SelectedItem="{Binding EditMarkingSubcategoryOption}"
+                          IsVisible="{Binding HasMarkingSubcategories}"
+                          HorizontalAlignment="Stretch">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CategoryOptionVm">
+                      <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
                 <TextBlock Text="Срок годности" Classes="page-subtitle" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <NumericUpDown Minimum="1" Maximum="3650" Increment="1" FormatString="0"
@@ -161,6 +210,13 @@
                     </ComboBox.ItemTemplate>
                   </ComboBox>
                 </StackPanel>
+                <TextBlock Text="Температурный режим" Classes="page-subtitle" />
+                <ComboBox ItemsSource="{Binding TemperaturePresets}"
+                          SelectedItem="{Binding EditTemperatureRegime}"
+                          HorizontalAlignment="Stretch"
+                          PlaceholderText="Выберите пресет" />
+                <TextBox Watermark="или введите свой режим"
+                         Text="{Binding EditTemperatureRegime}" />
                 <ItemsControl ItemsSource="{Binding CustomFields}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:CustomFieldEditVm">
@@ -173,7 +229,7 @@
                 </ItemsControl>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <Button Classes="accent" Command="{Binding SaveCommand}">
-                    <TextBlock Text="Сохранить" Foreground="White" />
+                    <TextBlock Text="Сохранить"  />
                   </Button>
                   <Button Content="Отмена" Command="{Binding CancelEditCommand}" />
                 </StackPanel>
@@ -201,8 +257,10 @@
                         RowBackground="Transparent">
                 <DataGrid.Columns>
                   <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" MinWidth="160" />
-                  <DataGridTextColumn Header="Артикул" Binding="{Binding Sku}" Width="140" />
-                  <DataGridTextColumn Header="Срок" Binding="{Binding ShelfLifeDisplay}" Width="100" />
+                  <DataGridTextColumn Header="Категория" Binding="{Binding CategoryName}" Width="120" />
+                  <DataGridTextColumn Header="Артикул" Binding="{Binding Sku}" Width="120" />
+                  <DataGridTextColumn Header="Срок" Binding="{Binding ShelfLifeDisplay}" Width="90" />
+                  <DataGridTextColumn Header="t°" Binding="{Binding TemperatureRegime}" Width="100" />
                 </DataGrid.Columns>
               </DataGrid>
             </Border>
@@ -247,7 +305,7 @@
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button Classes="accent" Command="{Binding SaveAddonCommand}">
-                  <TextBlock Text="Сохранить" Foreground="White" />
+                  <TextBlock Text="Сохранить"  />
                 </Button>
                 <Button Content="Отмена" Command="{Binding CancelAddonEditCommand}" />
               </StackPanel>

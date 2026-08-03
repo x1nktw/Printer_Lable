@@ -3,10 +3,12 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.ObjectModel;
 using Avalonia.Media;
+using Avalonia.Threading;
 using LabelPrint.Domain.Enums;
 using LabelPrint.Application.Abstractions;
 using LabelPrint.Application.Abstractions.Services;
 using LabelPrint.Application.DTOs;
+using LabelPrint.Plugins.Abstractions.Printing;
 using LabelPrint.UI.Services;
 
 namespace LabelPrint.UI.ViewModels;
@@ -45,22 +47,15 @@ public partial class MainViewModel : ViewModelBase
     }
 
     public ObservableCollection<NavItem> NavItems { get; }
-    public ObservableCollection<UserListItemDto> Users { get; } = new();
 
     [ObservableProperty] private PageViewModelBase _currentPage;
     [ObservableProperty] private NavItem? _selectedNavItem;
     [ObservableProperty] private bool _isDarkTheme = true;
     [ObservableProperty] private bool _isSidebarCollapsed;
-    [ObservableProperty] private bool _isSignedIn;
-    [ObservableProperty] private string _currentUserLabel = "Гость";
-    [ObservableProperty] private UserListItemDto? _selectedLoginUser;
-    [ObservableProperty] private string? _loginPin;
-    [ObservableProperty] private string? _loginError;
 
     public double SidebarWidth => IsSidebarCollapsed ? 60 : 260;
     public double SidebarExpandedOpacity => IsSidebarCollapsed ? 0 : 1;
     public double SidebarCollapsedOpacity => IsSidebarCollapsed ? 1 : 0;
-    public double LoginOverlayOpacity => IsSignedIn ? 0 : 1;
     public string SidebarToggleTooltip => IsSidebarCollapsed ? "Развернуть меню" : "Свернуть меню";
     // Same icon either way — hamburger reads clearer than panel glyphs at 18px
     public Geometry SidebarToggleIcon => AppIcons.PanelLeft;
@@ -73,9 +68,6 @@ public partial class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(SidebarToggleIcon));
         OnPropertyChanged(nameof(SidebarToggleTooltip));
     }
-
-    partial void OnIsSignedInChanged(bool value) =>
-        OnPropertyChanged(nameof(LoginOverlayOpacity));
 
     [RelayCommand]
     private void ToggleSidebar() => IsSidebarCollapsed = !IsSidebarCollapsed;
@@ -90,102 +82,65 @@ public partial class MainViewModel : ViewModelBase
         _ = NavigateToAsync(value.Key);
     }
 
-    [RelayCommand]
-    private async Task SignInAsync()
-    {
-        if (SelectedLoginUser is null)
-        {
-            LoginError = "Выберите пользователя.";
-            return;
-        }
-
-        using var scope = _scopeFactory.CreateScope();
-        var auth = scope.ServiceProvider.GetRequiredService<IAuthService>();
-        var result = await auth.SignInAsync(SelectedLoginUser.Id, LoginPin);
-        if (result.IsFailure)
-        {
-            LoginError = result.Error;
-            return;
-        }
-
-        LoginPin = null;
-        LoginError = null;
-        RefreshSessionUi();
-        await ResetToHomeAsync(loadAbout: true);
-    }
-
-    [RelayCommand]
-    private void SignOut()
-    {
-        using var scope = _scopeFactory.CreateScope();
-        var auth = scope.ServiceProvider.GetRequiredService<IAuthService>();
-        auth.SignOut();
-        ResetToHome(loadAbout: false);
-        RefreshSessionUi();
-    }
-
-    private void ResetToHome(bool loadAbout)
-    {
-        _currentNavKey = "home";
-        _suppressNav = true;
-        SelectedNavItem = NavItems[0];
-        _suppressNav = false;
-
-        var home = new HomeViewModel(_scopeFactory);
-        CurrentPage = home;
-        if (loadAbout)
-        {
-            _ = home.LoadAboutCommand.ExecuteAsync(null);
-        }
-    }
-
-    private async Task ResetToHomeAsync(bool loadAbout)
-    {
-        _currentNavKey = "home";
-        _suppressNav = true;
-        SelectedNavItem = NavItems[0];
-        _suppressNav = false;
-
-        var home = new HomeViewModel(_scopeFactory);
-        CurrentPage = home;
-        if (loadAbout)
-        {
-            await home.LoadAboutCommand.ExecuteAsync(null);
-        }
-    }
-
     private async Task InitializeAsync()
     {
         await InitializeThemeAsync();
-        await LoadUsersAsync();
+        await AutoSignInAsync();
+        await ResetToHomeAsync(loadStatus: true);
     }
 
-    private async Task LoadUsersAsync()
+    /// <summary>
+    /// Signs in as Administrator (or first active user) without showing a login UI.
+    /// Keeps IUserSession for settings roles and reprint attribution.
+    /// </summary>
+    private async Task AutoSignInAsync()
     {
         using var scope = _scopeFactory.CreateScope();
         var auth = scope.ServiceProvider.GetRequiredService<IAuthService>();
         var result = await auth.ListUsersAsync();
-        Users.Clear();
-        if (result.IsFailure)
+        if (result.IsFailure || result.Value.Count == 0)
         {
-            LoginError = result.Error;
             return;
         }
 
-        foreach (var user in result.Value)
+        var user = result.Value.FirstOrDefault(u => u.Role == UserRole.Administrator)
+                   ?? result.Value[0];
+
+        // Seeded users have no PIN; skip users that require one.
+        if (user.RequiresPin)
         {
-            Users.Add(user);
+            user = result.Value.FirstOrDefault(u => !u.RequiresPin) ?? user;
+            if (user.RequiresPin)
+            {
+                return;
+            }
         }
 
-        SelectedLoginUser = Users.FirstOrDefault();
+        await auth.SignInAsync(user.Id, pin: null);
     }
 
-    private void RefreshSessionUi()
+    private async Task ResetToHomeAsync(bool loadStatus)
     {
-        IsSignedIn = _session.IsSignedIn;
-        CurrentUserLabel = _session.IsSignedIn
-            ? $"{_session.CurrentUserName} ({_session.CurrentUserRole})"
-            : "Гость";
+        _currentNavKey = "home";
+        _suppressNav = true;
+        SelectedNavItem = NavItems[0];
+        _suppressNav = false;
+
+        var home = new HomeViewModel(_scopeFactory);
+        DisposeCurrentPage();
+        CurrentPage = home;
+        if (loadStatus)
+        {
+            await home.LoadStatusCommand.ExecuteAsync(null);
+        }
+    }
+
+    private void DisposeCurrentPage()
+    {
+        if (CurrentPage is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
     }
 
     private async Task InitializeThemeAsync()
@@ -205,9 +160,13 @@ public partial class MainViewModel : ViewModelBase
 
     private async Task NavigateToAsync(string key)
     {
-        if (!IsSignedIn)
+        if (!_session.IsSignedIn)
         {
-            return;
+            await AutoSignInAsync();
+            if (!_session.IsSignedIn)
+            {
+                return;
+            }
         }
 
         if (CurrentPage is TemplateEditorViewModel editor)
@@ -223,13 +182,15 @@ public partial class MainViewModel : ViewModelBase
 
         _currentNavKey = key;
 
+        DisposeCurrentPage();
+
         switch (key)
         {
             case "home":
             {
                 var home = new HomeViewModel(_scopeFactory);
                 CurrentPage = home;
-                await home.LoadAboutCommand.ExecuteAsync(null);
+                await home.LoadStatusCommand.ExecuteAsync(null);
                 break;
             }
             case "catalog":
@@ -289,9 +250,11 @@ public partial class MainViewModel : ViewModelBase
                 _suppressNav = true;
                 SelectedNavItem = NavItems.First(n => n.Key == "settings");
                 _suppressNav = false;
+                DisposeCurrentPage();
                 CurrentPage = await OpenSettingsAsync(showTemplates: true);
             });
 
+        DisposeCurrentPage();
         CurrentPage = editor;
         await editor.LoadCommand.ExecuteAsync(null);
         _currentNavKey = "settings";
@@ -300,9 +263,38 @@ public partial class MainViewModel : ViewModelBase
 
 public sealed record NavItem(string Key, string Title, Geometry Icon);
 
-public partial class HomeViewModel : PageViewModelBase
+public enum SystemStatusLevel
+{
+    Ok,
+    Warning,
+    Error
+}
+
+public sealed class SystemStatusItem
+{
+    public SystemStatusLevel Level { get; init; }
+
+    public string Icon { get; init; } = "✔";
+
+    public string Title { get; init; } = string.Empty;
+
+    public string? Detail { get; init; }
+
+    public bool HasDetail => !string.IsNullOrWhiteSpace(Detail);
+
+    public IBrush IconBrush => Level switch
+    {
+        SystemStatusLevel.Ok => new SolidColorBrush(Color.Parse("#34C759")),
+        SystemStatusLevel.Warning => new SolidColorBrush(Color.Parse("#FF9F0A")),
+        _ => new SolidColorBrush(Color.Parse("#FF453A"))
+    };
+}
+
+public partial class HomeViewModel : PageViewModelBase, IDisposable
 {
     private readonly IServiceScopeFactory? _scopeFactory;
+    private readonly CancellationTokenSource _refreshCts = new();
+    private int _refreshRunning;
 
     public HomeViewModel(IServiceScopeFactory? scopeFactory = null)
     {
@@ -314,30 +306,329 @@ public partial class HomeViewModel : PageViewModelBase
         "Приложение для каталога товаров, приёма заказов FrontPad и печати этикеток на термопринтерах. " +
         "Управляйте шаблонами, маркировкой сырья, очередью печати и историей из одного окна.";
 
+    public ObservableCollection<SystemStatusItem> StatusItems { get; } = new();
+
     [ObservableProperty] private string _versionLabel = "LabelPrint Pro";
-    [ObservableProperty] private string _updateMessage = "Проверка обновлений…";
+
+    public void Dispose()
+    {
+        _refreshCts.Cancel();
+        _refreshCts.Dispose();
+    }
 
     [RelayCommand]
-    private async Task LoadAboutAsync()
+    private async Task LoadStatusAsync()
     {
+        await RefreshStatusCoreAsync();
+        StartAutoRefresh();
+    }
+
+    private void StartAutoRefresh()
+    {
+        if (Interlocked.Exchange(ref _refreshRunning, 1) == 1)
+        {
+            return;
+        }
+
+        _ = AutoRefreshLoopAsync();
+    }
+
+    private async Task AutoRefreshLoopAsync()
+    {
+        try
+        {
+            while (!_refreshCts.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(5), _refreshCts.Token);
+                await RefreshStatusCoreAsync();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // page left
+        }
+    }
+
+    private async Task RefreshStatusCoreAsync()
+    {
+        var next = new List<SystemStatusItem>();
+
         if (_scopeFactory is null)
         {
-            UpdateMessage = "Updates not configured.";
+            next.Add(new SystemStatusItem
+            {
+                Level = SystemStatusLevel.Warning,
+                Icon = "⚠",
+                Title = "Статус недоступен"
+            });
+            ReplaceStatusItems(next);
             return;
         }
 
         using var scope = _scopeFactory.CreateScope();
-        var updates = scope.ServiceProvider.GetRequiredService<IUpdateChecker>();
-        var result = await updates.CheckAsync();
-        if (result.IsFailure)
+        var sp = scope.ServiceProvider;
+
+        await LoadVersionAsync(sp);
+        AddBridgeAndWebhookStatus(sp, next);
+        AddFrontPadStatus(sp, next);
+        await AddPrinterStatusAsync(sp, next);
+        await AddQueueStatusAsync(sp, next);
+        await AddLastPrintStatusAsync(sp, next);
+        ReplaceStatusItems(next);
+    }
+
+    private void ReplaceStatusItems(IReadOnlyList<SystemStatusItem> next)
+    {
+        void Apply()
         {
-            UpdateMessage = result.Error ?? "Не удалось проверить обновления.";
+            StatusItems.Clear();
+            foreach (var item in next)
+            {
+                StatusItems.Add(item);
+            }
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            Apply();
+        }
+        else
+        {
+            Dispatcher.UIThread.Post(Apply);
+        }
+    }
+
+    private async Task LoadVersionAsync(IServiceProvider sp)
+    {
+        var updates = sp.GetRequiredService<IUpdateChecker>();
+        var result = await updates.CheckAsync();
+        if (result.IsSuccess)
+        {
+            VersionLabel = $"LabelPrint Pro v{result.Value.CurrentVersion}";
+        }
+    }
+
+    private static void AddBridgeAndWebhookStatus(IServiceProvider sp, List<SystemStatusItem> items)
+    {
+        var webhook = sp.GetService<IOrderWebhookHost>();
+        if (webhook is null || !webhook.IsListening)
+        {
+            items.Add(new SystemStatusItem
+            {
+                Level = SystemStatusLevel.Error,
+                Icon = "❌",
+                Title = "Webhook недоступен",
+                Detail = "Локальный слушатель не запущен"
+            });
+            items.Add(new SystemStatusItem
+            {
+                Level = SystemStatusLevel.Error,
+                Icon = "❌",
+                Title = "Bridge отключен"
+            });
             return;
         }
 
-        VersionLabel = $"LabelPrint Pro v{result.Value.CurrentVersion}";
-        UpdateMessage = result.Value.Message;
+        var feed = webhook.GetFeedStatus();
+        if (!feed.IsBridgeOnline)
+        {
+            items.Add(new SystemStatusItem
+            {
+                Level = SystemStatusLevel.Error,
+                Icon = "❌",
+                Title = "Bridge отключен",
+                Detail = "Откройте popup расширения (Обновить) — нужен v1.3.4+"
+            });
+            return;
+        }
+
+        if (feed.BridgeEnabled == false)
+        {
+            items.Add(new SystemStatusItem
+            {
+                Level = SystemStatusLevel.Warning,
+                Icon = "⚠",
+                Title = "Bridge на паузе",
+                Detail = "Выключен в расширении"
+            });
+            return;
+        }
+
+        items.Add(new SystemStatusItem
+        {
+            Level = SystemStatusLevel.Ok,
+            Icon = "✔",
+            Title = "Bridge подключен"
+        });
     }
+
+    private static void AddFrontPadStatus(IServiceProvider sp, List<SystemStatusItem> items)
+    {
+        var webhook = sp.GetService<IOrderWebhookHost>();
+        var feed = webhook?.GetFeedStatus();
+
+        if (feed is null || !feed.IsListening || !feed.IsBridgeOnline)
+        {
+            items.Add(new SystemStatusItem
+            {
+                Level = SystemStatusLevel.Error,
+                Icon = "❌",
+                Title = "FrontPad Offline",
+                Detail = "Нет связи через Bridge"
+            });
+            return;
+        }
+
+        if (feed.BridgeEnabled == false)
+        {
+            items.Add(new SystemStatusItem
+            {
+                Level = SystemStatusLevel.Warning,
+                Icon = "⚠",
+                Title = "FrontPad Offline",
+                Detail = "Bridge на паузе"
+            });
+            return;
+        }
+
+        if (feed.FrontPadHookActive)
+        {
+            items.Add(new SystemStatusItem
+            {
+                Level = SystemStatusLevel.Ok,
+                Icon = "✔",
+                Title = "FrontPad Online"
+            });
+            return;
+        }
+
+        items.Add(new SystemStatusItem
+        {
+            Level = SystemStatusLevel.Error,
+            Icon = "❌",
+            Title = "FrontPad Offline",
+            Detail = "Нет открытой вкладки FrontPad"
+        });
+    }
+
+    private static async Task AddPrinterStatusAsync(IServiceProvider sp, List<SystemStatusItem> items)
+    {
+        var printers = sp.GetRequiredService<IPrinterService>();
+        var list = await printers.ListAsync(includeInactive: false);
+        if (list.IsFailure || list.Value.Count == 0)
+        {
+            items.Add(new SystemStatusItem
+            {
+                Level = SystemStatusLevel.Warning,
+                Icon = "⚠",
+                Title = "Нет принтера"
+            });
+            return;
+        }
+
+        var printer = list.Value.FirstOrDefault(p => p.IsDefault) ?? list.Value[0];
+        var gateway = sp.GetService<IPrinterGateway>();
+        if (gateway is not null)
+        {
+            try
+            {
+                var device = await gateway.GetStatusAsync(printer.Id);
+                if (!device.IsOnline)
+                {
+                    items.Add(new SystemStatusItem
+                    {
+                        Level = SystemStatusLevel.Error,
+                        Icon = "❌",
+                        Title = "Принтер недоступен",
+                        Detail = printer.Name
+                    });
+                    return;
+                }
+
+                if (!device.HasPaper)
+                {
+                    items.Add(new SystemStatusItem
+                    {
+                        Level = SystemStatusLevel.Warning,
+                        Icon = "⚠",
+                        Title = "Принтер",
+                        Detail = $"{printer.Name} — нет бумаги"
+                    });
+                    return;
+                }
+            }
+            catch
+            {
+                items.Add(new SystemStatusItem
+                {
+                    Level = SystemStatusLevel.Warning,
+                    Icon = "⚠",
+                    Title = "Принтер",
+                    Detail = printer.Name
+                });
+                return;
+            }
+        }
+
+        items.Add(new SystemStatusItem
+        {
+            Level = SystemStatusLevel.Ok,
+            Icon = "✔",
+            Title = "Принтер",
+            Detail = printer.Name
+        });
+    }
+
+    private static async Task AddQueueStatusAsync(IServiceProvider sp, List<SystemStatusItem> items)
+    {
+        var queue = sp.GetRequiredService<IPrintQueueService>();
+        var result = await queue.ListAsync();
+        var count = result.IsSuccess ? result.Value.Count : 0;
+        var hasFailed = result.IsSuccess && result.Value.Any(j => j.Status == PrintJobStatus.Failed);
+
+        items.Add(new SystemStatusItem
+        {
+            Level = hasFailed ? SystemStatusLevel.Warning : SystemStatusLevel.Ok,
+            Icon = hasFailed ? "⚠" : "✔",
+            Title = "Очередь",
+            Detail = FormatQueueCount(count)
+        });
+    }
+
+    private static async Task AddLastPrintStatusAsync(IServiceProvider sp, List<SystemStatusItem> items)
+    {
+        var history = sp.GetRequiredService<IPrintHistoryService>();
+        var result = await history.GetPageAsync(cursor: null, pageSize: 1);
+        if (result.IsFailure || result.Value.Items.Count == 0)
+        {
+            items.Add(new SystemStatusItem
+            {
+                Level = SystemStatusLevel.Warning,
+                Icon = "⚠",
+                Title = "Последняя печать",
+                Detail = "Нет данных"
+            });
+            return;
+        }
+
+        var last = result.Value.Items[0];
+        items.Add(new SystemStatusItem
+        {
+            Level = SystemStatusLevel.Ok,
+            Icon = "✔",
+            Title = "Последняя печать",
+            Detail = last.PrintedAt.ToLocalTime().ToString("HH:mm")
+        });
+    }
+
+    private static string FormatQueueCount(int count) =>
+        count switch
+        {
+            0 => "0 заданий",
+            1 => "1 задание",
+            >= 2 and <= 4 => $"{count} задания",
+            _ => $"{count} заданий"
+        };
 }
 
 public partial class PlaceholderViewModel : PageViewModelBase

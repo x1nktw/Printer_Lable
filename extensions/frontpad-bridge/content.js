@@ -4,12 +4,50 @@
 (function () {
   "use strict";
 
-  function relay(payload) {
+  const KEEP_ALIVE_MS = 20000;
+  const isTopFrame = window === window.top;
+  let keepAliveTimer = null;
+
+  function relay(payload, expectResponse) {
     try {
-      chrome.runtime.sendMessage(payload).catch(() => {});
+      if (expectResponse) {
+        chrome.runtime.sendMessage(payload, () => {
+          void chrome.runtime.lastError;
+        });
+        return;
+      }
+
+      // Fire-and-forget: never call .catch on a non-Promise return value.
+      chrome.runtime.sendMessage(payload, () => {
+        void chrome.runtime.lastError;
+      });
     } catch {
-      // extension reloaded
+      // Extension context invalidated (reload).
     }
+  }
+
+  function notifyHookAlive() {
+    if (!isTopFrame) return;
+    relay({ type: "frontpad-hook-ready", href: location.href });
+  }
+
+  function notifyHookGone() {
+    if (!isTopFrame) return;
+    relay({ type: "frontpad-hook-gone", href: location.href });
+  }
+
+  function startKeepAlive() {
+    if (!isTopFrame || keepAliveTimer) return;
+    keepAliveTimer = setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      notifyHookAlive();
+    }, KEEP_ALIVE_MS);
+  }
+
+  function stopKeepAlive() {
+    if (!keepAliveTimer) return;
+    clearInterval(keepAliveTimer);
+    keepAliveTimer = null;
   }
 
   window.addEventListener("message", (event) => {
@@ -18,7 +56,8 @@
     if (!data || data.source !== "labelprint-frontpad-bridge") return;
 
     if (data.type === "hook-ready") {
-      relay({ type: "frontpad-hook-ready", href: data.href });
+      notifyHookAlive();
+      startKeepAlive();
       return;
     }
 
@@ -43,6 +82,18 @@
     }
   });
 
-  // Ping so popup can show isolated script is loaded even before MAIN posts
-  relay({ type: "frontpad-content-loaded", href: location.href });
+  if (isTopFrame) {
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") return;
+      notifyHookAlive();
+    });
+
+    window.addEventListener("pagehide", () => {
+      stopKeepAlive();
+      notifyHookGone();
+    });
+
+    relay({ type: "frontpad-content-loaded", href: location.href });
+    startKeepAlive();
+  }
 })();

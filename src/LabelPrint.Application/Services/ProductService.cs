@@ -153,7 +153,9 @@ public sealed class ProductService : IProductService
         int skip,
         int take,
         CancellationToken cancellationToken = default,
-        Guid? excludeCategoryId = null)
+        Guid? excludeCategoryId = null,
+        IReadOnlyCollection<Guid>? categoryIds = null,
+        IReadOnlyCollection<Guid>? excludeCategoryIds = null)
     {
         if (take <= 0 || take > 500)
         {
@@ -166,7 +168,15 @@ public sealed class ProductService : IProductService
         }
 
         var (items, total) = await _unitOfWork.Products.SearchAsync(
-            search, categoryId, includeArchived, skip, take, cancellationToken, excludeCategoryId);
+            search,
+            categoryId,
+            includeArchived,
+            skip,
+            take,
+            cancellationToken,
+            excludeCategoryId,
+            categoryIds,
+            excludeCategoryIds);
 
         var dtos = items.Select(p => new ProductListItemDto
         {
@@ -179,6 +189,8 @@ public sealed class ProductService : IProductService
             ShelfLifeDays = p.ShelfLifeDays,
             ShelfLifeUnit = p.ShelfLifeUnit,
             ShelfLifeDisplay = FormatShelfLife(p.ShelfLifeDays, p.ShelfLifeUnit),
+            TemperatureRegime = p.TemperatureRegime,
+            CategoryId = p.CategoryId,
             IsArchived = p.IsArchived
         }).ToList();
 
@@ -252,6 +264,9 @@ public sealed class ProductService : IProductService
         product.ExpireDate = dto.ExpireDate;
         product.ShelfLifeDays = dto.ShelfLifeDays;
         product.ShelfLifeUnit = dto.ShelfLifeUnit;
+        product.TemperatureRegime = string.IsNullOrWhiteSpace(dto.TemperatureRegime)
+            ? null
+            : dto.TemperatureRegime.Trim();
         product.CategoryId = dto.CategoryId;
         product.DefaultTemplateId = dto.DefaultTemplateId;
         product.OrderItemTemplateId = dto.OrderItemTemplateId;
@@ -270,6 +285,7 @@ public sealed class ProductService : IProductService
         ExpireDate = product.ExpireDate,
         ShelfLifeDays = product.ShelfLifeDays,
         ShelfLifeUnit = product.ShelfLifeUnit,
+        TemperatureRegime = product.TemperatureRegime,
         CategoryId = product.CategoryId,
         DefaultTemplateId = product.DefaultTemplateId,
         OrderItemTemplateId = product.OrderItemTemplateId,

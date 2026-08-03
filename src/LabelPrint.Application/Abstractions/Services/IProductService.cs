@@ -28,5 +28,7 @@ public interface IProductService
         int skip,
         int take,
         CancellationToken cancellationToken = default,
-        Guid? excludeCategoryId = null);
+        Guid? excludeCategoryId = null,
+        IReadOnlyCollection<Guid>? categoryIds = null,
+        IReadOnlyCollection<Guid>? excludeCategoryIds = null);
 }

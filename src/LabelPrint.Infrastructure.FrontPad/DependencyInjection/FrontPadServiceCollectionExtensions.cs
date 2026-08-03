@@ -47,6 +47,12 @@ public sealed class OrderWebhookHostedService : IOrderWebhookHost
         _logger = logger;
     }
 
+    /// <inheritdoc />
+    public bool IsListening => _listener.IsListening;
+
+    /// <inheritdoc />
+    public BridgeFeedStatus GetFeedStatus() => _listener.GetFeedStatus();
+
     /// <summary>Starts webhook listener if configured.</summary>
     public void Start()
     {

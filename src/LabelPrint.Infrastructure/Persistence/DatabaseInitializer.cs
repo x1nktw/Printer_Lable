@@ -1,3 +1,4 @@
+using LabelPrint.Application.Marking;
 using LabelPrint.Domain.Entities;
 using LabelPrint.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -206,7 +207,7 @@ public sealed class DatabaseInitializer
             ("Позиция заказа 58×40", 58, 40,
                 """{"schemaVersion":1,"name":"Позиция заказа","canvas":{"widthMm":58,"heightMm":40,"dpi":203},"elements":[{"id":"el1","type":0,"bounds":{"x":2,"y":2,"width":54,"height":7},"bindingMode":1,"valueBinding":"OrderNumber","font":{"family":"Arial","sizePt":10}},{"id":"el2","type":0,"bounds":{"x":2,"y":11,"width":54,"height":14},"bindingMode":1,"valueBinding":"PositionName","font":{"family":"Arial","sizePt":14,"bold":true}},{"id":"el3","type":0,"bounds":{"x":2,"y":28,"width":54,"height":8},"content":"{{PositionIndex}}/{{PositionTotal}}","bindingMode":0,"font":{"family":"Arial","sizePt":12}}]}"""),
             ("Сырьё 58×40", 58, 40,
-                """{"schemaVersion":1,"name":"Сырьё 58x40","canvas":{"widthMm":58,"heightMm":40,"dpi":203},"elements":[{"id":"el1","type":0,"bounds":{"x":2,"y":2,"width":54,"height":14},"bindingMode":1,"valueBinding":"ProductName","font":{"family":"Arial","sizePt":16,"bold":true}},{"id":"el2","type":0,"bounds":{"x":2,"y":18,"width":28,"height":8},"bindingMode":1,"valueBinding":"Date","font":{"family":"Arial","sizePt":10}},{"id":"el3","type":0,"bounds":{"x":30,"y":18,"width":26,"height":8},"bindingMode":1,"valueBinding":"Time","font":{"family":"Arial","sizePt":10,"bold":true}},{"id":"el4","type":0,"bounds":{"x":2,"y":28,"width":54,"height":9},"bindingMode":1,"valueBinding":"ExpireDate","font":{"family":"Arial","sizePt":11,"bold":true}}]}"""),
+                """{"schemaVersion":1,"name":"Сырьё 58x40","canvas":{"widthMm":58,"heightMm":40,"dpi":203},"elements":[{"id":"el1","type":0,"bounds":{"x":2,"y":1,"width":54,"height":12},"bindingMode":1,"valueBinding":"ProductName","font":{"family":"Arial","sizePt":14,"bold":true}},{"id":"el2","type":0,"bounds":{"x":2,"y":14,"width":28,"height":7},"bindingMode":1,"valueBinding":"Date","font":{"family":"Arial","sizePt":9}},{"id":"el3","type":0,"bounds":{"x":30,"y":14,"width":26,"height":7},"bindingMode":1,"valueBinding":"Time","font":{"family":"Arial","sizePt":9,"bold":true}},{"id":"el4","type":0,"bounds":{"x":2,"y":22,"width":54,"height":7},"bindingMode":1,"valueBinding":"TemperatureRegime","font":{"family":"Arial","sizePt":9}},{"id":"el5","type":0,"bounds":{"x":2,"y":30,"width":54,"height":8},"bindingMode":1,"valueBinding":"ExpireDate","font":{"family":"Arial","sizePt":11,"bold":true}}]}"""),
             ("Штрихкод 58×40", 58, 40,
                 """{"schemaVersion":1,"name":"Штрихкод 58x40","canvas":{"widthMm":58,"heightMm":40,"dpi":203},"elements":[{"id":"el1","type":0,"bounds":{"x":2,"y":2,"width":54,"height":7},"bindingMode":1,"valueBinding":"ProductName","font":{"family":"Arial","sizePt":9}},{"id":"el2","type":2,"bounds":{"x":3,"y":10,"width":52,"height":20},"symbology":0,"valueBinding":"Barcode"},{"id":"el3","type":0,"bounds":{"x":2,"y":31,"width":54,"height":6},"bindingMode":1,"valueBinding":"Sku","font":{"family":"Arial","sizePt":9}}]}"""),
             ("Кухня 58×40", 58, 40,
@@ -269,46 +270,105 @@ public sealed class DatabaseInitializer
 
     private async Task EnsureRawMaterialsSeedAsync(CancellationToken cancellationToken)
     {
-        var category = await _dbContext.Categories
-            .FirstOrDefaultAsync(c => c.Name == "Сырьё" && !c.IsArchived, cancellationToken);
-        if (category is null)
+        var rawRoot = await EnsureMarkingCategoryAsync(MarkingCategories.Raw, parentId: null, sortOrder: 0, cancellationToken);
+        var prepRoot = await EnsureMarkingCategoryAsync(MarkingCategories.Prep, parentId: null, sortOrder: 1, cancellationToken);
+        var semiRoot = await EnsureMarkingCategoryAsync(MarkingCategories.SemiFinished, parentId: null, sortOrder: 2, cancellationToken);
+        var sauceRoot = await EnsureMarkingCategoryAsync(MarkingCategories.Sauces, parentId: null, sortOrder: 3, cancellationToken);
+
+        var rootByName = new Dictionary<string, Category>(StringComparer.OrdinalIgnoreCase)
         {
-            category = new Category { Name = "Сырьё" };
-            _dbContext.Categories.Add(category);
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            [MarkingCategories.Raw] = rawRoot,
+            [MarkingCategories.Prep] = prepRoot,
+            [MarkingCategories.SemiFinished] = semiRoot,
+            [MarkingCategories.Sauces] = sauceRoot
+        };
+
+        var subIds = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (rootName, children) in MarkingCategories.DefaultSubcategories)
+        {
+            if (!rootByName.TryGetValue(rootName, out var root))
+            {
+                continue;
+            }
+
+            for (var i = 0; i < children.Length; i++)
+            {
+                var name = children[i];
+                var sub = await EnsureMarkingCategoryAsync(name, root.Id, sortOrder: i, cancellationToken);
+                // Prefer Сырьё children for sample product mapping keys.
+                if (rootName.Equals(MarkingCategories.Raw, StringComparison.OrdinalIgnoreCase)
+                    || !subIds.ContainsKey(name))
+                {
+                    subIds[name] = sub.Id;
+                }
+            }
         }
 
         var rawTemplate = await _dbContext.LabelTemplates
             .FirstOrDefaultAsync(t => t.IsSystemPreset && t.Name == "Сырьё 58×40" && !t.IsArchived, cancellationToken);
 
-        var samples = new (string Name, string Sku)[]
+        var samples = new (string Name, string Sku, string Subcategory, string? Temperature)[]
         {
-            ("Мясо", "RAW-MEAT"),
-            ("Томаты", "RAW-TOMATO"),
-            ("Лук", "RAW-ONION"),
-            ("Сыр", "RAW-CHEESE"),
-            ("Огурцы", "RAW-CUCUMBER"),
-            ("Курица", "RAW-CHICKEN"),
-            ("Рыба", "RAW-FISH")
+            ("Мясо", "RAW-MEAT", "Мясо", "+2…+6 °C"),
+            ("Курица", "RAW-CHICKEN", "Мясо", "+2…+6 °C"),
+            ("Рыба", "RAW-FISH", "Мясо", "0…+4 °C"),
+            ("Томаты", "RAW-TOMATO", "Овощи", "+2…+6 °C"),
+            ("Лук", "RAW-ONION", "Овощи", "комнатная"),
+            ("Огурцы", "RAW-CUCUMBER", "Овощи", "+2…+6 °C"),
+            ("Сыр", "RAW-CHEESE", "Сыр", "+2…+6 °C")
         };
 
-        foreach (var (name, sku) in samples)
+        foreach (var (name, sku, subcategory, temperature) in samples)
         {
             if (await _dbContext.Products.AnyAsync(p => p.Sku == sku, cancellationToken))
             {
                 continue;
             }
 
+            var categoryId = subIds.TryGetValue(subcategory, out var id) ? id : rawRoot.Id;
             _dbContext.Products.Add(new Product
             {
                 Name = name,
                 Sku = sku,
                 PriceAmount = 0,
                 PriceCurrency = "RUB",
-                CategoryId = category.Id,
+                CategoryId = categoryId,
+                TemperatureRegime = temperature,
                 DefaultTemplateId = rawTemplate?.Id
             });
         }
+    }
+
+    private async Task<Category> EnsureMarkingCategoryAsync(
+        string name,
+        Guid? parentId,
+        int sortOrder,
+        CancellationToken cancellationToken)
+    {
+        var existing = await _dbContext.Categories
+            .FirstOrDefaultAsync(
+                c => c.Name == name && c.ParentId == parentId && !c.IsArchived,
+                cancellationToken);
+        if (existing is not null)
+        {
+            if (existing.SortOrder != sortOrder)
+            {
+                existing.SortOrder = sortOrder;
+                existing.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+
+            return existing;
+        }
+
+        var category = new Category
+        {
+            Name = name,
+            ParentId = parentId,
+            SortOrder = sortOrder
+        };
+        _dbContext.Categories.Add(category);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return category;
     }
 
     private static LabelTemplate CreatePreset(string name, double width, double height, string json) => new()

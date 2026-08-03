@@ -2,6 +2,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LabelPrint.Application.Abstractions.Services;
 using LabelPrint.Application.DTOs;
+using LabelPrint.Application.Marking;
+using LabelPrint.Domain.Entities;
 using LabelPrint.Domain.Enums;
 using LabelPrint.UI.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,26 +14,36 @@ namespace LabelPrint.UI.ViewModels;
 public partial class CatalogViewModel : PageViewModelBase
 {
     private const int PageSize = 100;
-    private const string RawCategoryName = "Сырьё";
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IUiDialogService _dialogs;
     private int _loadedCount;
     private int _totalCount;
-    private Guid? _rawCategoryId;
+    private IReadOnlyList<Category> _allCategories = Array.Empty<Category>();
+    private IReadOnlyList<Guid> _markingCategoryIds = Array.Empty<Guid>();
     private Guid? _editDefaultTemplateId;
     private Guid? _editOrderItemTemplateId;
     private DateOnly? _editExpireDate;
     private DateOnly? _editManufactureDate;
+    private bool _suppressMarkingCascade;
 
     public CatalogViewModel(IServiceScopeFactory scopeFactory, IUiDialogService dialogs)
     {
         _scopeFactory = scopeFactory;
         _dialogs = dialogs;
         Title = "Каталог";
+        foreach (var preset in MarkingCategories.TemperaturePresets)
+        {
+            TemperaturePresets.Add(preset);
+        }
     }
 
     public ObservableCollection<ProductListItemDto> Products { get; } = new();
     public ObservableCollection<CategoryOptionVm> CategoryOptions { get; } = new();
+    public ObservableCollection<CategoryOptionVm> MarkingRootOptions { get; } = new();
+    public ObservableCollection<CategoryOptionVm> MarkingSubcategoryOptions { get; } = new();
+    public ObservableCollection<CategoryOptionVm> FilterMarkingRootOptions { get; } = new();
+    public ObservableCollection<CategoryOptionVm> FilterMarkingSubcategoryOptions { get; } = new();
+    public ObservableCollection<string> TemperaturePresets { get; } = new();
     public ObservableCollection<CustomFieldEditVm> CustomFields { get; } = new();
     public ObservableCollection<CustomFieldDefinitionDto> FieldDefinitions { get; } = new();
     public ObservableCollection<AddonListItemDto> Addons { get; } = new();
@@ -50,8 +62,14 @@ public partial class CatalogViewModel : PageViewModelBase
     [ObservableProperty] private decimal? _editPrice;
     [ObservableProperty] private decimal? _editShelfLifeValue;
     [ObservableProperty] private ShelfLifeUnit _editShelfLifeUnit = ShelfLifeUnit.Days;
+    [ObservableProperty] private string? _editTemperatureRegime;
     [ObservableProperty] private Guid? _editCategoryId;
     [ObservableProperty] private CategoryOptionVm? _editCategoryOption;
+    [ObservableProperty] private CategoryOptionVm? _editMarkingRootOption;
+    [ObservableProperty] private CategoryOptionVm? _editMarkingSubcategoryOption;
+    [ObservableProperty] private CategoryOptionVm? _filterMarkingRootOption;
+    [ObservableProperty] private CategoryOptionVm? _filterMarkingSubcategoryOption;
+    [ObservableProperty] private string _newMarkingSubcategoryName = string.Empty;
     [ObservableProperty] private bool _isEditorOpen;
     [ObservableProperty] private Guid? _editingId;
     [ObservableProperty] private string _newFieldName = string.Empty;
@@ -69,6 +87,11 @@ public partial class CatalogViewModel : PageViewModelBase
     public bool IsRawSection => SelectedSectionIndex == 1;
     public bool IsAddonsSection => SelectedSectionIndex == 2;
     public bool IsProductCatalogSection => SelectedSectionIndex is 0 or 1;
+    public bool HasMarkingSubcategories => EditMarkingRootOption?.Id is not null;
+    public bool HasFilterMarkingSubcategories => FilterMarkingRootOption?.Id is not null;
+    public bool CanAddMarkingSubcategory =>
+        FilterMarkingRootOption?.Id is not null
+        || (IsEditorOpen && EditMarkingRootOption?.Id is not null);
 
     public IReadOnlyList<ShelfLifeUnitOptionVm> ShelfLifeUnitOptions { get; } =
     [
@@ -107,6 +130,55 @@ public partial class CatalogViewModel : PageViewModelBase
 
     partial void OnEditCategoryOptionChanged(CategoryOptionVm? value) => EditCategoryId = value?.Id;
 
+    partial void OnEditMarkingRootOptionChanged(CategoryOptionVm? value)
+    {
+        if (_suppressMarkingCascade)
+        {
+            return;
+        }
+
+        RebuildMarkingSubcategoryOptions(value?.Id, selectSubId: null);
+        EditCategoryId = ResolveMarkingCategoryId(EditMarkingRootOption, EditMarkingSubcategoryOption);
+        OnPropertyChanged(nameof(HasMarkingSubcategories));
+        OnPropertyChanged(nameof(CanAddMarkingSubcategory));
+    }
+
+    partial void OnEditMarkingSubcategoryOptionChanged(CategoryOptionVm? value)
+    {
+        if (_suppressMarkingCascade)
+        {
+            return;
+        }
+
+        EditCategoryId = ResolveMarkingCategoryId(EditMarkingRootOption, value);
+    }
+
+    partial void OnFilterMarkingRootOptionChanged(CategoryOptionVm? value)
+    {
+        if (_suppressMarkingCascade)
+        {
+            return;
+        }
+
+        RebuildFilterMarkingSubcategoryOptions(value?.Id);
+        OnPropertyChanged(nameof(HasFilterMarkingSubcategories));
+        OnPropertyChanged(nameof(CanAddMarkingSubcategory));
+        if (IsRawSection)
+        {
+            _ = ReloadProductsAsync();
+        }
+    }
+
+    partial void OnFilterMarkingSubcategoryOptionChanged(CategoryOptionVm? value)
+    {
+        if (_suppressMarkingCascade || !IsRawSection)
+        {
+            return;
+        }
+
+        _ = ReloadProductsAsync();
+    }
+
     [RelayCommand]
     private async Task LoadAsync() => await ReloadAllAsync();
 
@@ -134,12 +206,21 @@ public partial class CatalogViewModel : PageViewModelBase
         EditShelfLifeValue = null;
         EditShelfLifeUnit = ShelfLifeUnit.Days;
         OnPropertyChanged(nameof(EditShelfLifeUnitOption));
+        EditTemperatureRegime = null;
         _editExpireDate = null;
         _editManufactureDate = null;
         if (IsRawSection)
         {
-            EditCategoryId = _rawCategoryId;
-            EditCategoryOption = CategoryOptions.FirstOrDefault(c => c.Id == _rawCategoryId);
+            var root = FilterMarkingRootOption?.Id is not null
+                ? MarkingRootOptions.FirstOrDefault(c => c.Id == FilterMarkingRootOption.Id)
+                : MarkingRootOptions.FirstOrDefault(c =>
+                    c.Name.Equals(MarkingCategories.Raw, StringComparison.OrdinalIgnoreCase))
+                  ?? MarkingRootOptions.FirstOrDefault();
+            _suppressMarkingCascade = true;
+            EditMarkingRootOption = root;
+            RebuildMarkingSubcategoryOptions(root?.Id, FilterMarkingSubcategoryOption?.Id);
+            _suppressMarkingCascade = false;
+            EditCategoryId = ResolveMarkingCategoryId(EditMarkingRootOption, EditMarkingSubcategoryOption);
         }
         else
         {
@@ -179,10 +260,19 @@ public partial class CatalogViewModel : PageViewModelBase
         EditShelfLifeValue = dto.ShelfLifeDays;
         EditShelfLifeUnit = dto.ShelfLifeUnit;
         OnPropertyChanged(nameof(EditShelfLifeUnitOption));
+        EditTemperatureRegime = dto.TemperatureRegime;
         _editExpireDate = dto.ExpireDate;
         _editManufactureDate = dto.ManufactureDate;
         EditCategoryId = dto.CategoryId;
-        EditCategoryOption = CategoryOptions.FirstOrDefault(c => c.Id == EditCategoryId);
+        if (IsRawSection)
+        {
+            ApplyMarkingEditorSelection(dto.CategoryId);
+        }
+        else
+        {
+            EditCategoryOption = CategoryOptions.FirstOrDefault(c => c.Id == EditCategoryId);
+        }
+
         _editDefaultTemplateId = dto.DefaultTemplateId;
         _editOrderItemTemplateId = dto.OrderItemTemplateId;
         await LoadCustomFieldEditorsAsync(dto.CustomFieldValues);
@@ -202,6 +292,21 @@ public partial class CatalogViewModel : PageViewModelBase
             EditSku = sku;
         }
 
+        Guid? categoryId;
+        if (IsRawSection)
+        {
+            categoryId = ResolveMarkingCategoryId(EditMarkingRootOption, EditMarkingSubcategoryOption);
+            if (categoryId is null)
+            {
+                StatusMessage = "Выберите категорию маркировки.";
+                return;
+            }
+        }
+        else
+        {
+            categoryId = EditCategoryId;
+        }
+
         var dto = new ProductUpsertDto
         {
             Name = EditName,
@@ -210,9 +315,10 @@ public partial class CatalogViewModel : PageViewModelBase
             PriceAmount = EditPrice ?? 0,
             ShelfLifeDays = EditShelfLifeValue is > 0 ? (int)EditShelfLifeValue.Value : null,
             ShelfLifeUnit = EditShelfLifeUnit,
+            TemperatureRegime = EditTemperatureRegime,
             ExpireDate = _editExpireDate,
             ManufactureDate = _editManufactureDate,
-            CategoryId = IsRawSection ? _rawCategoryId : null,
+            CategoryId = categoryId,
             DefaultTemplateId = _editDefaultTemplateId,
             OrderItemTemplateId = _editOrderItemTemplateId,
             CustomFieldValues = CustomFields.ToDictionary(f => f.DefinitionId, f => f.Value)
@@ -459,27 +565,106 @@ public partial class CatalogViewModel : PageViewModelBase
 
         if (IsRawSection)
         {
-            await EnsureRawCategorySelectedAsync();
+            await EnsureMarkingCategoriesAsync();
         }
 
         await ReloadProductsAsync();
     }
 
-    private async Task EnsureRawCategorySelectedAsync()
+    private async Task EnsureMarkingCategoriesAsync()
     {
         await LoadCategoriesAsync();
-        if (_rawCategoryId is not null)
+        if (_markingCategoryIds.Count > 0
+            && _allCategories.Any(c => c.ParentId is not null && MarkingCategories.IsMarkingCategory(c, _allCategories)))
         {
             return;
         }
 
         using var scope = _scopeFactory.CreateScope();
         var categories = scope.ServiceProvider.GetRequiredService<ICategoryService>();
-        var created = await categories.CreateAsync(RawCategoryName, parentId: null);
-        if (created.IsSuccess)
+        foreach (var rootName in MarkingCategories.Roots)
         {
-            await LoadCategoriesAsync();
+            if (MarkingCategories.FindByName(_allCategories, rootName) is null)
+            {
+                await categories.CreateAsync(rootName, parentId: null);
+            }
         }
+
+        await LoadCategoriesAsync();
+        foreach (var (rootName, children) in MarkingCategories.DefaultSubcategories)
+        {
+            var parentId = MarkingCategories.FindByName(_allCategories, rootName);
+            if (parentId is not Guid pid)
+            {
+                continue;
+            }
+
+            foreach (var sub in children)
+            {
+                if (MarkingCategories.FindByName(_allCategories, sub, pid) is null)
+                {
+                    await categories.CreateAsync(sub, pid);
+                }
+            }
+        }
+
+        await LoadCategoriesAsync();
+    }
+
+    [RelayCommand]
+    private async Task AddMarkingSubcategoryAsync()
+    {
+        var parentId = FilterMarkingRootOption?.Id
+                       ?? (IsEditorOpen ? EditMarkingRootOption?.Id : null);
+        var name = NewMarkingSubcategoryName?.Trim();
+        if (parentId is null)
+        {
+            StatusMessage = "Сначала выберите корневую категорию.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            StatusMessage = "Введите название подкатегории.";
+            return;
+        }
+
+        if (MarkingCategories.FindByName(_allCategories, name, parentId) is not null)
+        {
+            StatusMessage = $"Подкатегория «{name}» уже есть.";
+            return;
+        }
+
+        using var scope = _scopeFactory.CreateScope();
+        var categories = scope.ServiceProvider.GetRequiredService<ICategoryService>();
+        var created = await categories.CreateAsync(name, parentId);
+        if (created.IsFailure)
+        {
+            StatusMessage = created.Error;
+            return;
+        }
+
+        NewMarkingSubcategoryName = string.Empty;
+        StatusMessage = $"Добавлена подкатегория «{name}»";
+        var selectedRootId = parentId;
+        var selectedSubId = created.Value;
+        await LoadCategoriesAsync();
+
+        _suppressMarkingCascade = true;
+        FilterMarkingRootOption = FilterMarkingRootOptions.FirstOrDefault(c => c.Id == selectedRootId);
+        RebuildFilterMarkingSubcategoryOptions(selectedRootId);
+        FilterMarkingSubcategoryOption = FilterMarkingSubcategoryOptions.FirstOrDefault(c => c.Id == selectedSubId);
+        _suppressMarkingCascade = false;
+        OnPropertyChanged(nameof(HasFilterMarkingSubcategories));
+        OnPropertyChanged(nameof(CanAddMarkingSubcategory));
+
+        if (IsEditorOpen && EditMarkingRootOption?.Id == selectedRootId)
+        {
+            RebuildMarkingSubcategoryOptions(selectedRootId, selectedSubId);
+            EditCategoryId = selectedSubId;
+        }
+
+        await ReloadProductsAsync();
     }
 
     private async Task LoadAddonsAsync()
@@ -550,15 +735,31 @@ public partial class CatalogViewModel : PageViewModelBase
             IsBusy = true;
             using var scope = _scopeFactory.CreateScope();
             var products = scope.ServiceProvider.GetRequiredService<IProductService>();
-            Guid? categoryId = IsRawSection ? _rawCategoryId : null;
-            Guid? excludeCategoryId = IsProductsSection ? _rawCategoryId : null;
+
+            IReadOnlyCollection<Guid>? categoryIds = null;
+            IReadOnlyCollection<Guid>? excludeCategoryIds = null;
+            if (IsRawSection)
+            {
+                categoryIds = ResolveMarkingFilterIds();
+                if (categoryIds.Count == 0)
+                {
+                    StatusMessage = "Категории маркировки не найдены.";
+                    return;
+                }
+            }
+            else if (IsProductsSection)
+            {
+                excludeCategoryIds = _markingCategoryIds.Count > 0 ? _markingCategoryIds : null;
+            }
+
             var result = await products.SearchAsync(
                 SearchText,
-                categoryId,
+                categoryId: null,
                 includeArchived: false,
                 skip: append ? _loadedCount : 0,
                 take: PageSize,
-                excludeCategoryId: excludeCategoryId);
+                categoryIds: categoryIds,
+                excludeCategoryIds: excludeCategoryIds);
             if (result.IsFailure)
             {
                 StatusMessage = result.Error;
@@ -594,24 +795,139 @@ public partial class CatalogViewModel : PageViewModelBase
         var result = await categories.GetTreeAsync();
         CategoryOptions.Clear();
         CategoryOptions.Add(new CategoryOptionVm(null, "(без категории)"));
+        MarkingRootOptions.Clear();
+        FilterMarkingRootOptions.Clear();
+        FilterMarkingRootOptions.Add(new CategoryOptionVm(null, "Все категории"));
 
         if (result.IsFailure)
         {
             StatusMessage = result.Error;
+            _allCategories = Array.Empty<Category>();
+            _markingCategoryIds = Array.Empty<Guid>();
             return;
         }
 
-        foreach (var c in result.Value.OrderBy(c => c.Name))
+        _allCategories = result.Value;
+        _markingCategoryIds = MarkingCategories.GetAllMarkingCategoryIds(_allCategories);
+
+        foreach (var c in _allCategories.OrderBy(c => c.SortOrder).ThenBy(c => c.Name))
         {
-            if (c.Name.Equals(RawCategoryName, StringComparison.OrdinalIgnoreCase))
+            if (MarkingCategories.IsMarkingCategory(c, _allCategories))
             {
-                _rawCategoryId = c.Id;
-                // Сырьё / маркировка — отдельная вкладка, не в списке категорий товара.
+                if (c.ParentId is null && MarkingCategories.IsMarkingRootName(c.Name))
+                {
+                    var option = new CategoryOptionVm(c.Id, c.Name);
+                    MarkingRootOptions.Add(option);
+                    FilterMarkingRootOptions.Add(option);
+                }
+
                 continue;
             }
 
             CategoryOptions.Add(new CategoryOptionVm(c.Id, c.Name));
         }
+
+        _suppressMarkingCascade = true;
+        FilterMarkingRootOption ??= FilterMarkingRootOptions.FirstOrDefault();
+        RebuildFilterMarkingSubcategoryOptions(FilterMarkingRootOption?.Id);
+        _suppressMarkingCascade = false;
+    }
+
+    private void RebuildMarkingSubcategoryOptions(Guid? rootId, Guid? selectSubId)
+    {
+        MarkingSubcategoryOptions.Clear();
+        MarkingSubcategoryOptions.Add(new CategoryOptionVm(null, "(без подкатегории)"));
+        if (rootId is Guid rid)
+        {
+            foreach (var child in _allCategories
+                         .Where(c => c.ParentId == rid)
+                         .OrderBy(c => c.SortOrder)
+                         .ThenBy(c => c.Name))
+            {
+                MarkingSubcategoryOptions.Add(new CategoryOptionVm(child.Id, child.Name));
+            }
+        }
+
+        _suppressMarkingCascade = true;
+        EditMarkingSubcategoryOption = selectSubId is Guid sid
+            ? MarkingSubcategoryOptions.FirstOrDefault(c => c.Id == sid)
+            : MarkingSubcategoryOptions.FirstOrDefault();
+        _suppressMarkingCascade = false;
+        OnPropertyChanged(nameof(HasMarkingSubcategories));
+    }
+
+    private void RebuildFilterMarkingSubcategoryOptions(Guid? rootId)
+    {
+        FilterMarkingSubcategoryOptions.Clear();
+        FilterMarkingSubcategoryOptions.Add(new CategoryOptionVm(null, "Все подкатегории"));
+        if (rootId is Guid rid)
+        {
+            foreach (var child in _allCategories
+                         .Where(c => c.ParentId == rid)
+                         .OrderBy(c => c.SortOrder)
+                         .ThenBy(c => c.Name))
+            {
+                FilterMarkingSubcategoryOptions.Add(new CategoryOptionVm(child.Id, child.Name));
+            }
+        }
+
+        _suppressMarkingCascade = true;
+        FilterMarkingSubcategoryOption = FilterMarkingSubcategoryOptions.FirstOrDefault();
+        _suppressMarkingCascade = false;
+        OnPropertyChanged(nameof(HasFilterMarkingSubcategories));
+    }
+
+    private void ApplyMarkingEditorSelection(Guid? categoryId)
+    {
+        if (categoryId is null)
+        {
+            _suppressMarkingCascade = true;
+            EditMarkingRootOption = MarkingRootOptions.FirstOrDefault();
+            RebuildMarkingSubcategoryOptions(EditMarkingRootOption?.Id, null);
+            _suppressMarkingCascade = false;
+            return;
+        }
+
+        var category = _allCategories.FirstOrDefault(c => c.Id == categoryId);
+        if (category is null)
+        {
+            return;
+        }
+
+        Guid rootId;
+        Guid? subId = null;
+        if (category.ParentId is Guid parentId)
+        {
+            rootId = parentId;
+            subId = category.Id;
+        }
+        else
+        {
+            rootId = category.Id;
+        }
+
+        _suppressMarkingCascade = true;
+        EditMarkingRootOption = MarkingRootOptions.FirstOrDefault(c => c.Id == rootId);
+        RebuildMarkingSubcategoryOptions(rootId, subId);
+        _suppressMarkingCascade = false;
+    }
+
+    private static Guid? ResolveMarkingCategoryId(CategoryOptionVm? root, CategoryOptionVm? sub) =>
+        sub?.Id ?? root?.Id;
+
+    private IReadOnlyList<Guid> ResolveMarkingFilterIds()
+    {
+        if (FilterMarkingSubcategoryOption?.Id is Guid subId)
+        {
+            return MarkingCategories.GetSelfAndDescendantIds(_allCategories, [subId]);
+        }
+
+        if (FilterMarkingRootOption?.Id is Guid rootId)
+        {
+            return MarkingCategories.GetSelfAndDescendantIds(_allCategories, [rootId]);
+        }
+
+        return _markingCategoryIds;
     }
 
     private async Task LoadFieldDefinitionsAsync()

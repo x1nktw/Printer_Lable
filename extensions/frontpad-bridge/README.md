@@ -1,17 +1,26 @@
 # LabelPrint FrontPad Bridge (Chrome / Edge)
 
+**Версия: 1.3.4** (`manifest.json`)
+
 Расширение перехватывает сохранение заказа в веб-интерфейсе FrontPad (`order.php`)
-и отправляет состав позиций на локальный webhook **LabelPrint Pro**.
+и отправляет состав позиций на локальный webhook **LabelPrint Pro** (≥ 0.8.0).
+
+На GitHub Release отдельный архив: `frontpad-bridge-1.3.4.zip`  
+(в установщике/portable приложения то же расширение лежит в `extensions/frontpad-bridge/`).
 
 ## Установка / обновление
 
-1. Запустите LabelPrint Pro. В **Настройках** укажите webhook, например `http://127.0.0.1:8765/`, сохраните, **перезапустите** приложение (слушатель стартует при запуске).
-2. Chrome: `chrome://extensions` → режим разработчика → **Загрузить распакованное** (или «Обновить» после правок).
-3. Папка `extensions/frontpad-bridge`.
+1. Запустите LabelPrint Pro. В **Настройки → Общие** укажите webhook, например `http://127.0.0.1:8765/`, сохраните, **перезапустите** приложение (слушатель стартует при запуске).
+2. Chrome: `chrome://extensions` / Edge: `edge://extensions` → режим разработчика → **Загрузить распакованное** (или «Обновить» после правок).
+3. Папка:
+   - из репозитория: `extensions/frontpad-bridge`
+   - из установленного приложения: `<install>\extensions\frontpad-bridge`
 4. Откройте FrontPad **заново** (закрыть вкладку и открыть снова).
 5. Иконка расширения должна показать: «Хук на странице FrontPad активен».
 6. Кнопка **Тест webhook** — проверка LabelPrint без заказа.
 7. Сохраните заказ в FrontPad.
+
+Краткая памятка также в `INSTALL.txt` рядом с манифестом.
 
 ### Если «отправлено: 0»
 
@@ -25,7 +34,7 @@
 
 ## Как работает
 
-1. Content script внедряет хук в страницу (XHR + `fetch`).
+1. Content script внедряет хук в страницу (XHR + `fetch`), heartbeat сообщает LabelPrint о живом Bridge.
 2. При успешном ответе `order.php` (`result: success`) собираются:
    - **Request** → `positions` (состав)
    - **Response** → `order_id`, `order_n`, дата/время
@@ -56,3 +65,4 @@
 2. `F12` на странице FrontPad → Console: нет ли блокировок CSP (редко).
 3. Service worker на `chrome://extensions` → «Просмотр service worker» → логи.
 4. Папка inbox: `%LocalAppData%\LabelPrintPro\orders-inbox\` — должен появиться `webhook_*.json`.
+5. На главной LabelPrint — индикатор **Bridge** в блоке «Статус системы».

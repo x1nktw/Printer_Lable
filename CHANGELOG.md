@@ -7,6 +7,21 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-04
+
+### Added
+
+- Маркировка: корни (Сырьё, Заготовки, Полуфабрикаты, Соусы), подкатегории, поле **температурный режим**, переменная печати `TemperatureRegime`.
+- Главная: блок **Статус системы** (Bridge, FrontPad, принтер, очередь, последняя печать).
+- Publish: self-contained **single-file** win-x64 (`LabelPrint.UI.exe` + `config/` + `plugins/` + `extensions/frontpad-bridge/`).
+- Релиз: **Inno Setup** установщик + portable ZIP + отдельный zip Bridge; GitHub Actions по тегу `v*`.
+- CI/CD: GitHub Actions — сборка/тесты и релиз по тегу `v*`.
+
+### Changed
+
+- Акцентный цвет темы меняет **содержимое** кнопок и галочку чекбокса, а не заливку фона.
+- FrontPad Bridge → **v1.3.4** (heartbeat, надёжность hooks).
+
 ### Fixed
 
 - Выравнивание текста в редакторе шаблонов: кнопки «Выравн.» для текстового блока задают выравнивание **внутри** элемента (горизонталь/вертикаль); сохраняется в шаблоне и учитывается при печати. Для нескольких элементов / не-текста — выравнивание на холсте.
@@ -52,10 +67,11 @@
 - Рендер: белый текст на чёрном (`Invert`), перенос строк, скруглённые бейджи, `Dashed` линии, элементы `Image`, спец-режим `AddonsKitchen`.
 - Печать позиции заказа по умолчанию предпочитает шаблон «Кухня чек …».
 
-#### FrontPad Bridge (`extensions/frontpad-bridge` v1.2.1)
+#### FrontPad Bridge (`extensions/frontpad-bridge` **v1.3.4**)
 - Добавки (`positions.parent`, в т.ч. индекс `"0"`) **не** становятся отдельными позициями.
 - В inbox: `name` = блюдо, `addons` / `comment` = список добавок для блока на этикетке.
 - Исправлен falsy-баг JS: `parent === "0"` раньше терялся.
+- Heartbeat / надёжность hooks (статус Bridge на главной).
 
 #### Системные шаблоны (upsert при старте)
 - Ценник 58×40, Срок 58×30, Позиция заказа, Сырьё 58×40, Штрихкод 58×40, Кухня 58×40, **Кухня чек 40×58**.
@@ -81,6 +97,7 @@
 - Миграция `AddLabelDateTimeSettings`: `AppSettings.LabelDateTimeMode`, `AppSettings.ManualLabelDateTime`.
 - Миграция `AddPrinterRotate90`: `Printers.Rotate90`.
 - Миграция `AddPrinterPrintOffset`: `Printers.PrintOffsetXMm`, `PrintOffsetYMm`.
+- Миграция `AddProductTemperatureRegime`: `Products.TemperatureRegime`.
 
 ---
 
@@ -131,7 +148,8 @@
 
 - Проекты `LabelPrint.Shared`, верхнеуровневые `LabelPrint.Printing` / `LabelPrint.FrontPad` (перенесены под Infrastructure).
 
-[Unreleased]: https://github.com/local/LabelPrintPro/compare/v0.3.0...HEAD
-[0.3.0]: https://github.com/local/LabelPrintPro/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/local/LabelPrintPro/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/local/LabelPrintPro/releases/tag/v0.1.0
+[Unreleased]: https://github.com/x1nktw/Printer_Lable/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/x1nktw/Printer_Lable/releases/tag/v0.8.0
+[0.3.0]: https://github.com/x1nktw/Printer_Lable/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/x1nktw/Printer_Lable/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/x1nktw/Printer_Lable/releases/tag/v0.1.0

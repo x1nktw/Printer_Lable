@@ -27,6 +27,8 @@ public sealed class ProductUpsertDto
 
     public ShelfLifeUnit ShelfLifeUnit { get; set; } = ShelfLifeUnit.Days;
 
+    public string? TemperatureRegime { get; set; }
+
     public Guid? CategoryId { get; set; }
 
     public Guid? DefaultTemplateId { get; set; }
@@ -57,6 +59,10 @@ public sealed class ProductListItemDto
 
     /// <summary>Display like «3 дн.» or «12 ч.».</summary>
     public string? ShelfLifeDisplay { get; init; }
+
+    public string? TemperatureRegime { get; init; }
+
+    public Guid? CategoryId { get; init; }
 
     public bool IsArchived { get; init; }
 }

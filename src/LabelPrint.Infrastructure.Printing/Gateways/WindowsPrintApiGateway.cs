@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
+using System.Management;
 using System.Runtime.Versioning;
 using LabelPrint.Domain.Entities;
 using LabelPrint.Domain.Enums;
@@ -41,15 +42,82 @@ internal sealed class WindowsPrintApiGateway : IProtocolPrinterGateway
         EnsureWindows();
         ValidatePrinterName(printer);
 
+        var queueName = printer.ConnectionString.Trim();
         var installed = PrinterSettings.InstalledPrinters
             .Cast<string>()
-            .Any(name => name.Equals(printer.ConnectionString, StringComparison.OrdinalIgnoreCase));
+            .Any(name => name.Equals(queueName, StringComparison.OrdinalIgnoreCase));
 
-        return Task.FromResult(new PrinterDeviceStatus(
-            IsOnline: installed,
-            HasPaper: installed,
-            IsBusy: false,
-            Message: installed ? null : $"Windows printer '{printer.ConnectionString}' was not found."));
+        if (!installed)
+        {
+            return Task.FromResult(new PrinterDeviceStatus(
+                IsOnline: false,
+                HasPaper: false,
+                IsBusy: false,
+                Message: $"Windows printer '{queueName}' was not found."));
+        }
+
+        return Task.FromResult(QueryWindowsPrinterStatus(queueName));
+    }
+
+    /// <summary>
+    /// Uses Win32_Printer so powered-off / offline queues report as offline
+    /// (InstalledPrinters alone stays true while the driver is registered).
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    private static PrinterDeviceStatus QueryWindowsPrinterStatus(string queueName)
+    {
+        try
+        {
+            var escaped = queueName.Replace("\\", "\\\\", StringComparison.Ordinal)
+                .Replace("'", "\\'", StringComparison.Ordinal);
+            using var searcher = new ManagementObjectSearcher(
+                $"SELECT WorkOffline, PrinterStatus, PrinterState, DetectedErrorState, Name FROM Win32_Printer WHERE Name = '{escaped}'");
+            using var results = searcher.Get();
+            var mo = results.Cast<ManagementObject>().FirstOrDefault();
+            if (mo is null)
+            {
+                return new PrinterDeviceStatus(false, false, false, $"WMI: printer '{queueName}' not found.");
+            }
+
+            var workOffline = mo["WorkOffline"] is bool offline && offline;
+            var printerStatus = Convert.ToInt32(mo["PrinterStatus"] ?? 0);
+            var printerState = Convert.ToUInt32(mo["PrinterState"] ?? 0u);
+            var detectedError = Convert.ToInt32(mo["DetectedErrorState"] ?? 0);
+
+            // PrinterStatus: 7 = Offline. PrinterState bit 0x80 = Offline, 0x1000 = Offline pending.
+            var statusOffline = printerStatus == 7;
+            var stateOffline = (printerState & 0x80) != 0 || (printerState & 0x1000) != 0;
+            // DetectedErrorState: 3 = Offline, 4 = Off / no power (when driver reports it)
+            var errorOffline = detectedError is 3 or 4 or 5;
+
+            var isOnline = !workOffline && !statusOffline && !stateOffline && !errorOffline;
+            var noPaper = detectedError is 2 or 9 || (printerState & 0x10) != 0;
+            var isBusy = printerStatus is 4 or 6 or 10;
+
+            if (!isOnline)
+            {
+                return new PrinterDeviceStatus(
+                    false,
+                    !noPaper,
+                    isBusy,
+                    $"Printer offline (WorkOffline={workOffline}, Status={printerStatus}, State={printerState}).");
+            }
+
+            return new PrinterDeviceStatus(
+                true,
+                !noPaper,
+                isBusy,
+                null);
+        }
+        catch (Exception ex)
+        {
+            // Fall back: queue exists in Windows but WMI failed — treat as unknown/warn via Message.
+            return new PrinterDeviceStatus(
+                false,
+                true,
+                false,
+                $"Could not query printer status: {ex.Message}");
+        }
     }
 
     [SupportedOSPlatform("windows")]

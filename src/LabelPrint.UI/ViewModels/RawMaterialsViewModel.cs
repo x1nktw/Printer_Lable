@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LabelPrint.Application.Abstractions.Services;
 using LabelPrint.Application.DTOs;
+using LabelPrint.Application.Marking;
 using LabelPrint.Domain.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.ObjectModel;
@@ -12,6 +13,9 @@ public partial class RawMaterialsViewModel : PageViewModelBase
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private bool _suppressTemplatePersist;
+    private bool _suppressFilterCascade;
+    private IReadOnlyList<Category> _allCategories = Array.Empty<Category>();
+    private IReadOnlyList<Guid> _markingCategoryIds = Array.Empty<Guid>();
 
     public RawMaterialsViewModel(IServiceScopeFactory scopeFactory)
     {
@@ -22,6 +26,8 @@ public partial class RawMaterialsViewModel : PageViewModelBase
     public ObservableCollection<ProductListItemDto> Items { get; } = new();
     public ObservableCollection<PrinterListItemDto> Printers { get; } = new();
     public ObservableCollection<TemplateListItemDto> Templates { get; } = new();
+    public ObservableCollection<CategoryOptionVm> FilterRootOptions { get; } = new();
+    public ObservableCollection<CategoryOptionVm> FilterSubcategoryOptions { get; } = new();
 
     [ObservableProperty] private string? _searchText;
     [ObservableProperty] private ProductListItemDto? _selectedItem;
@@ -32,11 +38,39 @@ public partial class RawMaterialsViewModel : PageViewModelBase
     [ObservableProperty] private bool _useCustomLabelDateTime;
     [ObservableProperty] private DateTime? _labelDate = DateTime.Today;
     [ObservableProperty] private TimeSpan? _labelTime = DateTime.Now.TimeOfDay;
+    [ObservableProperty] private CategoryOptionVm? _filterRootOption;
+    [ObservableProperty] private CategoryOptionVm? _filterSubcategoryOption;
 
-    public string? ShelfLifeHint =>
-        SelectedItem?.ShelfLifeDisplay is { Length: > 0 } display
-            ? $"Срок годности: {display} (годен до = дата/время этикетки + срок)"
-            : null;
+    public bool HasFilterSubcategories => FilterRootOption?.Id is not null;
+
+    public string? ShelfLifeHint
+    {
+        get
+        {
+            if (SelectedItem is null)
+            {
+                return null;
+            }
+
+            var parts = new List<string>();
+            if (SelectedItem.ShelfLifeDisplay is { Length: > 0 } shelf)
+            {
+                parts.Add($"Срок: {shelf}");
+            }
+
+            if (SelectedItem.TemperatureRegime is { Length: > 0 } temp)
+            {
+                parts.Add($"t°: {temp}");
+            }
+
+            if (SelectedItem.CategoryName is { Length: > 0 } cat)
+            {
+                parts.Add(cat);
+            }
+
+            return parts.Count == 0 ? null : string.Join(" · ", parts);
+        }
+    }
 
     public bool HasShelfLifeHint => ShelfLifeHint is not null;
 
@@ -51,6 +85,28 @@ public partial class RawMaterialsViewModel : PageViewModelBase
         OnPropertyChanged(nameof(HasShelfLifeHint));
     }
 
+    partial void OnFilterRootOptionChanged(CategoryOptionVm? value)
+    {
+        if (_suppressFilterCascade)
+        {
+            return;
+        }
+
+        RebuildFilterSubcategories(value?.Id);
+        OnPropertyChanged(nameof(HasFilterSubcategories));
+        _ = LoadAsync();
+    }
+
+    partial void OnFilterSubcategoryOptionChanged(CategoryOptionVm? value)
+    {
+        if (_suppressFilterCascade)
+        {
+            return;
+        }
+
+        _ = LoadAsync();
+    }
+
     [RelayCommand]
     private async Task LoadAsync()
     {
@@ -60,19 +116,16 @@ public partial class RawMaterialsViewModel : PageViewModelBase
         var categories = scope.ServiceProvider.GetRequiredService<ICategoryService>();
         var printers = scope.ServiceProvider.GetRequiredService<IPrinterService>();
 
-        var tree = await categories.GetTreeAsync();
-        Guid? rawCategoryId = null;
-        if (tree.IsSuccess)
-        {
-            rawCategoryId = FindCategoryId(tree.Value, "Сырьё");
-        }
+        await EnsureFiltersAsync(categories);
 
+        var filterIds = ResolveFilterIds();
         var search = await products.SearchAsync(
             SearchText,
-            rawCategoryId,
+            categoryId: null,
             includeArchived: false,
             skip: 0,
-            take: 200);
+            take: 200,
+            categoryIds: filterIds.Count > 0 ? filterIds : null);
         if (search.IsFailure)
         {
             StatusMessage = search.Error;
@@ -99,8 +152,74 @@ public partial class RawMaterialsViewModel : PageViewModelBase
         await LoadTemplatesAsync(scope);
 
         StatusMessage = Items.Count == 0
-            ? "Нет товаров в категории «Сырьё». Добавьте в Каталог → Маркировка или «Создать примеры»."
+            ? "Нет позиций маркировки. Добавьте в Каталог → Маркировка или «Создать примеры»."
             : $"Позиций: {Items.Count}";
+    }
+
+    private async Task EnsureFiltersAsync(ICategoryService categories)
+    {
+        var tree = await categories.GetTreeAsync();
+        if (tree.IsFailure)
+        {
+            return;
+        }
+
+        _allCategories = tree.Value;
+        _markingCategoryIds = MarkingCategories.GetAllMarkingCategoryIds(_allCategories);
+
+        if (FilterRootOptions.Count == 0)
+        {
+            _suppressFilterCascade = true;
+            FilterRootOptions.Clear();
+            FilterRootOptions.Add(new CategoryOptionVm(null, "Все категории"));
+            foreach (var root in _allCategories
+                         .Where(c => c.ParentId is null && MarkingCategories.IsMarkingRootName(c.Name))
+                         .OrderBy(c => c.SortOrder)
+                         .ThenBy(c => c.Name))
+            {
+                FilterRootOptions.Add(new CategoryOptionVm(root.Id, root.Name));
+            }
+
+            FilterRootOption ??= FilterRootOptions.FirstOrDefault();
+            RebuildFilterSubcategories(FilterRootOption?.Id);
+            _suppressFilterCascade = false;
+        }
+    }
+
+    private void RebuildFilterSubcategories(Guid? rootId)
+    {
+        FilterSubcategoryOptions.Clear();
+        FilterSubcategoryOptions.Add(new CategoryOptionVm(null, "Все подкатегории"));
+        if (rootId is Guid rid)
+        {
+            foreach (var child in _allCategories
+                         .Where(c => c.ParentId == rid)
+                         .OrderBy(c => c.SortOrder)
+                         .ThenBy(c => c.Name))
+            {
+                FilterSubcategoryOptions.Add(new CategoryOptionVm(child.Id, child.Name));
+            }
+        }
+
+        _suppressFilterCascade = true;
+        FilterSubcategoryOption = FilterSubcategoryOptions.FirstOrDefault();
+        _suppressFilterCascade = false;
+        OnPropertyChanged(nameof(HasFilterSubcategories));
+    }
+
+    private IReadOnlyList<Guid> ResolveFilterIds()
+    {
+        if (FilterSubcategoryOption?.Id is Guid subId)
+        {
+            return MarkingCategories.GetSelfAndDescendantIds(_allCategories, [subId]);
+        }
+
+        if (FilterRootOption?.Id is Guid rootId)
+        {
+            return MarkingCategories.GetSelfAndDescendantIds(_allCategories, [rootId]);
+        }
+
+        return _markingCategoryIds;
     }
 
     private async Task LoadTemplatesAsync(IServiceScope scope)
@@ -186,18 +305,38 @@ public partial class RawMaterialsViewModel : PageViewModelBase
         var templates = scope.ServiceProvider.GetRequiredService<ITemplateService>();
 
         var tree = await categories.GetTreeAsync();
-        Guid? catId = tree.IsSuccess ? FindCategoryId(tree.Value, "Сырьё") : null;
-        if (catId is null)
+        var all = tree.IsSuccess ? tree.Value : Array.Empty<Category>();
+
+        foreach (var rootName in MarkingCategories.Roots)
         {
-            var created = await categories.CreateAsync("Сырьё", null);
-            if (created.IsFailure)
+            if (MarkingCategories.FindByName(all, rootName) is null)
             {
-                StatusMessage = created.Error;
-                return;
+                await categories.CreateAsync(rootName, null);
+            }
+        }
+
+        tree = await categories.GetTreeAsync();
+        all = tree.IsSuccess ? tree.Value : Array.Empty<Category>();
+        foreach (var (rootName, children) in MarkingCategories.DefaultSubcategories)
+        {
+            var parentId = MarkingCategories.FindByName(all, rootName);
+            if (parentId is not Guid pid)
+            {
+                continue;
             }
 
-            catId = created.Value;
+            foreach (var sub in children)
+            {
+                if (MarkingCategories.FindByName(all, sub, pid) is null)
+                {
+                    await categories.CreateAsync(sub, pid);
+                }
+            }
         }
+
+        tree = await categories.GetTreeAsync();
+        all = tree.IsSuccess ? tree.Value : Array.Empty<Category>();
+        var rawId = MarkingCategories.FindByName(all, MarkingCategories.Raw);
 
         Guid? templateId = null;
         var tmpl = await templates.SearchAsync("Сырьё", includeArchived: false, skip: 0, take: 10);
@@ -208,11 +347,25 @@ public partial class RawMaterialsViewModel : PageViewModelBase
                 ?.Id;
         }
 
-        string[] names = ["Мясо", "Томаты", "Лук", "Сыр", "Огурцы", "Курица", "Рыба"];
-        var createdCount = 0;
-        foreach (var name in names)
+        var samples = new (string Name, string Sku, string Sub, string Temp)[]
         {
-            var sku = $"RAW-{TranslitSku(name)}";
+            ("Мясо", "RAW-MEAT", "Мясо", "+2…+6 °C"),
+            ("Курица", "RAW-CHICKEN", "Мясо", "+2…+6 °C"),
+            ("Рыба", "RAW-FISH", "Мясо", "0…+4 °C"),
+            ("Томаты", "RAW-TOMATO", "Овощи", "+2…+6 °C"),
+            ("Лук", "RAW-ONION", "Овощи", "комнатная"),
+            ("Огурцы", "RAW-CUCUMBER", "Овощи", "+2…+6 °C"),
+            ("Сыр", "RAW-CHEESE", "Сыр", "+2…+6 °C")
+        };
+
+        var createdCount = 0;
+        foreach (var (name, sku, sub, temp) in samples)
+        {
+            Guid? catId = null;
+            if (rawId is Guid rid)
+            {
+                catId = MarkingCategories.FindByName(all, sub, rid) ?? rid;
+            }
             var existing = await products.SearchAsync(sku, catId, false, 0, 5);
             if (existing.IsSuccess && existing.Value.Items.Any(i => i.Sku.Equals(sku, StringComparison.OrdinalIgnoreCase)))
             {
@@ -225,6 +378,7 @@ public partial class RawMaterialsViewModel : PageViewModelBase
                 Sku = sku,
                 PriceAmount = 0,
                 CategoryId = catId,
+                TemperatureRegime = temp,
                 DefaultTemplateId = templateId
             });
             if (result.IsSuccess)
@@ -233,6 +387,7 @@ public partial class RawMaterialsViewModel : PageViewModelBase
             }
         }
 
+        FilterRootOptions.Clear();
         StatusMessage = createdCount > 0 ? $"Добавлено примеров: {createdCount}" : "Примеры уже есть.";
         await LoadAsync();
     }
@@ -243,7 +398,7 @@ public partial class RawMaterialsViewModel : PageViewModelBase
         var name = !string.IsNullOrWhiteSpace(CustomName) ? CustomName.Trim() : SelectedItem?.Name;
         if (string.IsNullOrWhiteSpace(name))
         {
-            StatusMessage = "Выберите сырьё или введите название.";
+            StatusMessage = "Выберите позицию или введите название.";
             return;
         }
 
@@ -268,43 +423,4 @@ public partial class RawMaterialsViewModel : PageViewModelBase
             ? result.Error
             : $"Напечатано: {name} (задание {result.Value})";
     }
-
-    private static Guid? FindCategoryId(IReadOnlyList<Category> nodes, string name)
-    {
-        foreach (var node in nodes)
-        {
-            if (string.Equals(node.Name, name, StringComparison.OrdinalIgnoreCase))
-            {
-                return node.Id;
-            }
-        }
-
-        foreach (var node in nodes)
-        {
-            if (node.Children.Count == 0)
-            {
-                continue;
-            }
-
-            var child = FindCategoryId(node.Children.ToList(), name);
-            if (child is not null)
-            {
-                return child;
-            }
-        }
-
-        return null;
-    }
-
-    private static string TranslitSku(string name) => name switch
-    {
-        "Мясо" => "MEAT",
-        "Томаты" => "TOMATO",
-        "Лук" => "ONION",
-        "Сыр" => "CHEESE",
-        "Огурцы" => "CUCUMBER",
-        "Курица" => "CHICKEN",
-        "Рыба" => "FISH",
-        _ => Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()
-    };
 }

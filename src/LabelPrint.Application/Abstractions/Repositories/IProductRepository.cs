@@ -26,7 +26,9 @@ public interface IProductRepository
         int skip,
         int take,
         CancellationToken cancellationToken = default,
-        Guid? excludeCategoryId = null);
+        Guid? excludeCategoryId = null,
+        IReadOnlyCollection<Guid>? categoryIds = null,
+        IReadOnlyCollection<Guid>? excludeCategoryIds = null);
 
     Task AddAsync(Product product, CancellationToken cancellationToken = default);
 

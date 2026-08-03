@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Resolve version
+        id: ver
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag.TrimStart("v")
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Pack zip + installer
+        id: pack
+        shell: pwsh
+        run: |
+          ./scripts/pack-release.ps1 -Version "${{ steps.ver.outputs.version }}" -Configuration Release
+          $manifest = Get-Content "extensions/frontpad-bridge/manifest.json" -Raw | ConvertFrom-Json
+          "bridge_version=$($manifest.version)" >> $env:GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: LabelPrint Pro ${{ steps.ver.outputs.version }}
+          draft: false
+          generate_release_notes: true
+          body: |
+            ## Скачать
+
+            | Файл | Назначение |
+            |------|------------|
+            | **LabelPrintPro-${{ steps.ver.outputs.version }}-win-x64-setup.exe** | Установщик (ярлык в меню Пуск / рабочий стол) |
+            | **LabelPrintPro-${{ steps.ver.outputs.version }}-win-x64.zip** | Portable — распаковать и запустить `LabelPrint.UI.exe` |
+            | **frontpad-bridge-${{ steps.pack.outputs.bridge_version }}.zip** | FrontPad Bridge **v${{ steps.pack.outputs.bridge_version }}** (только расширение) |
+
+            ## После установки
+
+            1. Запустите **LabelPrint Pro**
+            2. FrontPad Bridge лежит в папке приложения: `extensions\frontpad-bridge\`
+               - Chrome/Edge → Режим разработчика → «Загрузить распакованное» → эта папка
+               - см. `INSTALL.txt`
+            3. В **Настройках** проверьте webhook (обычно `http://127.0.0.1:8765/`)
+
+            Подробнее: [INSTALLER.md](https://github.com/x1nktw/Printer_Lable/blob/main/docs/INSTALLER.md) · [CHANGELOG](https://github.com/x1nktw/Printer_Lable/blob/main/CHANGELOG.md)
+          files: |
+            artifacts/release/LabelPrintPro-*-win-x64-setup.exe
+            artifacts/release/LabelPrintPro-*-win-x64.zip
+            artifacts/release/frontpad-bridge-*.zip

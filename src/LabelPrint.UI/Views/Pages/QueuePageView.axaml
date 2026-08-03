@@ -19,7 +19,7 @@
           <Button Content="Отменить" Command="{Binding CancelSelectedCommand}" />
           <Button Content="Повторить" Command="{Binding RetrySelectedCommand}" />
           <Button Classes="accent" Command="{Binding ReprintSelectedCommand}">
-            <TextBlock Text="Перепечатать" Foreground="White" />
+            <TextBlock Text="Перепечатать"  />
           </Button>
         </StackPanel>
       </Border>

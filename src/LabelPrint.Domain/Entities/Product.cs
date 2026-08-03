@@ -34,6 +34,9 @@ public class Product : EntityBase
 
     public ShelfLifeUnit ShelfLifeUnit { get; set; } = ShelfLifeUnit.Days;
 
+    /// <summary>Storage temperature regime for marking labels (e.g. «+2…+6 °C»).</summary>
+    public string? TemperatureRegime { get; set; }
+
     public Guid? CategoryId { get; set; }
 
     public Category? Category { get; set; }
