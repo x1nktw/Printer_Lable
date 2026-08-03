@@ -83,7 +83,9 @@ internal sealed class InMemoryUnitOfWork : IUnitOfWork
             int skip,
             int take,
             CancellationToken cancellationToken = default,
-            Guid? excludeCategoryId = null)
+            Guid? excludeCategoryId = null,
+            IReadOnlyCollection<Guid>? categoryIds = null,
+            IReadOnlyCollection<Guid>? excludeCategoryIds = null)
         {
             IEnumerable<Product> query = _items;
             if (!includeArchived)
@@ -91,13 +93,25 @@ internal sealed class InMemoryUnitOfWork : IUnitOfWork
                 query = query.Where(p => !p.IsArchived);
             }
 
-            if (categoryId is not null)
+            var includeIds = categoryIds?.Count > 0
+                ? categoryIds
+                : categoryId is Guid singleInclude
+                    ? (IReadOnlyCollection<Guid>)new[] { singleInclude }
+                    : null;
+
+            var excludeIds = excludeCategoryIds?.Count > 0
+                ? excludeCategoryIds
+                : excludeCategoryId is Guid singleExclude
+                    ? (IReadOnlyCollection<Guid>)new[] { singleExclude }
+                    : null;
+
+            if (includeIds is not null)
             {
-                query = query.Where(p => p.CategoryId == categoryId);
+                query = query.Where(p => p.CategoryId != null && includeIds.Contains(p.CategoryId.Value));
             }
-            else if (excludeCategoryId is not null)
+            else if (excludeIds is not null)
             {
-                query = query.Where(p => p.CategoryId != excludeCategoryId);
+                query = query.Where(p => p.CategoryId == null || !excludeIds.Contains(p.CategoryId.Value));
             }
 
             if (!string.IsNullOrWhiteSpace(search))
