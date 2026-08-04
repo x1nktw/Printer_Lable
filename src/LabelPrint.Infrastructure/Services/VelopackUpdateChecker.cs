@@ -62,7 +62,7 @@ public sealed class VelopackUpdateChecker : IUpdateChecker
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            var update = await mgr.CheckForUpdatesAsync().ConfigureAwait(false);
+            var update = await CheckForUpdatesWithTimeoutAsync(mgr, cancellationToken).ConfigureAwait(false);
             if (update is null)
             {
                 return Result.Success(new UpdateCheckResult
@@ -151,6 +151,22 @@ public sealed class VelopackUpdateChecker : IUpdateChecker
             _options.GitHubToken,
             _options.IncludePrerelease);
         return new UpdateManager(source);
+    }
+
+    private static async Task<UpdateInfo?> CheckForUpdatesWithTimeoutAsync(
+        UpdateManager mgr,
+        CancellationToken cancellationToken)
+    {
+        var checkTask = mgr.CheckForUpdatesAsync();
+        var delayTask = Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
+        var completed = await Task.WhenAny(checkTask, delayTask).ConfigureAwait(false);
+        if (completed != checkTask)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            throw new TimeoutException("Проверка обновлений превысила время ожидания.");
+        }
+
+        return await checkTask.ConfigureAwait(false);
     }
 
     private string GetCurrentVersion()

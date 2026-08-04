@@ -184,48 +184,61 @@ public partial class MainViewModel : ViewModelBase
 
         DisposeCurrentPage();
 
-        switch (key)
+        try
         {
-            case "home":
+            switch (key)
             {
-                var home = new HomeViewModel(_scopeFactory);
-                CurrentPage = home;
-                await home.LoadStatusCommand.ExecuteAsync(null);
-                break;
+                case "home":
+                {
+                    var home = new HomeViewModel(_scopeFactory);
+                    CurrentPage = home;
+                    await home.LoadStatusCommand.ExecuteAsync(null);
+                    break;
+                }
+                case "catalog":
+                {
+                    var catalog = _services.GetRequiredService<CatalogViewModel>();
+                    CurrentPage = catalog;
+                    await catalog.LoadCommand.ExecuteAsync(null);
+                    break;
+                }
+                case "raw":
+                {
+                    var raw = _services.GetRequiredService<RawMaterialsViewModel>();
+                    CurrentPage = raw;
+                    await raw.LoadCommand.ExecuteAsync(null);
+                    break;
+                }
+                case "settings":
+                {
+                    // Show Settings immediately — LoadAsync must not block navigation (update check / network).
+                    var settings = CreateSettingsViewModel();
+                    CurrentPage = settings;
+                    await settings.LoadCommand.ExecuteAsync(null);
+                    break;
+                }
+                case "orders":
+                {
+                    var orders = _services.GetRequiredService<OrdersViewModel>();
+                    CurrentPage = orders;
+                    await orders.LoadCommand.ExecuteAsync(null);
+                    break;
+                }
+                default:
+                    CurrentPage = new PlaceholderViewModel(key, "Раздел", "Страница в разработке.");
+                    break;
             }
-            case "catalog":
-            {
-                var catalog = _services.GetRequiredService<CatalogViewModel>();
-                CurrentPage = catalog;
-                await catalog.LoadCommand.ExecuteAsync(null);
-                break;
-            }
-            case "raw":
-            {
-                var raw = _services.GetRequiredService<RawMaterialsViewModel>();
-                CurrentPage = raw;
-                await raw.LoadCommand.ExecuteAsync(null);
-                break;
-            }
-            case "settings":
-            {
-                CurrentPage = await OpenSettingsAsync();
-                break;
-            }
-            case "orders":
-            {
-                var orders = _services.GetRequiredService<OrdersViewModel>();
-                CurrentPage = orders;
-                await orders.LoadCommand.ExecuteAsync(null);
-                break;
-            }
-            default:
-                CurrentPage = new PlaceholderViewModel(key, "Раздел", "Страница в разработке.");
-                break;
+        }
+        catch (Exception ex)
+        {
+            CurrentPage = new PlaceholderViewModel(
+                key,
+                "Ошибка",
+                $"Не удалось открыть раздел: {ex.Message}");
         }
     }
 
-    private async Task<SettingsViewModel> OpenSettingsAsync(bool showTemplates = false)
+    private SettingsViewModel CreateSettingsViewModel(bool showTemplates = false)
     {
         var settings = _services.GetRequiredService<SettingsViewModel>();
         settings.BindTemplateEditor(OpenTemplateEditor);
@@ -234,6 +247,12 @@ public partial class MainViewModel : ViewModelBase
             settings.ShowTemplatesTab();
         }
 
+        return settings;
+    }
+
+    private async Task<SettingsViewModel> OpenSettingsAsync(bool showTemplates = false)
+    {
+        var settings = CreateSettingsViewModel(showTemplates);
         await settings.LoadCommand.ExecuteAsync(null);
         return settings;
     }
@@ -251,7 +270,9 @@ public partial class MainViewModel : ViewModelBase
                 SelectedNavItem = NavItems.First(n => n.Key == "settings");
                 _suppressNav = false;
                 DisposeCurrentPage();
-                CurrentPage = await OpenSettingsAsync(showTemplates: true);
+                var settings = CreateSettingsViewModel(showTemplates: true);
+                CurrentPage = settings;
+                await settings.LoadCommand.ExecuteAsync(null);
             });
 
         DisposeCurrentPage();
@@ -365,16 +386,37 @@ public partial class HomeViewModel : PageViewModelBase, IDisposable
             return;
         }
 
-        using var scope = _scopeFactory.CreateScope();
-        var sp = scope.ServiceProvider;
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var sp = scope.ServiceProvider;
 
-        await AddUpdateStatusOnceAsync(sp, next);
-        AddBridgeAndWebhookStatus(sp, next);
-        AddFrontPadStatus(sp, next);
-        await AddPrinterStatusAsync(sp, next);
-        await AddQueueStatusAsync(sp, next);
-        await AddLastPrintStatusAsync(sp, next);
-        ReplaceStatusItems(next);
+            // Local checks first so the strip is useful even if GitHub update check hangs.
+            AddBridgeAndWebhookStatus(sp, next);
+            AddFrontPadStatus(sp, next);
+            await AddPrinterStatusAsync(sp, next);
+            await AddQueueStatusAsync(sp, next);
+            await AddLastPrintStatusAsync(sp, next);
+            ReplaceStatusItems(next);
+
+            await AddUpdateStatusOnceAsync(sp, next);
+            if (_cachedUpdateStatusItem is not null && !next.Contains(_cachedUpdateStatusItem))
+            {
+                next.Insert(0, _cachedUpdateStatusItem);
+                ReplaceStatusItems(next);
+            }
+        }
+        catch (Exception ex)
+        {
+            next.Add(new SystemStatusItem
+            {
+                Level = SystemStatusLevel.Error,
+                Icon = "❌",
+                Title = "Ошибка статуса",
+                Detail = ex.Message
+            });
+            ReplaceStatusItems(next);
+        }
     }
 
     private bool _updateStatusChecked;
@@ -384,7 +426,7 @@ public partial class HomeViewModel : PageViewModelBase, IDisposable
     {
         var version = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version;
         var current = version is null
-            ? "0.8.0"
+            ? "0.9.0"
             : $"{version.Major}.{version.Minor}.{version.Build}";
         VersionLabel = $"LabelPrint Pro v{current}";
 
@@ -393,8 +435,9 @@ public partial class HomeViewModel : PageViewModelBase, IDisposable
             _updateStatusChecked = true;
             try
             {
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
                 var updates = sp.GetRequiredService<IUpdateChecker>();
-                var result = await updates.CheckAsync();
+                var result = await updates.CheckAsync(timeout.Token);
                 if (result.IsSuccess && result.Value.UpdateAvailable)
                 {
                     _cachedUpdateStatusItem = new SystemStatusItem
@@ -402,19 +445,14 @@ public partial class HomeViewModel : PageViewModelBase, IDisposable
                         Level = SystemStatusLevel.Warning,
                         Icon = "⬆",
                         Title = $"Доступно обновление v{result.Value.LatestVersion}",
-                        Detail = "Настройки → Система → Установить обновление"
+                        Detail = "Настройки → Система → Обновить"
                     };
                 }
             }
             catch
             {
-                // ignore — status strip should not fail
+                // ignore — status strip should not fail on network / Velopack
             }
-        }
-
-        if (_cachedUpdateStatusItem is not null)
-        {
-            items.Add(_cachedUpdateStatusItem);
         }
     }
 

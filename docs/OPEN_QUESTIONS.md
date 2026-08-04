@@ -1,6 +1,6 @@
 # Open questions (LabelPrint Pro)
 
-Актуально на **0.9.0** / Bridge **1.3.4**.  
+Актуально на **0.9.1** / Bridge **1.3.4**.  
 Tracked decisions that must not be silently assumed in schema or plugin contracts.
 
 ## FrontPad

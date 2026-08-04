@@ -179,17 +179,19 @@ public partial class SettingsViewModel : PageViewModelBase
                 _markingPrintTemplateId = dto.MarkingPrintTemplateId;
                 StatusMessage = "Загружено";
                 RefreshAccentSelection();
-
-                var updates = scope.ServiceProvider.GetRequiredService<IUpdateChecker>();
-                var updateResult = await updates.CheckAsync();
-                ApplyUpdateCheck(updateResult);
             }
         }
 
+        // Tabs/content first — update check is network-bound and must not block Settings open.
         await Templates.LoadCommand.ExecuteAsync(null);
         await Printers.LoadCommand.ExecuteAsync(null);
         await Queue.LoadCommand.ExecuteAsync(null);
         await History.LoadCommand.ExecuteAsync(null);
+
+        if (IsAdministrator)
+        {
+            _ = CheckUpdatesAsync();
+        }
     }
 
     [RelayCommand]

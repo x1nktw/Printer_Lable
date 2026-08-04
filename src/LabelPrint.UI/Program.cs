@@ -82,7 +82,18 @@ sealed class Program
 
     private static IConfiguration BuildConfiguration()
     {
+        // Prefer the directory of the running exe (Velopack current\, single-file publish).
         var baseDir = AppContext.BaseDirectory;
+        var processPath = Environment.ProcessPath;
+        if (!string.IsNullOrWhiteSpace(processPath))
+        {
+            var processDir = Path.GetDirectoryName(processPath);
+            if (!string.IsNullOrWhiteSpace(processDir))
+            {
+                baseDir = processDir;
+            }
+        }
+
         var configDir = Path.Combine(baseDir, "config");
         var contentRoot = File.Exists(Path.Combine(configDir, "appsettings.json"))
             ? configDir

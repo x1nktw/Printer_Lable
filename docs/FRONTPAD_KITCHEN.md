@@ -1,6 +1,6 @@
 # FrontPad → LabelPrint Pro
 
-Совместимо с **LabelPrint Pro 0.9.0** и **FrontPad Bridge 1.3.4**.
+Совместимо с **LabelPrint Pro 0.9.1** и **FrontPad Bridge 1.3.4**.
 
 ## Shop API
 
