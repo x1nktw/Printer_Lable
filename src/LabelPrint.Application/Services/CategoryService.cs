@@ -65,8 +65,28 @@ public sealed class CategoryService : ICategoryService
             return Result.Failure("Category not found.");
         }
 
+        // Move products from this category to the parent (or uncategorized).
+        var (products, _) = await _unitOfWork.Products.SearchAsync(
+            search: null,
+            categoryId: id,
+            includeArchived: true,
+            skip: 0,
+            take: 10_000,
+            cancellationToken);
+        foreach (var product in products)
+        {
+            product.CategoryId = category.ParentId;
+            product.UpdatedAt = DateTimeOffset.UtcNow;
+            _unitOfWork.Products.Update(product);
+        }
+
         await _unitOfWork.Categories.SoftArchiveAsync(id, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation(
+            "Category {CategoryId} archived; reparented {Count} product(s) to {ParentId}",
+            id,
+            products.Count,
+            category.ParentId);
         return Result.Success();
     }
 

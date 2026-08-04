@@ -58,8 +58,8 @@
           <CheckBox Content="Привязка" IsChecked="{Binding SnapEnabled}" VerticalAlignment="Center"
                     ToolTip.Tip="Привязка к сетке при перемещении" />
           <CheckBox Content="Сетка" IsChecked="{Binding ShowGrid}" VerticalAlignment="Center" />
-          <CheckBox Content="Превью" IsChecked="{Binding IsPreviewMode}" VerticalAlignment="Center"
-                    ToolTip.Tip="Подставить значения переменных" />
+          <CheckBox Content="Превью печати" IsChecked="{Binding IsPreviewMode}" VerticalAlignment="Center"
+                    ToolTip.Tip="Точный рендер как на принтере / в PNG (редактирование на холсте отключено)" />
         </StackPanel>
       </WrapPanel>
 
@@ -74,6 +74,10 @@
         <Button Content="Прямоугольник" Command="{Binding AddRectangleCommand}" Margin="0,0,6,4" Padding="10,4" />
         <Button Content="Эллипс" Command="{Binding AddEllipseCommand}" Margin="0,0,6,4" Padding="10,4" />
         <Button Content="Линия" Command="{Binding AddLineCommand}" Margin="0,0,6,4" Padding="10,4" />
+        <Button Content="Иконка" Command="{Binding AddImageCommand}" Margin="0,0,6,4" Padding="10,4"
+                ToolTip.Tip="Иконка из набора или ProductIconKey" />
+        <Button Content="Добавки" Command="{Binding AddAddonsKitchenCommand}" Margin="0,0,6,4" Padding="10,4"
+                ToolTip.Tip="Блок добавок с иконками (AddonsKitchen)" />
         <TextBlock Text="|" VerticalAlignment="Center" Opacity="0.35" Margin="4,0,10,4" />
         <Button Content="Дублировать" Command="{Binding DuplicateSelectedCommand}" Margin="0,0,6,4" Padding="10,4" />
         <Button Content="Удалить" Command="{Binding DeleteSelectedCommand}" Margin="0,0,6,4" Padding="10,4" />
@@ -118,12 +122,34 @@
           <TextBlock Text="Имя элемента" Opacity="0.7" FontSize="12" />
           <TextBox Text="{Binding Selected.Name}" Height="28" MinHeight="28" Padding="8,2" />
 
-          <TextBlock Text="Содержимое" Opacity="0.7" FontSize="12" />
-          <TextBox Text="{Binding Selected.Content}" Height="28" MinHeight="28" Padding="8,2" />
+          <TextBlock Text="Тип содержимого" Opacity="0.7" FontSize="12" Margin="0,4,0,0"
+                     IsVisible="{Binding Selected.IsText}" />
+          <ComboBox ItemsSource="{Binding BindingModeOptions}"
+                    SelectedItem="{Binding Selected.BindingModeLabel}"
+                    IsVisible="{Binding Selected.IsText}"
+                    MinHeight="32" HorizontalAlignment="Stretch"
+                    ToolTip.Tip="Текст — свой текст; Переменная — данные при печати" />
 
-          <TextBlock Text="Переменная" Opacity="0.7" FontSize="12" />
-          <TextBox Watermark="например ProductName" Text="{Binding Selected.ValueBinding}"
-                   Height="28" MinHeight="28" Padding="8,2" />
+          <TextBlock Text="Текст" Opacity="0.7" FontSize="12"
+                     IsVisible="{Binding Selected.ShowsLiteralContent}" />
+          <TextBox Text="{Binding Selected.Content}" Height="28" MinHeight="28" Padding="8,2"
+                   IsVisible="{Binding Selected.ShowsLiteralContent}"
+                   Watermark="Свой текст или подпись" />
+
+          <TextBlock Text="Переменная" Opacity="0.7" FontSize="12"
+                     IsVisible="{Binding Selected.ShowsVariablePicker}" />
+          <ComboBox ItemsSource="{Binding VariableKeyOptions}"
+                    SelectedItem="{Binding Selected.ValueBinding}"
+                    IsVisible="{Binding Selected.ShowsVariablePicker}"
+                    MinHeight="32" HorizontalAlignment="Stretch"
+                    ToolTip.Tip="Выберите переменную (AddonsKitchen — блок добавок с иконками)" />
+          <TextBox Text="{Binding Selected.ValueBinding}"
+                   IsVisible="{Binding Selected.ShowsVariablePicker}"
+                   Height="28" MinHeight="28" Padding="8,2" Margin="0,4,0,0"
+                   Watermark="или введите ключ вручную" />
+          <TextBlock Text="Добавки (кухня) рисуются списком с иконками — смотрите «Превью печати»."
+                     Opacity="0.55" FontSize="11" TextWrapping="Wrap"
+                     IsVisible="{Binding Selected.IsAddonsKitchen}" />
 
           <TextBlock Text="Перемещение (X / Y), мм" Opacity="0.7" FontSize="12" Margin="0,6,0,0" />
           <StackPanel Orientation="Horizontal" Spacing="8">
@@ -135,10 +161,13 @@
 
           <TextBlock Text="Размер (Ш × В), мм" Opacity="0.7" FontSize="12" />
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <controls:PlusMinusNumeric Value="{Binding Selected.WidthMm}" Minimum="1" Increment="0.5"
+            <controls:PlusMinusNumeric Value="{Binding Selected.WidthMm}"
+                                       Minimum="{Binding Selected.SizeMinimumMm}" Increment="0.5"
                                        FormatString="0.##" FieldWidth="56" ToolTip.Tip="Ширина" />
-            <controls:PlusMinusNumeric Value="{Binding Selected.HeightMm}" Minimum="1" Increment="0.5"
-                                       FormatString="0.##" FieldWidth="56" ToolTip.Tip="Высота" />
+            <controls:PlusMinusNumeric Value="{Binding Selected.HeightMm}"
+                                       Minimum="{Binding Selected.SizeMinimumMm}" Increment="0.5"
+                                       FormatString="0.##" FieldWidth="56"
+                                       ToolTip.Tip="Высота (для линии 0 = горизонтальная)" />
           </StackPanel>
 
           <TextBlock Text="Поворот, °" Opacity="0.7" FontSize="12" />
@@ -160,6 +189,8 @@
                                        HorizontalAlignment="Left" />
 
             <CheckBox Content="Жирный" IsChecked="{Binding Selected.IsBold}" />
+            <CheckBox Content="Белый текст (на тёмном фоне)" IsChecked="{Binding Selected.Invert}"
+                      ToolTip.Tip="Как номер заказа на чёрной шапке кухонного чека" />
 
             <TextBlock Text="Выравнивание текста в блоке" Opacity="0.7" FontSize="12" />
             <StackPanel Orientation="Horizontal" Spacing="4">
@@ -170,6 +201,49 @@
               <Button Content="↕" Command="{Binding AlignCenterVerticalCommand}" MinWidth="32" ToolTip.Tip="Посередине" />
               <Button Content="↓" Command="{Binding AlignBottomCommand}" MinWidth="32" ToolTip.Tip="Снизу" />
             </StackPanel>
+          </StackPanel>
+
+          <StackPanel Spacing="6" IsVisible="{Binding Selected.IsShape}" Margin="0,6,0,0">
+            <TextBlock Text="Обводка, мм" Opacity="0.7" FontSize="12" />
+            <controls:PlusMinusNumeric Value="{Binding Selected.StrokeThickness}" Minimum="0.1" Maximum="5"
+                                       Increment="0.05" FormatString="0.##" FieldWidth="72"
+                                       HorizontalAlignment="Left" />
+            <CheckBox Content="Пунктир" IsChecked="{Binding Selected.Dashed}"
+                      IsVisible="{Binding Selected.IsLine}"
+                      ToolTip.Tip="Пунктирная линия (как на маркировке)" />
+            <CheckBox Content="Заливка" IsChecked="{Binding Selected.Filled}"
+                      IsVisible="{Binding Selected.IsRectangleShape}" />
+            <CheckBox Content="Белый цвет (на тёмном фоне)" IsChecked="{Binding Selected.Invert}"
+                      ToolTip.Tip="Белая заливка/обводка или белая линия" />
+            <TextBlock Text="Скругление углов, мм" Opacity="0.7" FontSize="12"
+                       IsVisible="{Binding Selected.IsRectangleShape}" />
+            <controls:PlusMinusNumeric Value="{Binding Selected.CornerRadiusMm}" Minimum="0" Maximum="20"
+                                       Increment="0.5" FormatString="0.##" FieldWidth="72"
+                                       HorizontalAlignment="Left"
+                                       IsVisible="{Binding Selected.IsRectangleShape}" />
+            <TextBlock Text="Для горизонтальной линии высота = 0 (не крутите поворот)."
+                       Opacity="0.55" FontSize="11" TextWrapping="Wrap"
+                       IsVisible="{Binding Selected.IsLine}" />
+          </StackPanel>
+
+          <StackPanel Spacing="6" IsVisible="{Binding Selected.IsImage}" Margin="0,6,0,0">
+            <CheckBox Content="Иконка товара (ProductIconKey)" IsChecked="{Binding Selected.UseProductIcon}"
+                      ToolTip.Tip="Брать иконку из карточки маркировки при печати" />
+            <TextBlock Text="Иконка" Opacity="0.7" FontSize="12" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <ComboBox ItemsSource="{Binding IconKeys}"
+                        SelectedItem="{Binding Selected.ImagePath}"
+                        Width="160"
+                        IsEnabled="{Binding Selected.UseProductIcon, Converter={x:Static BoolConverters.Not}}"
+                        PlaceholderText="выберите…" />
+              <Button Content="Импорт…" Command="{Binding ImportTemplateIconCommand}" Padding="10,4" />
+            </StackPanel>
+            <TextBlock Text="Цвет иконки" Opacity="0.7" FontSize="12" />
+            <ComboBox ItemsSource="{Binding IconColorOptions}"
+                      SelectedItem="{Binding Selected.IconColor}"
+                      Width="160"
+                      HorizontalAlignment="Left"
+                      ToolTip.Tip="Чёрный на белой этикетке или белый на чёрной подложке" />
           </StackPanel>
 
           <CheckBox Content="Замок (не двигать)" IsChecked="{Binding Selected.IsLocked}" Margin="0,8,0,0" />
@@ -186,9 +260,16 @@
               PointerPressed="OnCanvasPointerPressed"
               PointerMoved="OnCanvasPointerMoved"
               PointerReleased="OnCanvasPointerReleased">
-          <Canvas x:Name="GridCanvas" IsHitTestVisible="False" />
-          <Canvas x:Name="GuideCanvas" IsHitTestVisible="False" />
-          <ItemsControl ItemsSource="{Binding Elements}" x:Name="DesignSurface">
+          <Canvas x:Name="GridCanvas" IsHitTestVisible="False" IsVisible="{Binding IsDesignMode}" />
+          <Canvas x:Name="GuideCanvas" IsHitTestVisible="False" IsVisible="{Binding IsDesignMode}" />
+          <Image Source="{Binding PrintPreviewBitmap}"
+                 Stretch="Fill"
+                 Width="{Binding CanvasWidthPx}"
+                 Height="{Binding CanvasHeightPx}"
+                 IsVisible="{Binding IsPreviewMode}"
+                 IsHitTestVisible="False" />
+          <ItemsControl ItemsSource="{Binding Elements}" x:Name="DesignSurface"
+                        IsVisible="{Binding IsDesignMode}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <Canvas />
@@ -202,52 +283,83 @@
             </ItemsControl.Styles>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:CanvasElementViewModel">
-                <Border Width="{Binding WidthPx}" Height="{Binding HeightPx}"
-                        Classes.selected="{Binding IsSelected}" Classes.overflow="{Binding IsOverflow}"
-                        BorderBrush="#888888" BorderThickness="1" Background="#18000000"
-                        Tag="{Binding}" PointerPressed="OnElementPointerPressed"
-                        RenderTransformOrigin="0.5,0.5">
-                  <Border.Styles>
-                    <Style Selector="Border.selected">
-                      <Setter Property="BorderBrush" Value="#0078D4" />
-                      <Setter Property="BorderThickness" Value="2" />
-                    </Style>
-                    <Style Selector="Border.overflow">
-                      <Setter Property="BorderBrush" Value="#E81123" />
-                    </Style>
-                  </Border.Styles>
-                  <Border.RenderTransform>
-                    <RotateTransform Angle="{Binding Rotation}" />
-                  </Border.RenderTransform>
-                  <Panel>
-                    <TextBlock Text="{Binding PreviewText}" FontSize="{Binding FontSizePx}"
-                               FontFamily="{Binding FontFamily}"
-                               Classes.bold="{Binding IsBold}"
-                               TextWrapping="Wrap"
-                               TextAlignment="{Binding TextAlignment}"
-                               HorizontalAlignment="{Binding BlockHorizontalAlignment}"
-                               VerticalAlignment="{Binding TextVerticalAlignment}"
-                               IsVisible="{Binding IsText}" Margin="2">
-                      <TextBlock.Styles>
-                        <Style Selector="TextBlock.bold">
-                          <Setter Property="FontWeight" Value="Bold" />
-                        </Style>
-                      </TextBlock.Styles>
-                    </TextBlock>
-                    <Border Background="#222" IsVisible="{Binding IsBarcode}">
-                      <TextBlock Text="{Binding PreviewText}" Foreground="White" FontSize="10"
-                                 HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" />
-                    </Border>
-                    <Rectangle Stroke="#111" StrokeThickness="1.5" Fill="Transparent"
-                               IsVisible="{Binding IsRectangle}" />
-                    <Ellipse Stroke="#111" StrokeThickness="1.5" Fill="Transparent"
-                             IsVisible="{Binding IsEllipse}" />
-                  </Panel>
-                </Border>
+                <!-- Hit box can be larger than geom; only the inner border rotates (line midpoint = center). -->
+                <Panel Width="{Binding HitWidthPx}" Height="{Binding HitHeightPx}"
+                       Background="Transparent"
+                       Tag="{Binding}" PointerPressed="OnElementPointerPressed">
+                  <Border Width="{Binding WidthPx}" Height="{Binding HeightPx}"
+                          HorizontalAlignment="Left" VerticalAlignment="Top"
+                          Classes.selected="{Binding IsSelected}" Classes.overflow="{Binding IsOverflow}"
+                          Classes.line="{Binding IsLine}"
+                          BorderBrush="#888888" BorderThickness="{Binding EditorBorderThickness}"
+                          Background="{Binding EditorChromeBrush}"
+                          RenderTransformOrigin="{Binding RotateOrigin}">
+                    <Border.Styles>
+                      <Style Selector="Border.selected">
+                        <Setter Property="BorderBrush" Value="#0078D4" />
+                        <Setter Property="BorderThickness" Value="2" />
+                      </Style>
+                      <Style Selector="Border.line">
+                        <Setter Property="BorderThickness" Value="0" />
+                      </Style>
+                      <Style Selector="Border.line.selected">
+                        <Setter Property="BorderThickness" Value="0" />
+                      </Style>
+                      <Style Selector="Border.overflow">
+                        <Setter Property="BorderBrush" Value="#E81123" />
+                      </Style>
+                    </Border.Styles>
+                    <Border.RenderTransform>
+                      <RotateTransform Angle="{Binding Rotation}" />
+                    </Border.RenderTransform>
+                    <Panel>
+                      <TextBlock Text="{Binding PreviewText}" FontSize="{Binding FontSizePx}"
+                                 FontFamily="{Binding FontFamily}"
+                                 Foreground="{Binding EditorTextBrush}"
+                                 Classes.bold="{Binding IsBold}"
+                                 TextWrapping="Wrap"
+                                 TextAlignment="{Binding TextAlignment}"
+                                 HorizontalAlignment="{Binding BlockHorizontalAlignment}"
+                                 VerticalAlignment="{Binding TextVerticalAlignment}"
+                                 IsVisible="{Binding IsText}" Margin="0">
+                        <TextBlock.Styles>
+                          <Style Selector="TextBlock.bold">
+                            <Setter Property="FontWeight" Value="Bold" />
+                          </Style>
+                        </TextBlock.Styles>
+                      </TextBlock>
+                      <Border Background="#222" IsVisible="{Binding IsBarcode}">
+                        <TextBlock Text="{Binding PreviewText}" Foreground="White" FontSize="10"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" />
+                      </Border>
+                      <Rectangle Stroke="{Binding EditorShapeStroke}" StrokeThickness="1.5"
+                                 Fill="{Binding EditorShapeFill}"
+                                 IsVisible="{Binding IsRectangleShape}" />
+                      <Canvas IsVisible="{Binding IsLine}" Width="{Binding WidthPx}" Height="{Binding HeightPx}"
+                              IsHitTestVisible="False">
+                        <Line StartPoint="{Binding LineStartPoint}" EndPoint="{Binding LineEndPoint}"
+                              Stroke="{Binding EditorShapeStroke}"
+                              StrokeThickness="{Binding LineStrokeThicknessPx}"
+                              StrokeDashArray="{Binding LineDashArray}" />
+                        <Rectangle Width="{Binding WidthPx}" Height="{Binding HeightPx}"
+                                   Stroke="#0078D4" StrokeThickness="1" Fill="Transparent"
+                                   IsVisible="{Binding IsSelected}" />
+                      </Canvas>
+                      <Ellipse Stroke="{Binding EditorShapeStroke}" StrokeThickness="1.5" Fill="Transparent"
+                               IsVisible="{Binding IsEllipse}" />
+                      <Border Background="#10000000" IsVisible="{Binding IsImage}">
+                        <TextBlock Text="{Binding PreviewText}" FontSize="10" Opacity="0.75"
+                                   Foreground="{Binding EditorTextBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   TextWrapping="Wrap" TextAlignment="Center" />
+                      </Border>
+                    </Panel>
+                  </Border>
+                </Panel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-          <Canvas x:Name="RubberBandCanvas" IsHitTestVisible="False" />
+          <Canvas x:Name="RubberBandCanvas" IsHitTestVisible="False" IsVisible="{Binding IsDesignMode}" />
         </Grid>
       </Border>
     </ScrollViewer>

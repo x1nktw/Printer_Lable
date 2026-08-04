@@ -54,15 +54,21 @@ public sealed class SkiaLabelRenderService : ILabelRenderService
         IReadOnlyDictionary<string, string> variables,
         int dpi)
     {
-        var x = MmToPx(element.Bounds.X, dpi);
-        var y = MmToPx(element.Bounds.Y, dpi);
-        var width = MmToPx(element.Bounds.Width, dpi);
-        var height = MmToPx(element.Bounds.Height, dpi);
+        // Positions may be 0; line width/height may be 0 (true horizontal/vertical).
+        // Other element sizes need at least 1px so text/shapes still draw.
+        var x = MmToPx(element.Bounds.X, dpi, minPixels: 0);
+        var y = MmToPx(element.Bounds.Y, dpi, minPixels: 0);
+        var isLine = element.Type == TemplateElementType.Line;
+        var width = MmToPx(element.Bounds.Width, dpi, minPixels: isLine ? 0 : 1);
+        var height = MmToPx(element.Bounds.Height, dpi, minPixels: isLine ? 0 : 1);
 
         canvas.Save();
         if (element.Rotation != 0)
         {
-            canvas.RotateDegrees((float)element.Rotation, x + (width / 2f), y + (height / 2f));
+            // Rotate around the geometric midpoint of the element (for lines: segment midpoint).
+            var pivotX = x + width / 2f;
+            var pivotY = y + height / 2f;
+            canvas.RotateDegrees((float)element.Rotation, pivotX, pivotY);
         }
 
         switch (element.Type)
@@ -74,7 +80,7 @@ public sealed class SkiaLabelRenderService : ILabelRenderService
                 DrawText(canvas, element, variables, x, y, width, height, dpi);
                 break;
             case TemplateElementType.Image:
-                DrawImage(canvas, element, x, y, width, height);
+                DrawImage(canvas, element, variables, x, y, width, height);
                 break;
             case TemplateElementType.Barcode:
             case TemplateElementType.QrCode:
@@ -210,32 +216,85 @@ public sealed class SkiaLabelRenderService : ILabelRenderService
     private static void DrawImage(
         SKCanvas canvas,
         TemplateElementDocument element,
+        IReadOnlyDictionary<string, string> variables,
         float x,
         float y,
         float width,
         float height)
     {
-        if (string.IsNullOrWhiteSpace(element.ImagePath))
+        var path = ResolveImageSource(element, variables);
+        if (string.IsNullOrWhiteSpace(path))
         {
             return;
         }
 
-        using var bitmap = LabelAssets.TryLoadIcon(element.ImagePath);
+        using var bitmap = LabelAssets.TryLoadIcon(path);
         if (bitmap is null)
         {
-            if (File.Exists(element.ImagePath))
+            if (File.Exists(path))
             {
-                using var fileBmp = SKBitmap.Decode(element.ImagePath);
+                using var fileBmp = SKBitmap.Decode(path);
                 if (fileBmp is not null)
                 {
-                    canvas.DrawBitmap(fileBmp, new SKRect(x, y, x + width, y + height));
+                    using var tintedFile = TintIcon(fileBmp, element.Invert);
+                    canvas.DrawBitmap(tintedFile, new SKRect(x, y, x + width, y + height));
                 }
             }
 
             return;
         }
 
-        canvas.DrawBitmap(bitmap, new SKRect(x, y, x + width, y + height));
+        using var tinted = TintIcon(bitmap, element.Invert);
+        canvas.DrawBitmap(tinted, new SKRect(x, y, x + width, y + height));
+    }
+
+    /// <summary>
+    /// Force opaque icon pixels to black or white (thermal mono), keeping alpha.
+    /// </summary>
+    private static SKBitmap TintIcon(SKBitmap source, bool white)
+    {
+        var copy = source.Copy()
+                   ?? new SKBitmap(source.Info);
+        if (!ReferenceEquals(copy, source))
+        {
+            source.CopyTo(copy);
+        }
+
+        var target = white ? (byte)255 : (byte)0;
+        for (var y = 0; y < copy.Height; y++)
+        {
+            for (var x = 0; x < copy.Width; x++)
+            {
+                var c = copy.GetPixel(x, y);
+                if (c.Alpha == 0)
+                {
+                    continue;
+                }
+
+                copy.SetPixel(x, y, new SKColor(target, target, target, c.Alpha));
+            }
+        }
+
+        return copy;
+    }
+
+    private static string? ResolveImageSource(
+        TemplateElementDocument element,
+        IReadOnlyDictionary<string, string> variables)
+    {
+        if (element.BindingMode == TextBindingMode.Variable && !string.IsNullOrWhiteSpace(element.ValueBinding))
+        {
+            var fromVariable = LookupVariable(variables, element.ValueBinding);
+            if (!string.IsNullOrWhiteSpace(fromVariable))
+            {
+                return fromVariable;
+            }
+
+            // Variable-bound icon with empty key → draw nothing (no fallback to static imagePath).
+            return null;
+        }
+
+        return element.ImagePath;
     }
 
     private static void DrawText(
@@ -265,8 +324,11 @@ public sealed class SkiaLabelRenderService : ILabelRenderService
         };
 
         var lineHeight = textSize * 1.15f;
-        var lines = WrapText(text, skFont, Math.Max(1f, width));
         var maxLines = Math.Max(1, (int)Math.Floor(height / Math.Max(1f, lineHeight)));
+        // Single-line boxes must not word-wrap on spaces ("03.08.2026 14:30" → time was dropped).
+        var lines = maxLines <= 1
+            ? text.Replace("\r\n", "\n").Split('\n').Take(1).ToList()
+            : WrapText(text, skFont, Math.Max(1f, width));
         if (lines.Count > maxLines)
         {
             lines = lines.Take(maxLines).ToList();
@@ -294,6 +356,8 @@ public sealed class SkiaLabelRenderService : ILabelRenderService
             _ => y + textSize
         };
 
+        canvas.Save();
+        canvas.ClipRect(new SKRect(x, y, x + width, y + height));
         foreach (var line in lines)
         {
             canvas.DrawText(line, drawX, drawY, skAlign, skFont, paint);
@@ -303,6 +367,8 @@ public sealed class SkiaLabelRenderService : ILabelRenderService
                 break;
             }
         }
+
+        canvas.Restore();
     }
 
     private static List<string> WrapText(string text, SKFont font, float maxWidth)
@@ -407,7 +473,7 @@ public sealed class SkiaLabelRenderService : ILabelRenderService
             return;
         }
 
-        var radius = MmToPx(element.CornerRadiusMm, dpi);
+        var radius = MmToPx(element.CornerRadiusMm, dpi, minPixels: 0);
         if (radius > 0)
         {
             canvas.DrawRoundRect(rect, radius, radius, paint);
@@ -491,6 +557,6 @@ public sealed class SkiaLabelRenderService : ILabelRenderService
             };
     }
 
-    private static int MmToPx(double mm, int dpi) =>
-        Math.Max(1, (int)Math.Round(mm * dpi / 25.4d, MidpointRounding.AwayFromZero));
+    private static int MmToPx(double mm, int dpi, int minPixels = 1) =>
+        Math.Max(minPixels, (int)Math.Round(mm * dpi / 25.4d, MidpointRounding.AwayFromZero));
 }

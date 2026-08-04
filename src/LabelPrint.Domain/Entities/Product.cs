@@ -37,6 +37,9 @@ public class Product : EntityBase
     /// <summary>Storage temperature regime for marking labels (e.g. «+2…+6 °C»).</summary>
     public string? TemperatureRegime { get; set; }
 
+    /// <summary>Icon key for marking labels (same catalog as addon icons).</summary>
+    public string? IconKey { get; set; }
+
     public Guid? CategoryId { get; set; }
 
     public Category? Category { get; set; }

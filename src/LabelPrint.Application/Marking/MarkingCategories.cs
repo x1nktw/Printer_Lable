@@ -20,8 +20,12 @@ public static class MarkingCategories
         Sauces
     ];
 
-    /// <summary>Default subcategories seeded under each root.</summary>
+    /// <summary>No longer seeded — users create their own. Kept empty on purpose.</summary>
     public static readonly IReadOnlyDictionary<string, string[]> DefaultSubcategories =
+        new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Names previously seeded; archived on upgrade so the catalog starts clean.</summary>
+    public static readonly IReadOnlyDictionary<string, string[]> LegacyDefaultSubcategories =
         new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
         {
             [Raw] = ["Мясо", "Овощи", "Сыр", "Выпечка"],
@@ -30,8 +34,8 @@ public static class MarkingCategories
             [Sauces] = ["Горячие", "Холодные", "Заправки"]
         };
 
-    /// <summary>Legacy alias for Сырьё defaults.</summary>
-    public static readonly string[] RawSubcategories = DefaultSubcategories[Raw];
+    /// <summary>Legacy alias — empty (no default Сырьё children).</summary>
+    public static readonly string[] RawSubcategories = [];
 
     public static readonly string[] TemperaturePresets =
     [

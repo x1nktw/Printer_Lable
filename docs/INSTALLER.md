@@ -1,7 +1,7 @@
 # Installer & distribution
 
 LabelPrint Pro **0.9.1** — self-contained .NET 8 Windows x64.  
-FrontPad Bridge **1.3.4** (версия в `extensions/frontpad-bridge/manifest.json`).
+FrontPad Bridge **1.3.5** (версия в `extensions/frontpad-bridge/manifest.json`).
 
 ## GitHub Releases (recommended)
 
@@ -20,7 +20,7 @@ git push origin v0.9.1
 | `LabelPrintPro-win-Setup.exe` | **Velopack Setup** — первая установка и база для автообновлений |
 | `LabelPrintPro-win-Portable.zip` | **Portable** — распаковать и запустить установщик/ярлык Velopack |
 | `LabelPrintPro-0.9.1-full.nupkg` + `releases.win.json` | Канал автообновлений Velopack |
-| `frontpad-bridge-1.3.4.zip` | Только Chrome/Edge расширение (не путать с версией приложения) |
+| `frontpad-bridge-1.3.5.zip` | Только Chrome/Edge расширение (не путать с версией приложения) |
 
 Имена: app = `<Version>` из `LabelPrint.UI.csproj`; Bridge = `version` из `manifest.json`.
 
@@ -48,7 +48,7 @@ vpk-app/
   config/appsettings.json
   plugins/                   # optional plugin DLLs
   extensions/
-    frontpad-bridge/         # Bridge 1.3.4 — см. INSTALL.txt
+    frontpad-bridge/         # Bridge 1.3.5 — см. INSTALL.txt
 ```
 
 После Velopack Setup приложение лежит в:
@@ -69,7 +69,7 @@ vpk-app/
 3. Bridge: `%LocalAppData%\LabelPrintPro\current\extensions\frontpad-bridge`.
 4. Optional: drop plugin DLLs into `current\plugins\` (see [README](../README.md#plugins)).
 
-### FrontPad Bridge 1.3.4 (Chrome / Edge)
+### FrontPad Bridge 1.3.5 (Chrome / Edge)
 
 Расширение уже в сборке — отдельно скачивать не обязательно (zip на релизе — для обновления только Bridge).
 

@@ -1,13 +1,13 @@
 # Open questions (LabelPrint Pro)
 
-Актуально на **0.9.1** / Bridge **1.3.4**.  
+Актуально на **0.9.1** / Bridge **1.3.5**.  
 Tracked decisions that must not be silently assumed in schema or plugin contracts.
 
 ## FrontPad
 
 Shop API (`get_products`, `new_order`, …) **не используется**.
 
-Заказы с кассы: browser extension Bridge **1.3.4** → локальный webhook (см. [FRONTPAD_KITCHEN.md](FRONTPAD_KITCHEN.md)).
+Заказы с кассы: browser extension Bridge **1.3.5** → локальный webhook (см. [FRONTPAD_KITCHEN.md](FRONTPAD_KITCHEN.md)).
 
 ### Still open
 

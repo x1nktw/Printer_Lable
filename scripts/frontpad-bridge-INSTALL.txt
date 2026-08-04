@@ -1,4 +1,4 @@
-LabelPrint FrontPad Bridge 1.3.4 — установка
+LabelPrint FrontPad Bridge 1.3.5 — установка
 
 1. Запустите LabelPrint Pro 0.8.0+ (должен слушать webhook, обычно http://127.0.0.1:8765).
 2. Откройте Chrome или Edge:
@@ -13,6 +13,6 @@ LabelPrint FrontPad Bridge 1.3.4 — установка
 После обновления LabelPrint Pro: на странице расширений нажмите «Обновить»
 у FrontPad Bridge (или удалите и загрузите папку снова).
 
-Отдельный архив на GitHub Releases: frontpad-bridge-1.3.4.zip
+Отдельный архив на GitHub Releases: frontpad-bridge-1.3.5.zip
 
 Подробнее: docs/FRONTPAD_KITCHEN.md и README.md в этой папке.

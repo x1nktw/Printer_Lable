@@ -18,6 +18,7 @@ internal sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(x => x.PriceCurrency).HasMaxLength(3).IsRequired();
         builder.Property(x => x.WeightValue).HasPrecision(18, 6);
         builder.Property(x => x.TemperatureRegime).HasMaxLength(64);
+        builder.Property(x => x.IconKey).HasMaxLength(64);
 
         builder.HasIndex(x => x.Sku).IsUnique();
         builder.HasIndex(x => x.Barcode).IsUnique().HasFilter("Barcode IS NOT NULL");

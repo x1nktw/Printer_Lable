@@ -22,18 +22,194 @@
     return Number.isFinite(n) ? n : fallback;
   }
 
+  /** Max length for PHP-style arrays / sparse objects (`{3: "x"}` → 4). */
+  function fieldLength(value) {
+    if (value == null) return 0;
+    if (Array.isArray(value)) return value.length;
+    if (typeof value === "object") {
+      const idxs = Object.keys(value)
+        .map((k) => Number(k))
+        .filter((n) => Number.isFinite(n) && n >= 0 && Number.isInteger(n));
+      if (idxs.length === 0) return toArray(value).length;
+      return Math.max(...idxs) + 1;
+    }
+    return 0;
+  }
+
+  function padNames(list, expectedCount) {
+    const out = list.map((x) => String(x ?? "").trim());
+    while (out.length < expectedCount) out.push("");
+    return out.slice(0, Math.max(expectedCount, out.length));
+  }
+
+  /**
+   * FrontPad joins position names with "," (no space): "Классика,Бекон".
+   * Human lists inside one name use ", " (comma+space): "Капуста, томаты, огурцы".
+   * Split only on commas that are NOT followed by whitespace.
+   */
+  function splitNameSeparators(raw) {
+    return String(raw ?? "").split(/,(?!\s)/);
+  }
+
+  /**
+   * FrontPad often sends positions.name as:
+   * - real array / sparse object (preferred)
+   * - comma-joined string "A,B,C" when names have no commas
+   * - sparse join ",,,Dish,,,,Addon with, commas." (Array#toString)
+   * Never treat ", " inside an addon as a position boundary.
+   */
   function splitNames(nameField, expectedCount) {
-    if (Array.isArray(nameField)) return nameField.map((x) => String(x ?? "").trim());
-    if (nameField && typeof nameField === "object") return toArray(nameField).map((x) => String(x ?? "").trim());
-    const raw = String(nameField ?? "").trim();
-    if (!raw) return Array.from({ length: expectedCount }, () => "Позиция");
-    const parts = raw.split(",").map((s) => s.trim()).filter(Boolean);
-    if (expectedCount > 0 && parts.length === expectedCount) return parts;
-    if (expectedCount <= 1) return [raw];
-    // Uneven split — keep whole string on first row, placeholders on rest
-    const result = [raw];
-    while (result.length < expectedCount) result.push(`Позиция ${result.length + 1}`);
-    return result;
+    if (Array.isArray(nameField)) {
+      return padNames(nameField, expectedCount);
+    }
+    if (nameField && typeof nameField === "object") {
+      const len = Math.max(expectedCount, fieldLength(nameField));
+      const densified = [];
+      for (let i = 0; i < len; i++) {
+        const v = nameField[i] ?? nameField[String(i)];
+        densified.push(v == null ? "" : String(v).trim());
+      }
+      return densified;
+    }
+
+    const raw = String(nameField ?? "");
+    if (!raw.trim()) {
+      return Array.from({ length: expectedCount }, () => "");
+    }
+    if (expectedCount <= 1) {
+      return [raw.trim()];
+    }
+
+    const parts = splitNameSeparators(raw);
+    if (parts.length === expectedCount) {
+      return parts.map((s) => s.trim());
+    }
+
+    // Classic compact join: "Классика,Бекон,Картофель" (no spaces after commas)
+    const compact = parts.map((s) => s.trim()).filter((s) => s.length > 0);
+    if (compact.length === expectedCount) {
+      return compact;
+    }
+
+    if (parts.length < expectedCount) {
+      // Prefer mapping compact names onto leading slots when join omitted empties
+      if (compact.length > 0 && compact.length < expectedCount) {
+        return padNames(compact, expectedCount);
+      }
+      return padNames(parts, expectedCount);
+    }
+
+    // Too many separators → extras belong inside the last slot.
+    const head = parts.slice(0, expectedCount - 1).map((s) => s.trim());
+    const tail = parts
+      .slice(expectedCount - 1)
+      .join(",")
+      .replace(/^,+/, "")
+      .trim();
+    return [...head, tail];
+  }
+
+  function isPlaceholderName(name) {
+    return /^Позиция(\s+\d+)?$/i.test(String(name ?? "").trim());
+  }
+
+  function hasProductId(productId) {
+    if (productId == null) return false;
+    const s = String(productId).trim();
+    return s !== "" && s !== "0";
+  }
+
+  /** Ghost slot: no id, no price, placeholder/empty name — not a real line. */
+  function isGhostRow(row) {
+    if (row.parentIndex != null) return false;
+    if (hasProductId(row.productId)) return false;
+    if (row.price != null) return false;
+    const name = String(row.name ?? "").trim();
+    return name === "" || isPlaceholderName(name);
+  }
+
+  /** Modifier rows without parent → attach to nearest preceding dish/anchor. */
+  function inferMissingParents(rows) {
+    let lastAnchor = -1;
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (row.parentIndex != null) {
+        const root = rootParentIndex(rows, row.parentIndex);
+        if (root >= 0) lastAnchor = root;
+        continue;
+      }
+      const isAnchor = hasProductId(row.productId) || row.price != null;
+      if (isAnchor) {
+        lastAnchor = i;
+        continue;
+      }
+      const name = String(row.name ?? "").trim();
+      if (!name || isPlaceholderName(name)) {
+        continue;
+      }
+      if (lastAnchor >= 0) {
+        row.parentIndex = lastAnchor;
+      } else {
+        lastAnchor = i;
+      }
+    }
+  }
+
+  /**
+   * When comma-splitting shredded one dish into several roots but only one line
+   * has price/productId — reassemble: first name = dish, the rest = one addon text.
+   */
+  function coalesceFragmentItems(items) {
+    if (items.length <= 1) return items;
+
+    const priced = items.filter((it) => it.price != null || hasProductId(it.externalProductId));
+    if (priced.length !== 1) return items;
+
+    const orphans = items.filter((it) => it.price == null && !hasProductId(it.externalProductId));
+    if (orphans.length === 0) return items;
+    // Only coalesce when every non-priced line looks like a name fragment (no own sku)
+    if (orphans.length + priced.length !== items.length) return items;
+
+    const main = priced[0];
+    const addonBits = [];
+    let dish = null;
+
+    for (const it of items) {
+      const n = String(it.name ?? "").trim();
+      const isMain = it === main;
+      if (!isMain) {
+        if (!dish && n) dish = n;
+        else if (n) addonBits.push(n);
+        for (const a of it.addons || []) {
+          const t = String(a ?? "").trim();
+          if (t) addonBits.push(t);
+        }
+        continue;
+      }
+      // priced row: its name is often a shredded leftover ("томаты")
+      if (n && !isPlaceholderName(n) && !/^Товар\s/i.test(n)) {
+        if (!dish) dish = n;
+        else addonBits.push(n);
+      }
+      for (const a of it.addons || []) {
+        const t = String(a ?? "").trim();
+        if (t) addonBits.push(t);
+      }
+    }
+
+    if (!dish) dish = main.name || "Без названия";
+    const addonText = addonBits.join(", ").replace(/\s+,/g, ",").trim();
+    const addons = addonText ? [addonText] : [];
+
+    return [{
+      externalProductId: main.externalProductId,
+      sku: main.sku ?? main.externalProductId,
+      name: dish,
+      quantity: main.quantity || 1,
+      price: main.price,
+      comment: addons.length ? addons.join("\n") : null,
+      addons
+    }];
   }
 
   /**
@@ -170,32 +346,44 @@
 
   function buildItems(positions) {
     if (!positions || typeof positions !== "object") return [];
-    const ids = toArray(positions.productID ?? positions.productId ?? positions.product_id);
-    const count = Math.max(
-      ids.length,
-      toArray(positions.kol).length,
-      toArray(positions.kol_val).length,
-      toArray(positions.price).length
-    );
-    if (count === 0) return [];
-
-    const names = splitNames(positions.name, count);
+    const idRaw = positions.productID ?? positions.productId ?? positions.product_id;
+    const ids = toArray(idRaw);
     const kol = toArray(positions.kol ?? positions.kol_val);
     const prices = toArray(positions.price);
     const parents = toArray(positions.parent ?? positions.product_mod ?? positions.productMod);
 
+    const count = Math.max(
+      fieldLength(idRaw),
+      ids.length,
+      fieldLength(positions.kol),
+      fieldLength(positions.kol_val),
+      kol.length,
+      fieldLength(positions.price),
+      prices.length,
+      fieldLength(positions.parent),
+      fieldLength(positions.product_mod),
+      parents.length,
+      fieldLength(positions.name)
+    );
+    if (count === 0) return [];
+
+    const names = splitNames(positions.name, count);
+
     const rows = [];
     for (let i = 0; i < count; i++) {
-      const productId = ids[i] != null ? String(ids[i]) : null;
-      const parentIndex = resolveParentIndex(parents[i], count, ids);
+      const productId = ids[i] != null && String(ids[i]).trim() !== "" ? String(ids[i]).trim() : null;
+      const parentIndex = resolveParentIndex(parents[i], count, ids.map((id) => (id == null ? null : String(id))));
+      const name = String(names[i] ?? "").trim();
       rows.push({
         productId,
-        name: names[i] || `Позиция ${i + 1}`,
+        name,
         quantity: asNumber(kol[i], 1) || 1,
-        price: prices[i] != null ? asNumber(prices[i], null) : null,
+        price: prices[i] != null && String(prices[i]).trim() !== "" ? asNumber(prices[i], null) : null,
         parentIndex: parentIndex === i ? null : parentIndex
       });
     }
+
+    inferMissingParents(rows);
 
     const addonsByRoot = new Map();
     for (let i = 0; i < rows.length; i++) {
@@ -209,20 +397,35 @@
     const items = [];
     for (let i = 0; i < rows.length; i++) {
       if (rows[i].parentIndex != null) continue;
+      if (isGhostRow(rows[i]) && !(addonsByRoot.get(i) || []).length) continue;
 
       const addons = addonsByRoot.get(i) || [];
       let name = rows[i].name;
+      if (!name || isPlaceholderName(name)) {
+        name = name || "";
+      }
       let price = rows[i].price;
       let comment = null;
       let addonNames = [];
 
       if (addons.length > 0) {
-        addonNames = addons.map((a) => a.name).filter(Boolean);
+        addonNames = addons
+          .map((a) => a.name)
+          .map((n) => String(n ?? "").trim())
+          .filter((n) => n && !isPlaceholderName(n));
         const priceParts = [rows[i].price, ...addons.map((a) => a.price)].filter((p) => p != null);
         if (priceParts.length > 0) {
           price = priceParts.reduce((sum, p) => sum + p, 0);
         }
-        comment = addonNames.join("\n");
+        comment = addonNames.length ? addonNames.join("\n") : null;
+      }
+
+      if ((!name || isPlaceholderName(name)) && addonNames.length === 0 && !hasProductId(rows[i].productId) && price == null) {
+        continue;
+      }
+
+      if (isPlaceholderName(name)) {
+        name = hasProductId(rows[i].productId) ? `Товар ${rows[i].productId}` : "Без названия";
       }
 
       items.push({
@@ -236,7 +439,7 @@
       });
     }
 
-    return items;
+    return coalesceFragmentItems(items);
   }
 
   function buildAddress(order) {

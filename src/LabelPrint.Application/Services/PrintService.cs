@@ -186,9 +186,14 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
 
         if (template is null || template.IsArchived)
         {
-            var byName = await _unitOfWork.Templates.SearchAsync("Сырьё", includeArchived: false, skip: 0, take: 5, cancellationToken);
-            template = byName.Items.FirstOrDefault(t => t.Name.Contains("Сырьё", StringComparison.OrdinalIgnoreCase))
-                       ?? byName.Items.FirstOrDefault();
+            var byName = await _unitOfWork.Templates.SearchAsync("Маркировка", includeArchived: false, skip: 0, take: 5, cancellationToken);
+            template = byName.Items.FirstOrDefault(t => t.Name.Contains("Маркировка", StringComparison.OrdinalIgnoreCase));
+            if (template is null)
+            {
+                byName = await _unitOfWork.Templates.SearchAsync("Сырьё", includeArchived: false, skip: 0, take: 5, cancellationToken);
+                template = byName.Items.FirstOrDefault(t => t.Name.Contains("Сырьё", StringComparison.OrdinalIgnoreCase))
+                           ?? byName.Items.FirstOrDefault();
+            }
         }
 
         if (template is null || template.IsArchived)
@@ -199,7 +204,7 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
 
         if (template is null)
         {
-            return Result.Failure<Guid>("Нет шаблона для печати. Создайте шаблон «Сырьё».");
+            return Result.Failure<Guid>("Нет шаблона для печати. Создайте шаблон «Маркировка 58×40».");
         }
 
         var printer = printerId is Guid pid
@@ -271,7 +276,9 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
         return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["Date"] = _labelDateTime.FormatDate(effective),
-            ["Time"] = _labelDateTime.FormatTime(effective)
+            ["Time"] = _labelDateTime.FormatTime(effective),
+            ["DateTime"] = _labelDateTime.FormatDateTime(effective),
+            ["ManufacturedAt"] = _labelDateTime.FormatDateTime(effective)
         };
     }
     /// <inheritdoc />

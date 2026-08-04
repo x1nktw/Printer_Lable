@@ -209,12 +209,18 @@ async function handleCapture(message) {
     await setStatus({
       lastStatus: `Пропуск: ${built.error}`,
       lastError: built.error,
-      lastDebug: `req=${clip(message.requestBody, 200)} | res=${clip(message.responseBody, 200)}`
+      lastDebug: `req=${clip(message.requestBody, 400)} | res=${clip(message.responseBody, 200)}`
     });
     return { ok: false, error: built.error };
   }
 
   const order = built.order;
+  const itemSummary = (order.items || [])
+    .map((it) => `${it.name}${it.addons && it.addons.length ? " +[" + it.addons.join("; ") + "]" : ""}`)
+    .join(" | ");
+  await setStatus({
+    lastDebug: `order №${order.number} items=${order.items.length}: ${clip(itemSummary, 240)}`
+  });
   if (isDuplicate(order.externalOrderId)) {
     await setStatus({
       lastStatus: `Дубль №${order.number} (уже отправляли)`,
@@ -230,6 +236,7 @@ async function handleCapture(message) {
       lastStatus: `Отправлен заказ №${order.number} (${order.items.length} поз.)`,
       lastOrderNumber: order.number,
       lastError: null,
+      lastDebug: `order №${order.number} items=${order.items.length}: ${clip(itemSummary, 240)}`,
       sentCount
     });
     scheduleHeartbeat(0);

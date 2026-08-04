@@ -206,8 +206,8 @@ public sealed class DatabaseInitializer
                 """{"schemaVersion":1,"name":"Срок годности","canvas":{"widthMm":58,"heightMm":30,"dpi":203},"elements":[{"id":"el1","type":0,"bounds":{"x":2,"y":2,"width":54,"height":8},"bindingMode":1,"valueBinding":"ProductName","font":{"family":"Arial","sizePt":11,"bold":true}},{"id":"el2","type":0,"bounds":{"x":2,"y":12,"width":54,"height":7},"bindingMode":1,"valueBinding":"Date","font":{"family":"Arial","sizePt":9}},{"id":"el3","type":0,"bounds":{"x":2,"y":20,"width":54,"height":7},"bindingMode":1,"valueBinding":"ExpireDate","font":{"family":"Arial","sizePt":10,"bold":true}}]}"""),
             ("Позиция заказа 58×40", 58, 40,
                 """{"schemaVersion":1,"name":"Позиция заказа","canvas":{"widthMm":58,"heightMm":40,"dpi":203},"elements":[{"id":"el1","type":0,"bounds":{"x":2,"y":2,"width":54,"height":7},"bindingMode":1,"valueBinding":"OrderNumber","font":{"family":"Arial","sizePt":10}},{"id":"el2","type":0,"bounds":{"x":2,"y":11,"width":54,"height":14},"bindingMode":1,"valueBinding":"PositionName","font":{"family":"Arial","sizePt":14,"bold":true}},{"id":"el3","type":0,"bounds":{"x":2,"y":28,"width":54,"height":8},"content":"{{PositionIndex}}/{{PositionTotal}}","bindingMode":0,"font":{"family":"Arial","sizePt":12}}]}"""),
-            ("Сырьё 58×40", 58, 40,
-                """{"schemaVersion":1,"name":"Сырьё 58x40","canvas":{"widthMm":58,"heightMm":40,"dpi":203},"elements":[{"id":"el1","type":0,"bounds":{"x":2,"y":1,"width":54,"height":12},"bindingMode":1,"valueBinding":"ProductName","font":{"family":"Arial","sizePt":14,"bold":true}},{"id":"el2","type":0,"bounds":{"x":2,"y":14,"width":28,"height":7},"bindingMode":1,"valueBinding":"Date","font":{"family":"Arial","sizePt":9}},{"id":"el3","type":0,"bounds":{"x":30,"y":14,"width":26,"height":7},"bindingMode":1,"valueBinding":"Time","font":{"family":"Arial","sizePt":9,"bold":true}},{"id":"el4","type":0,"bounds":{"x":2,"y":22,"width":54,"height":7},"bindingMode":1,"valueBinding":"TemperatureRegime","font":{"family":"Arial","sizePt":9}},{"id":"el5","type":0,"bounds":{"x":2,"y":30,"width":54,"height":8},"bindingMode":1,"valueBinding":"ExpireDate","font":{"family":"Arial","sizePt":11,"bold":true}}]}"""),
+            ("Маркировка 58×40", 58, 40,
+                MarkingLabel58x40Json),
             ("Штрихкод 58×40", 58, 40,
                 """{"schemaVersion":1,"name":"Штрихкод 58x40","canvas":{"widthMm":58,"heightMm":40,"dpi":203},"elements":[{"id":"el1","type":0,"bounds":{"x":2,"y":2,"width":54,"height":7},"bindingMode":1,"valueBinding":"ProductName","font":{"family":"Arial","sizePt":9}},{"id":"el2","type":2,"bounds":{"x":3,"y":10,"width":52,"height":20},"symbology":0,"valueBinding":"Barcode"},{"id":"el3","type":0,"bounds":{"x":2,"y":31,"width":54,"height":6},"bindingMode":1,"valueBinding":"Sku","font":{"family":"Arial","sizePt":9}}]}"""),
             ("Кухня 58×40", 58, 40,
@@ -234,6 +234,52 @@ public sealed class DatabaseInitializer
         }
 
         await ArchiveLegacyKitchenChecksAsync(presets, cancellationToken);
+        await MigrateLegacyRawTemplateAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Unified marking label 58×40 (reference: icon + name, manufactured / use-by / store-at rows).
+    /// </summary>
+    private static string MarkingLabel58x40Json { get; } = LoadPresetJson("marking-58x40.json");
+
+    private static string LoadPresetJson(string fileName)
+    {
+        var asm = typeof(DatabaseInitializer).Assembly;
+        var resourceName = asm.GetManifestResourceNames()
+            .FirstOrDefault(n => n.EndsWith(fileName, StringComparison.OrdinalIgnoreCase))
+            ?? throw new InvalidOperationException($"Embedded preset '{fileName}' not found.");
+        using var stream = asm.GetManifestResourceStream(resourceName)
+            ?? throw new InvalidOperationException($"Cannot open embedded preset '{fileName}'.");
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd().Trim();
+    }
+
+    private async Task MigrateLegacyRawTemplateAsync(CancellationToken cancellationToken)
+    {
+        var marking = await _dbContext.LabelTemplates
+            .FirstOrDefaultAsync(t => t.IsSystemPreset && t.Name == "Маркировка 58×40", cancellationToken);
+        var legacy = await _dbContext.LabelTemplates
+            .FirstOrDefaultAsync(t => t.IsSystemPreset && t.Name == "Сырьё 58×40", cancellationToken);
+        if (legacy is null)
+        {
+            return;
+        }
+
+        if (marking is null)
+        {
+            legacy.Name = "Маркировка 58×40";
+            legacy.WidthMm = 58;
+            legacy.HeightMm = 40;
+            legacy.ContentJson = MarkingLabel58x40Json;
+            legacy.UpdatedAt = DateTimeOffset.UtcNow;
+            return;
+        }
+
+        // Keep legacy name for old product DefaultTemplateId links, but sync content.
+        legacy.ContentJson = MarkingLabel58x40Json;
+        legacy.WidthMm = 58;
+        legacy.HeightMm = 40;
+        legacy.UpdatedAt = DateTimeOffset.UtcNow;
     }
 
     private async Task ArchiveLegacyKitchenChecksAsync(
@@ -283,49 +329,32 @@ public sealed class DatabaseInitializer
             [MarkingCategories.Sauces] = sauceRoot
         };
 
-        var subIds = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (rootName, children) in MarkingCategories.DefaultSubcategories)
-        {
-            if (!rootByName.TryGetValue(rootName, out var root))
-            {
-                continue;
-            }
-
-            for (var i = 0; i < children.Length; i++)
-            {
-                var name = children[i];
-                var sub = await EnsureMarkingCategoryAsync(name, root.Id, sortOrder: i, cancellationToken);
-                // Prefer Сырьё children for sample product mapping keys.
-                if (rootName.Equals(MarkingCategories.Raw, StringComparison.OrdinalIgnoreCase)
-                    || !subIds.ContainsKey(name))
-                {
-                    subIds[name] = sub.Id;
-                }
-            }
-        }
+        await ArchiveLegacyDefaultSubcategoriesAsync(rootByName, cancellationToken);
 
         var rawTemplate = await _dbContext.LabelTemplates
-            .FirstOrDefaultAsync(t => t.IsSystemPreset && t.Name == "Сырьё 58×40" && !t.IsArchived, cancellationToken);
+            .FirstOrDefaultAsync(t => t.IsSystemPreset && t.Name == "Маркировка 58×40" && !t.IsArchived, cancellationToken)
+            ?? await _dbContext.LabelTemplates
+                .FirstOrDefaultAsync(t => t.IsSystemPreset && t.Name == "Сырьё 58×40" && !t.IsArchived, cancellationToken);
 
-        var samples = new (string Name, string Sku, string Subcategory, string? Temperature)[]
+        // Sample products under roots only (no seeded subcategories).
+        var samples = new (string Name, string Sku, Guid CategoryId, string? Temperature, int? ShelfLifeHours)[]
         {
-            ("Мясо", "RAW-MEAT", "Мясо", "+2…+6 °C"),
-            ("Курица", "RAW-CHICKEN", "Мясо", "+2…+6 °C"),
-            ("Рыба", "RAW-FISH", "Мясо", "0…+4 °C"),
-            ("Томаты", "RAW-TOMATO", "Овощи", "+2…+6 °C"),
-            ("Лук", "RAW-ONION", "Овощи", "комнатная"),
-            ("Огурцы", "RAW-CUCUMBER", "Овощи", "+2…+6 °C"),
-            ("Сыр", "RAW-CHEESE", "Сыр", "+2…+6 °C")
+            ("Мясо", "RAW-MEAT", rawRoot.Id, "+2…+6 °C", 48),
+            ("Курица", "RAW-CHICKEN", rawRoot.Id, "+2…+6 °C", 36),
+            ("Рыба", "RAW-FISH", rawRoot.Id, "0…+4 °C", 24),
+            ("Томаты", "RAW-TOMATO", rawRoot.Id, "+2…+6 °C", 72),
+            ("Лук", "RAW-ONION", rawRoot.Id, "комнатная", 120),
+            ("Огурцы", "RAW-CUCUMBER", rawRoot.Id, "+2…+6 °C", 72),
+            ("Сыр", "RAW-CHEESE", rawRoot.Id, "+2…+6 °C", 72)
         };
 
-        foreach (var (name, sku, subcategory, temperature) in samples)
+        foreach (var (name, sku, categoryId, temperature, shelfHours) in samples)
         {
             if (await _dbContext.Products.AnyAsync(p => p.Sku == sku, cancellationToken))
             {
                 continue;
             }
 
-            var categoryId = subIds.TryGetValue(subcategory, out var id) ? id : rawRoot.Id;
             _dbContext.Products.Add(new Product
             {
                 Name = name,
@@ -334,9 +363,48 @@ public sealed class DatabaseInitializer
                 PriceCurrency = "RUB",
                 CategoryId = categoryId,
                 TemperatureRegime = temperature,
+                IconKey = null,
+                ShelfLifeDays = shelfHours,
+                ShelfLifeUnit = ShelfLifeUnit.Hours,
                 DefaultTemplateId = rawTemplate?.Id
             });
         }
+    }
+
+    /// <summary>Remove previously seeded marking subcategories; products move to the root.</summary>
+    private async Task ArchiveLegacyDefaultSubcategoriesAsync(
+        IReadOnlyDictionary<string, Category> rootByName,
+        CancellationToken cancellationToken)
+    {
+        foreach (var (rootName, childNames) in MarkingCategories.LegacyDefaultSubcategories)
+        {
+            if (!rootByName.TryGetValue(rootName, out var root))
+            {
+                continue;
+            }
+
+            var legacyNames = childNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var children = await _dbContext.Categories
+                .Where(c => c.ParentId == root.Id && !c.IsArchived)
+                .ToListAsync(cancellationToken);
+
+            foreach (var child in children.Where(c => legacyNames.Contains(c.Name)))
+            {
+                var products = await _dbContext.Products
+                    .Where(p => p.CategoryId == child.Id)
+                    .ToListAsync(cancellationToken);
+                foreach (var product in products)
+                {
+                    product.CategoryId = root.Id;
+                    product.UpdatedAt = DateTimeOffset.UtcNow;
+                }
+
+                child.IsArchived = true;
+                child.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<Category> EnsureMarkingCategoryAsync(

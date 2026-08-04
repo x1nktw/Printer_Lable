@@ -190,6 +190,7 @@ public sealed class ProductService : IProductService
             ShelfLifeUnit = p.ShelfLifeUnit,
             ShelfLifeDisplay = FormatShelfLife(p.ShelfLifeDays, p.ShelfLifeUnit),
             TemperatureRegime = p.TemperatureRegime,
+            IconKey = p.IconKey,
             CategoryId = p.CategoryId,
             IsArchived = p.IsArchived
         }).ToList();
@@ -267,6 +268,9 @@ public sealed class ProductService : IProductService
         product.TemperatureRegime = string.IsNullOrWhiteSpace(dto.TemperatureRegime)
             ? null
             : dto.TemperatureRegime.Trim();
+        product.IconKey = string.IsNullOrWhiteSpace(dto.IconKey)
+            ? null
+            : dto.IconKey.Trim();
         product.CategoryId = dto.CategoryId;
         product.DefaultTemplateId = dto.DefaultTemplateId;
         product.OrderItemTemplateId = dto.OrderItemTemplateId;
@@ -286,6 +290,7 @@ public sealed class ProductService : IProductService
         ShelfLifeDays = product.ShelfLifeDays,
         ShelfLifeUnit = product.ShelfLifeUnit,
         TemperatureRegime = product.TemperatureRegime,
+        IconKey = product.IconKey,
         CategoryId = product.CategoryId,
         DefaultTemplateId = product.DefaultTemplateId,
         OrderItemTemplateId = product.OrderItemTemplateId,

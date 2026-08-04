@@ -317,25 +317,6 @@ public partial class RawMaterialsViewModel : PageViewModelBase
 
         tree = await categories.GetTreeAsync();
         all = tree.IsSuccess ? tree.Value : Array.Empty<Category>();
-        foreach (var (rootName, children) in MarkingCategories.DefaultSubcategories)
-        {
-            var parentId = MarkingCategories.FindByName(all, rootName);
-            if (parentId is not Guid pid)
-            {
-                continue;
-            }
-
-            foreach (var sub in children)
-            {
-                if (MarkingCategories.FindByName(all, sub, pid) is null)
-                {
-                    await categories.CreateAsync(sub, pid);
-                }
-            }
-        }
-
-        tree = await categories.GetTreeAsync();
-        all = tree.IsSuccess ? tree.Value : Array.Empty<Category>();
         var rawId = MarkingCategories.FindByName(all, MarkingCategories.Raw);
 
         Guid? templateId = null;
@@ -347,25 +328,21 @@ public partial class RawMaterialsViewModel : PageViewModelBase
                 ?.Id;
         }
 
-        var samples = new (string Name, string Sku, string Sub, string Temp)[]
+        var samples = new (string Name, string Sku, string Temp)[]
         {
-            ("Мясо", "RAW-MEAT", "Мясо", "+2…+6 °C"),
-            ("Курица", "RAW-CHICKEN", "Мясо", "+2…+6 °C"),
-            ("Рыба", "RAW-FISH", "Мясо", "0…+4 °C"),
-            ("Томаты", "RAW-TOMATO", "Овощи", "+2…+6 °C"),
-            ("Лук", "RAW-ONION", "Овощи", "комнатная"),
-            ("Огурцы", "RAW-CUCUMBER", "Овощи", "+2…+6 °C"),
-            ("Сыр", "RAW-CHEESE", "Сыр", "+2…+6 °C")
+            ("Мясо", "RAW-MEAT", "+2…+6 °C"),
+            ("Курица", "RAW-CHICKEN", "+2…+6 °C"),
+            ("Рыба", "RAW-FISH", "0…+4 °C"),
+            ("Томаты", "RAW-TOMATO", "+2…+6 °C"),
+            ("Лук", "RAW-ONION", "комнатная"),
+            ("Огурцы", "RAW-CUCUMBER", "+2…+6 °C"),
+            ("Сыр", "RAW-CHEESE", "+2…+6 °C")
         };
 
         var createdCount = 0;
-        foreach (var (name, sku, sub, temp) in samples)
+        foreach (var (name, sku, temp) in samples)
         {
-            Guid? catId = null;
-            if (rawId is Guid rid)
-            {
-                catId = MarkingCategories.FindByName(all, sub, rid) ?? rid;
-            }
+            Guid? catId = rawId;
             var existing = await products.SearchAsync(sku, catId, false, 0, 5);
             if (existing.IsSuccess && existing.Value.Items.Any(i => i.Sku.Equals(sku, StringComparison.OrdinalIgnoreCase)))
             {

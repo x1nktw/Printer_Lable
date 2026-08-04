@@ -11,8 +11,7 @@ namespace LabelPrint.Application.Services;
 /// </summary>
 public sealed class AddonService : IAddonService
 {
-    public static readonly IReadOnlyList<string> DefaultBuiltInIconKeys =
-        new[] { "pepper", "cheese", "onion", "bullet" };
+    public static readonly IReadOnlyList<string> DefaultBuiltInIconKeys = [];
 
     private readonly IUnitOfWork _unitOfWork;
     private readonly IAddonIconResolver _iconResolver;

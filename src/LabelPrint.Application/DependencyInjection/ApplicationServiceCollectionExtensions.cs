@@ -49,8 +49,12 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<IVariableProvider, PriceVariableProvider>();
         services.AddScoped<IVariableProvider, DateVariableProvider>();
         services.AddScoped<IVariableProvider, TimeVariableProvider>();
+        services.AddScoped<IVariableProvider, DateTimeVariableProvider>();
+        services.AddScoped<IVariableProvider, ManufacturedAtVariableProvider>();
         services.AddScoped<IVariableProvider, ExpireDateVariableProvider>();
+        services.AddScoped<IVariableProvider, ExpireTimeVariableProvider>();
         services.AddScoped<IVariableProvider, TemperatureRegimeVariableProvider>();
+        services.AddScoped<IVariableProvider, ProductIconKeyVariableProvider>();
         services.AddScoped<IVariableProvider, OrderNumberVariableProvider>();
         services.AddScoped<IVariableProvider, PositionNameVariableProvider>();
         services.AddScoped<IVariableProvider, PositionIndexVariableProvider>();

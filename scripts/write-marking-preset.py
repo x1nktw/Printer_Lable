@@ -1,0 +1,197 @@
+# -*- coding: utf-8 -*-
+"""Write marking-58x40.json preset (single source for DatabaseInitializer)."""
+import json
+from pathlib import Path
+
+doc = {
+    "schemaVersion": 1,
+    "name": "Маркировка 58x40",
+    "canvas": {"widthMm": 58, "heightMm": 40, "dpi": 203},
+    "elements": [
+        {
+            "id": "icon",
+            "type": 1,
+            "bounds": {"x": 2, "y": 1.5, "width": 9, "height": 9},
+            "bindingMode": 1,
+            "valueBinding": "ProductIconKey",
+            "z": 1,
+        },
+        {
+            "id": "name",
+            "type": 0,
+            "bounds": {"x": 12, "y": 1.2, "width": 44, "height": 10},
+            "bindingMode": 1,
+            "valueBinding": "ProductName",
+            "font": {
+                "family": "Inter",
+                "sizePt": 12,
+                "bold": True,
+                "verticalAlign": "middle",
+            },
+            "z": 1,
+        },
+        {
+            "id": "d1",
+            "type": 6,
+            "bounds": {"x": 2, "y": 12.2, "width": 54, "height": 0},
+            "dashed": True,
+            "strokeThickness": 0.28,
+            "z": 0,
+        },
+        {
+            "id": "ical1",
+            "type": 1,
+            "bounds": {"x": 2, "y": 13.7, "width": 3.2, "height": 3.2},
+            "imagePath": "asset:icons/calendar.png",
+            "z": 1,
+        },
+        {
+            "id": "l1",
+            "type": 0,
+            "bounds": {"x": 5.8, "y": 13.3, "width": 17, "height": 4.2},
+            "content": "ИЗГОТОВЛЕНО",
+            "bindingMode": 0,
+            "font": {
+                "family": "Inter",
+                "sizePt": 6,
+                "bold": True,
+                "verticalAlign": "middle",
+            },
+            "z": 1,
+        },
+        {
+            "id": "d1a",
+            "type": 0,
+            "bounds": {"x": 23.5, "y": 13.2, "width": 20.5, "height": 4.4},
+            "bindingMode": 1,
+            "valueBinding": "Date",
+            "font": {
+                "family": "Inter",
+                "sizePt": 9,
+                "bold": True,
+                "horizontalAlign": "right",
+                "verticalAlign": "middle",
+            },
+            "z": 1,
+        },
+        {
+            "id": "t1",
+            "type": 0,
+            "bounds": {"x": 44.5, "y": 13.2, "width": 11.5, "height": 4.4},
+            "bindingMode": 1,
+            "valueBinding": "Time",
+            "font": {
+                "family": "Inter",
+                "sizePt": 9,
+                "bold": True,
+                "horizontalAlign": "right",
+                "verticalAlign": "middle",
+            },
+            "z": 1,
+        },
+        {
+            "id": "d2",
+            "type": 6,
+            "bounds": {"x": 2, "y": 19, "width": 54, "height": 0},
+            "dashed": True,
+            "strokeThickness": 0.28,
+            "z": 0,
+        },
+        {
+            "id": "ical2",
+            "type": 1,
+            "bounds": {"x": 2, "y": 20.8, "width": 3.2, "height": 3.2},
+            "imagePath": "asset:icons/calendar.png",
+            "z": 1,
+        },
+        {
+            "id": "l2",
+            "type": 0,
+            "bounds": {"x": 5.8, "y": 19.6, "width": 17, "height": 7},
+            "content": "ИСПОЛЬЗОВАТЬ\nДО",
+            "bindingMode": 0,
+            "font": {"family": "Inter", "sizePt": 6, "bold": True},
+            "z": 1,
+        },
+        {
+            "id": "d2a",
+            "type": 0,
+            "bounds": {"x": 23.5, "y": 21, "width": 20.5, "height": 4.4},
+            "bindingMode": 1,
+            "valueBinding": "ExpireDate",
+            "font": {
+                "family": "Inter",
+                "sizePt": 9,
+                "bold": True,
+                "horizontalAlign": "right",
+                "verticalAlign": "middle",
+            },
+            "z": 1,
+        },
+        {
+            "id": "t2",
+            "type": 0,
+            "bounds": {"x": 44.5, "y": 21, "width": 11.5, "height": 4.4},
+            "bindingMode": 1,
+            "valueBinding": "ExpireTime",
+            "font": {
+                "family": "Inter",
+                "sizePt": 9,
+                "bold": True,
+                "horizontalAlign": "right",
+                "verticalAlign": "middle",
+            },
+            "z": 1,
+        },
+        {
+            "id": "d3",
+            "type": 6,
+            "bounds": {"x": 2, "y": 28, "width": 54, "height": 0},
+            "dashed": True,
+            "strokeThickness": 0.28,
+            "z": 0,
+        },
+        {
+            "id": "itherm",
+            "type": 1,
+            "bounds": {"x": 2, "y": 29.8, "width": 3.2, "height": 3.2},
+            "imagePath": "asset:icons/thermometer.png",
+            "z": 1,
+        },
+        {
+            "id": "l3",
+            "type": 0,
+            "bounds": {"x": 5.8, "y": 29.5, "width": 20, "height": 4.2},
+            "content": "ХРАНИТЬ ПРИ",
+            "bindingMode": 0,
+            "font": {
+                "family": "Inter",
+                "sizePt": 6,
+                "bold": True,
+                "verticalAlign": "middle",
+            },
+            "z": 1,
+        },
+        {
+            "id": "v3",
+            "type": 0,
+            "bounds": {"x": 27, "y": 29.3, "width": 29, "height": 4.5},
+            "bindingMode": 1,
+            "valueBinding": "TemperatureRegime",
+            "font": {
+                "family": "Inter",
+                "sizePt": 9,
+                "bold": True,
+                "horizontalAlign": "right",
+                "verticalAlign": "middle",
+            },
+            "z": 1,
+        },
+    ],
+}
+
+out = Path(
+    r"d:\Cursor\Printer_Lable\src\LabelPrint.Infrastructure\Persistence\Presets\marking-58x40.json"
+)
+out.write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+print("wrote", out)

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LabelPrint FrontPad Bridge",
-  "version": "1.3.4",
+  "version": "1.3.6",
   "description": "Перехватывает сохранение заказа FrontPad (order.php) и отправляет состав в LabelPrint Pro.",
   "permissions": ["storage", "alarms"],
   "host_permissions": [

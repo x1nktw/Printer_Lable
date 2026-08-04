@@ -36,5 +36,13 @@ public sealed class ProductUpsertDtoValidator : AbstractValidator<ProductUpsertD
         RuleFor(x => x.ShelfLifeDays)
             .GreaterThan(0)
             .When(x => x.ShelfLifeDays.HasValue);
+
+        RuleFor(x => x.TemperatureRegime)
+            .MaximumLength(64)
+            .When(x => !string.IsNullOrWhiteSpace(x.TemperatureRegime));
+
+        RuleFor(x => x.IconKey)
+            .MaximumLength(64)
+            .When(x => !string.IsNullOrWhiteSpace(x.IconKey));
     }
 }

@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LabelPrint.Application.Abstractions.Services;
 using LabelPrint.Application.DTOs;
+using LabelPrint.Application.Icons;
 using LabelPrint.Application.Marking;
 using LabelPrint.Domain.Entities;
 using LabelPrint.Domain.Enums;
@@ -49,6 +50,8 @@ public partial class CatalogViewModel : PageViewModelBase
     public ObservableCollection<AddonListItemDto> Addons { get; } = new();
     public ObservableCollection<string> IconKeys { get; } = new();
 
+    private readonly HashSet<string> _builtInIconKeys = new(StringComparer.OrdinalIgnoreCase);
+
     [ObservableProperty] private int _selectedSectionIndex;
     [ObservableProperty] private string? _searchText;
     [ObservableProperty] private ProductListItemDto? _selectedProduct;
@@ -63,6 +66,7 @@ public partial class CatalogViewModel : PageViewModelBase
     [ObservableProperty] private decimal? _editShelfLifeValue;
     [ObservableProperty] private ShelfLifeUnit _editShelfLifeUnit = ShelfLifeUnit.Days;
     [ObservableProperty] private string? _editTemperatureRegime;
+    [ObservableProperty] private string? _editProductIconKey;
     [ObservableProperty] private Guid? _editCategoryId;
     [ObservableProperty] private CategoryOptionVm? _editCategoryOption;
     [ObservableProperty] private CategoryOptionVm? _editMarkingRootOption;
@@ -81,7 +85,7 @@ public partial class CatalogViewModel : PageViewModelBase
     [ObservableProperty] private Guid? _editingAddonId;
     [ObservableProperty] private string _editAddonName = string.Empty;
     [ObservableProperty] private string? _editAddonAliases;
-    [ObservableProperty] private string _editAddonIconKey = "bullet";
+    [ObservableProperty] private string _editAddonIconKey = string.Empty;
 
     public bool IsProductsSection => SelectedSectionIndex == 0;
     public bool IsRawSection => SelectedSectionIndex == 1;
@@ -92,6 +96,15 @@ public partial class CatalogViewModel : PageViewModelBase
     public bool CanAddMarkingSubcategory =>
         FilterMarkingRootOption?.Id is not null
         || (IsEditorOpen && EditMarkingRootOption?.Id is not null);
+
+    public bool CanDeleteMarkingSubcategory =>
+        IsRawSection && EditMarkingSubcategoryOption?.Id is not null;
+
+    public bool CanDeleteProductIcon =>
+        IsRawSection && !string.IsNullOrWhiteSpace(EditProductIconKey);
+
+    public bool CanDeleteAddonIcon =>
+        IsAddonsSection && !string.IsNullOrWhiteSpace(EditAddonIconKey);
 
     public IReadOnlyList<ShelfLifeUnitOptionVm> ShelfLifeUnitOptions { get; } =
     [
@@ -128,7 +141,12 @@ public partial class CatalogViewModel : PageViewModelBase
         _ = ReloadForSectionAsync();
     }
 
-    partial void OnEditCategoryOptionChanged(CategoryOptionVm? value) => EditCategoryId = value?.Id;
+    partial void OnEditProductIconKeyChanged(string? value) =>
+        OnPropertyChanged(nameof(CanDeleteProductIcon));
+
+    partial void OnEditAddonIconKeyChanged(string value) =>
+        OnPropertyChanged(nameof(CanDeleteAddonIcon));
+
 
     partial void OnEditMarkingRootOptionChanged(CategoryOptionVm? value)
     {
@@ -151,6 +169,7 @@ public partial class CatalogViewModel : PageViewModelBase
         }
 
         EditCategoryId = ResolveMarkingCategoryId(EditMarkingRootOption, value);
+        OnPropertyChanged(nameof(CanDeleteMarkingSubcategory));
     }
 
     partial void OnFilterMarkingRootOptionChanged(CategoryOptionVm? value)
@@ -207,6 +226,7 @@ public partial class CatalogViewModel : PageViewModelBase
         EditShelfLifeUnit = ShelfLifeUnit.Days;
         OnPropertyChanged(nameof(EditShelfLifeUnitOption));
         EditTemperatureRegime = null;
+        EditProductIconKey = null;
         _editExpireDate = null;
         _editManufactureDate = null;
         if (IsRawSection)
@@ -261,6 +281,12 @@ public partial class CatalogViewModel : PageViewModelBase
         EditShelfLifeUnit = dto.ShelfLifeUnit;
         OnPropertyChanged(nameof(EditShelfLifeUnitOption));
         EditTemperatureRegime = dto.TemperatureRegime;
+        EditProductIconKey = dto.IconKey;
+        if (!string.IsNullOrWhiteSpace(EditProductIconKey)
+            && !IconKeys.Contains(EditProductIconKey, StringComparer.OrdinalIgnoreCase))
+        {
+            IconKeys.Add(EditProductIconKey);
+        }
         _editExpireDate = dto.ExpireDate;
         _editManufactureDate = dto.ManufactureDate;
         EditCategoryId = dto.CategoryId;
@@ -316,6 +342,7 @@ public partial class CatalogViewModel : PageViewModelBase
             ShelfLifeDays = EditShelfLifeValue is > 0 ? (int)EditShelfLifeValue.Value : null,
             ShelfLifeUnit = EditShelfLifeUnit,
             TemperatureRegime = EditTemperatureRegime,
+            IconKey = EditProductIconKey,
             ExpireDate = _editExpireDate,
             ManufactureDate = _editManufactureDate,
             CategoryId = categoryId,
@@ -426,7 +453,7 @@ public partial class CatalogViewModel : PageViewModelBase
         EditingAddonId = null;
         EditAddonName = string.Empty;
         EditAddonAliases = null;
-        EditAddonIconKey = IconKeys.FirstOrDefault() ?? "bullet";
+        EditAddonIconKey = IconKeys.FirstOrDefault() ?? string.Empty;
         IsAddonEditorOpen = true;
     }
 
@@ -538,13 +565,138 @@ public partial class CatalogViewModel : PageViewModelBase
 
         var target = Path.Combine(dir, $"{stem}.png");
         File.Copy(path, target, overwrite: true);
+        HiddenIconStore.Unhide(stem);
         if (!IconKeys.Contains(stem, StringComparer.OrdinalIgnoreCase))
         {
             IconKeys.Add(stem);
         }
 
         EditAddonIconKey = stem;
+        if (IsRawSection)
+        {
+            EditProductIconKey = stem;
+        }
+
         StatusMessage = $"Иконка импортирована: {stem}.png";
+        OnPropertyChanged(nameof(CanDeleteProductIcon));
+        OnPropertyChanged(nameof(CanDeleteAddonIcon));
+    }
+
+    [RelayCommand]
+    private async Task DeleteMarkingSubcategoryAsync()
+    {
+        if (EditMarkingSubcategoryOption?.Id is not Guid subId)
+        {
+            return;
+        }
+
+        var name = EditMarkingSubcategoryOption.Name;
+        var parentId = EditMarkingRootOption?.Id;
+        var confirmed = await _dialogs.ConfirmAsync(
+            "Удаление подкатегории",
+            $"Удалить подкатегорию «{name}»? Товары перейдут в родительскую категорию.",
+            confirmText: "Удалить",
+            cancelText: "Отмена");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        using var scope = _scopeFactory.CreateScope();
+        var categories = scope.ServiceProvider.GetRequiredService<ICategoryService>();
+        var result = await categories.ArchiveAsync(subId);
+        if (result.IsFailure)
+        {
+            StatusMessage = result.Error;
+            return;
+        }
+
+        StatusMessage = $"Подкатегория «{name}» удалена";
+        await LoadCategoriesAsync();
+
+        _suppressMarkingCascade = true;
+        if (parentId is Guid rootId)
+        {
+            FilterMarkingRootOption = FilterMarkingRootOptions.FirstOrDefault(c => c.Id == rootId);
+            RebuildFilterMarkingSubcategoryOptions(rootId);
+            FilterMarkingSubcategoryOption = FilterMarkingSubcategoryOptions.FirstOrDefault();
+            EditMarkingRootOption = MarkingRootOptions.FirstOrDefault(c => c.Id == rootId);
+            RebuildMarkingSubcategoryOptions(rootId, selectSubId: null);
+            EditCategoryId = ResolveMarkingCategoryId(EditMarkingRootOption, EditMarkingSubcategoryOption);
+        }
+
+        _suppressMarkingCascade = false;
+        OnPropertyChanged(nameof(HasFilterMarkingSubcategories));
+        OnPropertyChanged(nameof(HasMarkingSubcategories));
+        OnPropertyChanged(nameof(CanAddMarkingSubcategory));
+        OnPropertyChanged(nameof(CanDeleteMarkingSubcategory));
+        await ReloadProductsAsync();
+    }
+
+    [RelayCommand]
+    private async Task DeleteProductIconAsync()
+    {
+        if (!CanDeleteProductIcon || string.IsNullOrWhiteSpace(EditProductIconKey))
+        {
+            return;
+        }
+
+        await DeleteCustomIconFileAsync(EditProductIconKey);
+        EditProductIconKey = null;
+        OnPropertyChanged(nameof(CanDeleteProductIcon));
+    }
+
+    [RelayCommand]
+    private async Task DeleteAddonIconAsync()
+    {
+        if (!CanDeleteAddonIcon || string.IsNullOrWhiteSpace(EditAddonIconKey))
+        {
+            return;
+        }
+
+        var key = EditAddonIconKey;
+        await DeleteCustomIconFileAsync(key);
+        EditAddonIconKey = IconKeys.FirstOrDefault() ?? string.Empty;
+        OnPropertyChanged(nameof(CanDeleteAddonIcon));
+    }
+
+    private async Task DeleteCustomIconFileAsync(string key)
+    {
+        var confirmed = await _dialogs.ConfirmAsync(
+            "Удаление иконки",
+            $"Удалить файл иконки «{key}.png»?",
+            confirmText: "Удалить",
+            cancelText: "Отмена");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        var path = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "LabelPrintPro",
+            "addon-icons",
+            $"{key}.png");
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Не удалось удалить иконку: {ex.Message}";
+            return;
+        }
+
+        var match = IconKeys.FirstOrDefault(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
+        if (match is not null)
+        {
+            IconKeys.Remove(match);
+        }
+
+        StatusMessage = $"Иконка «{key}» удалена из списка";
     }
 
     private async Task ReloadAllAsync()
@@ -574,12 +726,6 @@ public partial class CatalogViewModel : PageViewModelBase
     private async Task EnsureMarkingCategoriesAsync()
     {
         await LoadCategoriesAsync();
-        if (_markingCategoryIds.Count > 0
-            && _allCategories.Any(c => c.ParentId is not null && MarkingCategories.IsMarkingCategory(c, _allCategories)))
-        {
-            return;
-        }
-
         using var scope = _scopeFactory.CreateScope();
         var categories = scope.ServiceProvider.GetRequiredService<ICategoryService>();
         foreach (var rootName in MarkingCategories.Roots)
@@ -587,24 +733,6 @@ public partial class CatalogViewModel : PageViewModelBase
             if (MarkingCategories.FindByName(_allCategories, rootName) is null)
             {
                 await categories.CreateAsync(rootName, parentId: null);
-            }
-        }
-
-        await LoadCategoriesAsync();
-        foreach (var (rootName, children) in MarkingCategories.DefaultSubcategories)
-        {
-            var parentId = MarkingCategories.FindByName(_allCategories, rootName);
-            if (parentId is not Guid pid)
-            {
-                continue;
-            }
-
-            foreach (var sub in children)
-            {
-                if (MarkingCategories.FindByName(_allCategories, sub, pid) is null)
-                {
-                    await categories.CreateAsync(sub, pid);
-                }
             }
         }
 
@@ -692,9 +820,15 @@ public partial class CatalogViewModel : PageViewModelBase
         using var scope = _scopeFactory.CreateScope();
         var service = scope.ServiceProvider.GetRequiredService<IAddonService>();
         IconKeys.Clear();
+        _builtInIconKeys.Clear();
+        var hidden = HiddenIconStore.GetHidden();
         foreach (var key in service.BuiltInIconKeys)
         {
-            IconKeys.Add(key);
+            _builtInIconKeys.Add(key);
+            if (!hidden.Contains(key))
+            {
+                IconKeys.Add(key);
+            }
         }
 
         var dir = Path.Combine(
@@ -706,13 +840,19 @@ public partial class CatalogViewModel : PageViewModelBase
             foreach (var file in Directory.GetFiles(dir, "*.png"))
             {
                 var stem = Path.GetFileNameWithoutExtension(file);
-                if (!IconKeys.Contains(stem, StringComparer.OrdinalIgnoreCase))
+                if (string.IsNullOrWhiteSpace(stem)
+                    || hidden.Contains(stem)
+                    || IconKeys.Contains(stem, StringComparer.OrdinalIgnoreCase))
                 {
-                    IconKeys.Add(stem);
+                    continue;
                 }
+
+                IconKeys.Add(stem);
             }
         }
 
+        OnPropertyChanged(nameof(CanDeleteProductIcon));
+        OnPropertyChanged(nameof(CanDeleteAddonIcon));
         await Task.CompletedTask;
     }
 

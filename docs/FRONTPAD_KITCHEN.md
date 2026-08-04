@@ -1,6 +1,6 @@
 # FrontPad → LabelPrint Pro
 
-Совместимо с **LabelPrint Pro 0.9.1** и **FrontPad Bridge 1.3.4**.
+Совместимо с **LabelPrint Pro 0.9.1** и **FrontPad Bridge 1.3.5**.
 
 ## Shop API
 
@@ -11,7 +11,7 @@
 
 ## Поток заказов
 
-1. Расширение **FrontPad Bridge 1.3.4** (`extensions/frontpad-bridge`) перехватывает `order.php` в браузере  
+1. Расширение **FrontPad Bridge 1.3.5** (`extensions/frontpad-bridge`) перехватывает `order.php` в браузере  
 2. POST JSON на локальный webhook LabelPrint (`http://127.0.0.1:8765/` по умолчанию)  
 3. Автоимпорт в БД + обновление списка (+ автопечать при включении)  
 4. Heartbeat Bridge → индикатор на **Главной** («Статус системы»)
@@ -22,10 +22,10 @@ Webhook URL: **Настройки → Общие** → FrontPad Bridge.
 
 Иконки добавок на кухонной этикетке настраиваются в **Каталог → Добавки** (название как в FrontPad + иконка; без записи остаётся кружок).
 
-### Установка Bridge 1.3.4
+### Установка Bridge 1.3.5
 
 В релизе / publish / установщике расширение уже лежит в `extensions/frontpad-bridge/` (рядом с `LabelPrint.UI.exe`).  
-Отдельный артефакт релиза: `frontpad-bridge-1.3.4.zip`.
+Отдельный артефакт релиза: `frontpad-bridge-1.3.5.zip`.
 
 Chrome/Edge → Режим разработчика → **Загрузить распакованное** → эта папка.  
 См. `INSTALL.txt` и [README расширения](../extensions/frontpad-bridge/README.md).

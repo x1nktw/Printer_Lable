@@ -141,7 +141,12 @@ public partial class TemplateEditorPageView : UserControl
 
     private void OnElementPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is not Control control || control.Tag is not CanvasElementViewModel element || Vm is null)
+        if (Vm is null || Vm.IsPreviewMode)
+        {
+            return;
+        }
+
+        if (sender is not Control control || control.Tag is not CanvasElementViewModel element)
         {
             return;
         }
@@ -157,7 +162,7 @@ public partial class TemplateEditorPageView : UserControl
 
     private void OnCanvasPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (Vm is null || e.Source is Border { Tag: CanvasElementViewModel })
+        if (Vm is null || Vm.IsPreviewMode || e.Source is Control { Tag: CanvasElementViewModel })
         {
             return;
         }

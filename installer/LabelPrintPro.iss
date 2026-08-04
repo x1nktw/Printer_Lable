@@ -10,7 +10,7 @@
 #define MyAppURL "https://github.com/x1nktw/Printer_Lable"
 #define MyAppExeName "LabelPrint.UI.exe"
 #define MyAppId "{{8F3C2A91-6E4B-4D7A-9C1E-2B5F8D0A4E73}}"
-; FrontPad Bridge shipped under extensions\frontpad-bridge (manifest 1.3.4)
+; FrontPad Bridge shipped under extensions\frontpad-bridge (manifest 1.3.5)
 
 #ifndef PublishDir
   #define PublishDir "..\artifacts\publish\LabelPrintPro"

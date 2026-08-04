@@ -195,6 +195,10 @@
                     </DataTemplate>
                   </ComboBox.ItemTemplate>
                 </ComboBox>
+                <Button Content="Удалить подкатегорию"
+                        Command="{Binding DeleteMarkingSubcategoryCommand}"
+                        IsVisible="{Binding CanDeleteMarkingSubcategory}"
+                        HorizontalAlignment="Left" />
                 <TextBlock Text="Срок годности" Classes="page-subtitle" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <NumericUpDown Minimum="1" Maximum="3650" Increment="1" FormatString="0"
@@ -217,6 +221,18 @@
                           PlaceholderText="Выберите пресет" />
                 <TextBox Watermark="или введите свой режим"
                          Text="{Binding EditTemperatureRegime}" />
+                <TextBlock Text="Иконка" Classes="page-subtitle" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <ComboBox ItemsSource="{Binding IconKeys}"
+                            SelectedItem="{Binding EditProductIconKey}"
+                            Width="200"
+                            PlaceholderText="без иконки" />
+                  <Button Content="Импорт PNG…" Command="{Binding ImportAddonIconCommand}" />
+                  <Button Content="Удалить иконку"
+                          Command="{Binding DeleteProductIconCommand}"
+                          IsVisible="{Binding CanDeleteProductIcon}"
+                          ToolTip.Tip="Убрать из списка (встроенные скрываются, свои PNG удаляются)" />
+                </StackPanel>
                 <ItemsControl ItemsSource="{Binding CustomFields}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:CustomFieldEditVm">
@@ -261,6 +277,7 @@
                   <DataGridTextColumn Header="Артикул" Binding="{Binding Sku}" Width="120" />
                   <DataGridTextColumn Header="Срок" Binding="{Binding ShelfLifeDisplay}" Width="90" />
                   <DataGridTextColumn Header="t°" Binding="{Binding TemperatureRegime}" Width="100" />
+                  <DataGridTextColumn Header="Иконка" Binding="{Binding IconKey}" Width="90" />
                 </DataGrid.Columns>
               </DataGrid>
             </Border>
@@ -272,7 +289,7 @@
         <DockPanel Margin="0,8,0,0">
           <Border DockPanel.Dock="Top" Classes="app-card" Padding="12" Margin="0,0,0,12">
             <StackPanel Spacing="8">
-              <TextBlock Text="Сопоставьте названия добавок из FrontPad с иконками на кухонной этикетке. Без записи останется кружок (bullet)."
+              <TextBlock Text="Сопоставьте названия добавок из FrontPad с иконками на кухонной этикетке. Импортируйте свои PNG — встроенных иконок нет."
                          Classes="page-subtitle" TextWrapping="Wrap" />
               <WrapPanel>
                 <Button Content="Добавить" Command="{Binding NewAddonCommand}" Margin="0,0,8,8" />
@@ -302,6 +319,10 @@
                           SelectedItem="{Binding EditAddonIconKey}"
                           Width="200" />
                 <Button Content="Импорт PNG…" Command="{Binding ImportAddonIconCommand}" />
+                <Button Content="Удалить иконку"
+                        Command="{Binding DeleteAddonIconCommand}"
+                        IsVisible="{Binding CanDeleteAddonIcon}"
+                        ToolTip.Tip="Убрать из списка (встроенные скрываются, свои PNG удаляются)" />
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button Classes="accent" Command="{Binding SaveAddonCommand}">

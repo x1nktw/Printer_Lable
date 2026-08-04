@@ -12,6 +12,8 @@ namespace LabelPrint.UI.Services;
 /// </summary>
 public sealed class AvaloniaUiDialogService : IUiDialogService
 {
+    private const double DialogWidth = 420;
+
     /// <inheritdoc />
     public async Task<UnsavedChangesResult> ConfirmUnsavedChangesAsync(string title, string message)
     {
@@ -23,9 +25,9 @@ public sealed class AvaloniaUiDialogService : IUiDialogService
 
         var result = UnsavedChangesResult.Cancel;
         var dialog = CreateDialog(title);
-        var saveButton = CreateButton("Сохранить", 120);
-        var discardButton = CreateButton("Не сохранять", 140);
-        var cancelButton = CreateButton("Отмена", 100);
+        var saveButton = CreateButton("Сохранить");
+        var discardButton = CreateButton("Не сохранять");
+        var cancelButton = CreateButton("Отмена");
 
         saveButton.Click += (_, _) =>
         {
@@ -59,8 +61,8 @@ public sealed class AvaloniaUiDialogService : IUiDialogService
 
         var confirmed = false;
         var dialog = CreateDialog(title);
-        var okButton = CreateButton(confirmText, 120);
-        var cancelButton = CreateButton(cancelText, 100);
+        var okButton = CreateButton(confirmText);
+        var cancelButton = CreateButton(cancelText);
 
         okButton.Click += (_, _) =>
         {
@@ -103,28 +105,44 @@ public sealed class AvaloniaUiDialogService : IUiDialogService
     private static Window CreateDialog(string title) => new()
     {
         Title = title,
-        Width = 460,
+        Width = DialogWidth,
+        MinWidth = DialogWidth,
+        MaxWidth = DialogWidth,
         SizeToContent = SizeToContent.Height,
         WindowStartupLocation = WindowStartupLocation.CenterOwner,
         CanResize = false,
         ShowInTaskbar = false,
-        MinHeight = 160
+        SystemDecorations = SystemDecorations.Full,
+        UseLayoutRounding = true
     };
 
-    private static Button CreateButton(string content, double minWidth) => new()
+    private static Button CreateButton(string content) => new()
     {
         Content = content,
-        MinWidth = minWidth,
-        Padding = new Thickness(12, 6)
+        MinWidth = 96,
+        MinHeight = 32,
+        Padding = new Thickness(14, 6),
+        HorizontalContentAlignment = HorizontalAlignment.Center,
+        Margin = new Thickness(8, 0, 0, 0)
     };
 
-    private static Border BuildContent(string message, params Control[] buttons)
+    private static Control BuildContent(string message, params Control[] buttons)
     {
+        var messageBlock = new TextBlock
+        {
+            Text = message,
+            TextWrapping = TextWrapping.Wrap,
+            TextAlignment = TextAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Top,
+            MaxWidth = DialogWidth - 48
+        };
+
         var buttonRow = new StackPanel
         {
             Orientation = Orientation.Horizontal,
             HorizontalAlignment = HorizontalAlignment.Right,
-            Spacing = 8,
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Spacing = 0,
             Margin = new Thickness(0, 20, 0, 0)
         };
         foreach (var button in buttons)
@@ -132,18 +150,15 @@ public sealed class AvaloniaUiDialogService : IUiDialogService
             buttonRow.Children.Add(button);
         }
 
-        var root = new StackPanel { Spacing = 8 };
-        root.Children.Add(new TextBlock
-        {
-            Text = message,
-            TextWrapping = TextWrapping.Wrap
-        });
-        root.Children.Add(buttonRow);
-
         return new Border
         {
-            Padding = new Thickness(20),
-            Child = root
+            Padding = new Thickness(24, 20, 24, 16),
+            Width = DialogWidth,
+            Child = new StackPanel
+            {
+                Spacing = 0,
+                Children = { messageBlock, buttonRow }
+            }
         };
     }
 

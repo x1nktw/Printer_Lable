@@ -1,6 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Avalonia.Media.Imaging;
 using LabelPrint.Application.Abstractions.Services;
+using LabelPrint.Application.Icons;
 using LabelPrint.Application.Templates;
 using LabelPrint.Domain.Enums;
 using LabelPrint.Domain.Templates;
@@ -17,7 +19,15 @@ namespace LabelPrint.UI.ViewModels;
 /// </summary>
 public partial class TemplateEditorViewModel : PageViewModelBase
 {
+    /// <summary>Editor canvas scale (~203 dpi: 203/25.4 ≈ 8).</summary>
     public const double PxPerMm = 8;
+
+    /// <summary>
+    /// Convert template font points to editor pixels so preview matches Skia print
+    /// (<c>sizePt * dpi / 72</c> at the same mm scale as <see cref="PxPerMm"/>).
+    /// </summary>
+    public static double FontSizePtToPx(double sizePt, double zoom) =>
+        sizePt * (25.4 / 72.0) * PxPerMm * zoom;
 
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IUiDialogService _dialogs;
@@ -28,6 +38,7 @@ public partial class TemplateEditorViewModel : PageViewModelBase
     private bool _suppressUndo;
     private string _dragSnapshot = string.Empty;
     private IReadOnlyDictionary<string, string> _previewVariables = new Dictionary<string, string>();
+    private CancellationTokenSource? _printPreviewCts;
 
     public TemplateEditorViewModel(
         IServiceScopeFactory scopeFactory,
@@ -63,6 +74,15 @@ public partial class TemplateEditorViewModel : PageViewModelBase
     public ObservableCollection<SnapGuideViewModel> SnapGuides { get; } = new();
 
     public ObservableCollection<string> AvailableFontFamilies { get; } = new();
+
+    public ObservableCollection<string> IconKeys { get; } = new();
+
+    public IReadOnlyList<string> IconColorOptions { get; } = ["Чёрный", "Белый"];
+
+    public IReadOnlyList<string> BindingModeOptions { get; } = ["Текст", "Переменная"];
+
+    public IReadOnlyList<string> VariableKeyOptions { get; } =
+        TemplateVariablePalette.KnownVariables.Select(v => v.Key).ToArray();
 
     private static IEnumerable<string> BuildAvailableFontFamilies()
     {
@@ -112,9 +132,13 @@ public partial class TemplateEditorViewModel : PageViewModelBase
     [ObservableProperty] private bool _isPreviewMode;
     [ObservableProperty] private bool _canUndo;
     [ObservableProperty] private bool _canRedo;
+    [ObservableProperty] private Bitmap? _printPreviewBitmap;
 
     public double CanvasWidthPx => WidthMm * PxPerMm * Zoom;
     public double CanvasHeightPx => HeightMm * PxPerMm * Zoom;
+
+    /// <summary>True while editing vector chrome (not Skia print preview).</summary>
+    public bool IsDesignMode => !IsPreviewMode;
 
     public bool HasMultiSelection => SelectedElements.Count > 1;
 
@@ -123,6 +147,7 @@ public partial class TemplateEditorViewModel : PageViewModelBase
         OnPropertyChanged(nameof(CanvasWidthPx));
         RefreshOverflowState();
         RefreshDirtyState();
+        SchedulePrintPreviewRefresh();
     }
 
     partial void OnHeightMmChanged(double value)
@@ -130,6 +155,7 @@ public partial class TemplateEditorViewModel : PageViewModelBase
         OnPropertyChanged(nameof(CanvasHeightPx));
         RefreshOverflowState();
         RefreshDirtyState();
+        SchedulePrintPreviewRefresh();
     }
 
     partial void OnNameChanged(string value) => RefreshDirtyState();
@@ -146,12 +172,15 @@ public partial class TemplateEditorViewModel : PageViewModelBase
 
     partial void OnIsPreviewModeChanged(bool value)
     {
+        OnPropertyChanged(nameof(IsDesignMode));
         if (value)
         {
             _ = LoadPreviewVariablesAsync();
         }
         else
         {
+            CancelPrintPreview();
+            ClearPrintPreviewBitmap();
             RefreshAllPreviewText();
         }
     }
@@ -216,6 +245,8 @@ public partial class TemplateEditorViewModel : PageViewModelBase
             Canvas = new TemplateCanvas { WidthMm = dto.WidthMm, HeightMm = dto.HeightMm, Dpi = 203 },
             Elements = dto.Document.Elements
         }), markClean: true);
+
+        await LoadIconKeysAsync();
 
         if (IsPreviewMode)
         {
@@ -625,6 +656,35 @@ public partial class TemplateEditorViewModel : PageViewModelBase
     [RelayCommand]
     private void AddLine() => AddElementInternal(TemplateElementType.Line, "Линия");
 
+    [RelayCommand]
+    private void AddImage() => AddElementInternal(
+        TemplateElementType.Image,
+        "Иконка",
+        binding: TextBindingMode.Variable,
+        valueBinding: "ProductIconKey");
+
+    [RelayCommand]
+    private void AddAddonsKitchen()
+    {
+        RecordUndo();
+        var doc = new TemplateElementDocument
+        {
+            Type = TemplateElementType.Text,
+            Name = "Добавки (кухня)",
+            BindingMode = TextBindingMode.Variable,
+            ValueBinding = "AddonsKitchen",
+            Content = "{{AddonsKitchen}}",
+            Bounds = new TemplateBounds { X = 1.5, Y = 27, Width = 37, Height = 22 },
+            Font = new TemplateFont { Family = "Inter", SizePt = 8, Bold = true }
+        };
+        var vm = CreateElementViewModel(doc);
+        Elements.Add(vm);
+        SetSelection([vm]);
+        RefreshDirtyState();
+        RefreshOverflowState();
+        SchedulePrintPreviewRefresh();
+    }
+
     private void AddElementInternal(
         TemplateElementType type,
         string name,
@@ -639,6 +699,8 @@ public partial class TemplateEditorViewModel : PageViewModelBase
             RecordUndo();
         }
 
+        var isLine = type is TemplateElementType.Line;
+        var isImage = type is TemplateElementType.Image;
         var doc = new TemplateElementDocument
         {
             Type = type,
@@ -650,8 +712,13 @@ public partial class TemplateEditorViewModel : PageViewModelBase
             {
                 X = 2,
                 Y = 2,
-                Width = type is TemplateElementType.Line ? 40 : 30,
-                Height = type is TemplateElementType.Barcode or TemplateElementType.QrCode ? 12 : 8
+                Width = isLine ? 40 : isImage ? 10 : 30,
+                // Height 0 = horizontal line in Skia (diagonal uses height as rise).
+                Height = isLine
+                    ? 0
+                    : type is TemplateElementType.Barcode or TemplateElementType.QrCode
+                        ? 12
+                        : isImage ? 10 : 8
             },
             Font = new TemplateFont
             {
@@ -660,7 +727,8 @@ public partial class TemplateEditorViewModel : PageViewModelBase
                 Bold = type != TemplateElementType.Text || binding == TextBindingMode.Variable
             },
             Symbology = symbology ?? (type == TemplateElementType.Barcode ? BarcodeSymbology.Ean13 : type == TemplateElementType.QrCode ? BarcodeSymbology.QrCode : null),
-            StrokeThickness = 0.4
+            StrokeThickness = isLine ? 0.28 : 0.4,
+            Dashed = false
         };
 
         var vm = CreateElementViewModel(doc);
@@ -668,6 +736,7 @@ public partial class TemplateEditorViewModel : PageViewModelBase
         SetSelection([vm]);
         RefreshDirtyState();
         RefreshOverflowState();
+        SchedulePrintPreviewRefresh();
     }
 
     private void Align(Action<IList<TemplateAlignmentHelper.MutableBounds>> align)
@@ -768,6 +837,82 @@ public partial class TemplateEditorViewModel : PageViewModelBase
         }
     }
 
+    private Task LoadIconKeysAsync()
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var addons = scope.ServiceProvider.GetRequiredService<IAddonService>();
+        IconKeys.Clear();
+        var hidden = HiddenIconStore.GetHidden();
+        foreach (var key in addons.BuiltInIconKeys)
+        {
+            if (!hidden.Contains(key))
+            {
+                IconKeys.Add(key);
+            }
+        }
+
+        var dir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "LabelPrintPro",
+            "addon-icons");
+        if (Directory.Exists(dir))
+        {
+            foreach (var file in Directory.EnumerateFiles(dir, "*.png"))
+            {
+                var stem = Path.GetFileNameWithoutExtension(file);
+                if (!string.IsNullOrWhiteSpace(stem)
+                    && !hidden.Contains(stem)
+                    && !IconKeys.Contains(stem, StringComparer.OrdinalIgnoreCase))
+                {
+                    IconKeys.Add(stem);
+                }
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    [RelayCommand]
+    private async Task ImportTemplateIconAsync()
+    {
+        var path = await _dialogs.PickPngFileAsync();
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return;
+        }
+
+        var dir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "LabelPrintPro",
+            "addon-icons");
+        Directory.CreateDirectory(dir);
+
+        var stem = Path.GetFileNameWithoutExtension(path);
+        stem = string.Join("_", stem.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+        if (string.IsNullOrWhiteSpace(stem))
+        {
+            stem = Guid.NewGuid().ToString("N")[..8];
+        }
+
+        File.Copy(path, Path.Combine(dir, $"{stem}.png"), overwrite: true);
+        HiddenIconStore.Unhide(stem);
+        if (!IconKeys.Contains(stem, StringComparer.OrdinalIgnoreCase))
+        {
+            IconKeys.Add(stem);
+        }
+
+        if (Selected is { IsImage: true } image)
+        {
+            RecordUndo();
+            image.BindingMode = TextBindingMode.Literal;
+            image.ValueBinding = null;
+            image.ImagePath = stem;
+        }
+
+        StatusMessage = $"Иконка импортирована: {stem}.png";
+        SchedulePrintPreviewRefresh();
+    }
+
     private async Task LoadPreviewVariablesAsync()
     {
         using var scope = _scopeFactory.CreateScope();
@@ -796,6 +941,84 @@ public partial class TemplateEditorViewModel : PageViewModelBase
 
         _previewVariables = await resolver.ResolveAllAsync(context);
         RefreshAllPreviewText();
+        if (IsPreviewMode)
+        {
+            await RenderPrintPreviewAsync();
+        }
+    }
+
+    private void CancelPrintPreview()
+    {
+        _printPreviewCts?.Cancel();
+        _printPreviewCts?.Dispose();
+        _printPreviewCts = null;
+    }
+
+    private void ClearPrintPreviewBitmap()
+    {
+        var old = PrintPreviewBitmap;
+        PrintPreviewBitmap = null;
+        old?.Dispose();
+    }
+
+    private void SchedulePrintPreviewRefresh()
+    {
+        if (!IsPreviewMode)
+        {
+            return;
+        }
+
+        CancelPrintPreview();
+        _printPreviewCts = new CancellationTokenSource();
+        var token = _printPreviewCts.Token;
+        _ = DebouncedRenderPrintPreviewAsync(token);
+    }
+
+    private async Task DebouncedRenderPrintPreviewAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(180, cancellationToken);
+            await RenderPrintPreviewAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Newer edit superseded this render.
+        }
+    }
+
+    private async Task RenderPrintPreviewAsync(CancellationToken cancellationToken = default)
+    {
+        if (!IsPreviewMode)
+        {
+            return;
+        }
+
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var render = scope.ServiceProvider.GetRequiredService<ILabelRenderService>();
+            var document = BuildDocument();
+            var result = await render.RenderAsync(document, _previewVariables, cancellationToken);
+            if (cancellationToken.IsCancellationRequested || !IsPreviewMode)
+            {
+                return;
+            }
+
+            await using var stream = new MemoryStream(result.Payload);
+            var bitmap = new Bitmap(stream);
+            var previous = PrintPreviewBitmap;
+            PrintPreviewBitmap = bitmap;
+            previous?.Dispose();
+        }
+        catch (OperationCanceledException)
+        {
+            // Ignore cancelled preview.
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Превью печати: {ex.Message}";
+        }
     }
 
     private void RefreshAllPreviewText()
@@ -806,7 +1029,11 @@ public partial class TemplateEditorViewModel : PageViewModelBase
         }
     }
 
-    private void OnElementsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => RefreshDirtyState();
+    private void OnElementsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        RefreshDirtyState();
+        SchedulePrintPreviewRefresh();
+    }
 
     private void OnSelectedElementsChanged(object? sender, NotifyCollectionChangedEventArgs e) =>
         OnPropertyChanged(nameof(HasMultiSelection));
@@ -939,6 +1166,7 @@ public partial class TemplateEditorViewModel : PageViewModelBase
         if (IsPreviewMode)
         {
             RefreshAllPreviewText();
+            SchedulePrintPreviewRefresh();
         }
     }
 }
@@ -1043,20 +1271,221 @@ public partial class CanvasElementViewModel : ObservableObject
 
     public double LeftPx => XMm * TemplateEditorViewModel.PxPerMm * _zoom();
     public double TopPx => YMm * TemplateEditorViewModel.PxPerMm * _zoom();
-    public double WidthPx => WidthMm * TemplateEditorViewModel.PxPerMm * _zoom();
-    public double HeightPx => HeightMm * TemplateEditorViewModel.PxPerMm * _zoom();
-    public double FontSizePx => FontSizePt * _zoom() * 1.2;
+
+    /// <summary>
+    /// Visual / rotate box. For lines this matches Skia segment bounds (zero axis → stroke thickness)
+    /// so rotation around center stays on the segment midpoint.
+    /// </summary>
+    public double WidthPx
+    {
+        get
+        {
+            var scale = TemplateEditorViewModel.PxPerMm * _zoom();
+            var w = Math.Abs(WidthMm * scale);
+            if (Type is TemplateElementType.Line)
+            {
+                return w < 0.001 ? LineStrokeThicknessPx : w;
+            }
+
+            return Math.Max(w, 1);
+        }
+    }
+
+    public double HeightPx
+    {
+        get
+        {
+            var scale = TemplateEditorViewModel.PxPerMm * _zoom();
+            var h = Math.Abs(HeightMm * scale);
+            if (Type is TemplateElementType.Line)
+            {
+                return h < 0.001 ? LineStrokeThicknessPx : h;
+            }
+
+            return Math.Max(h, 1);
+        }
+    }
+
+    /// <summary>Larger transparent hit area so thin lines stay easy to select.</summary>
+    public double HitWidthPx => Type is TemplateElementType.Line ? Math.Max(WidthPx, 8) : WidthPx;
+
+    public double HitHeightPx => Type is TemplateElementType.Line ? Math.Max(HeightPx, 8) : HeightPx;
+
+    public double FontSizePx => TemplateEditorViewModel.FontSizePtToPx(FontSizePt, _zoom());
+    public double SizeMinimumMm => Type is TemplateElementType.Line ? 0 : 1;
+
+    /// <summary>
+    /// Line endpoints inside the geom box. Axis-aligned zero-height/width segments are centered
+    /// on the stroke so half the stroke is not clipped when rotating.
+    /// </summary>
+    public Avalonia.Point LineStartPoint
+    {
+        get
+        {
+            var stroke = LineStrokeThicknessPx;
+            if (Math.Abs(HeightMm) < 0.0001)
+            {
+                return new Avalonia.Point(0, stroke * 0.5);
+            }
+
+            if (Math.Abs(WidthMm) < 0.0001)
+            {
+                return new Avalonia.Point(stroke * 0.5, 0);
+            }
+
+            return default;
+        }
+    }
+
+    public Avalonia.Point LineEndPoint
+    {
+        get
+        {
+            var scale = TemplateEditorViewModel.PxPerMm * _zoom();
+            var w = WidthMm * scale;
+            var h = HeightMm * scale;
+            var stroke = LineStrokeThicknessPx;
+            if (Math.Abs(HeightMm) < 0.0001)
+            {
+                return new Avalonia.Point(w, stroke * 0.5);
+            }
+
+            if (Math.Abs(WidthMm) < 0.0001)
+            {
+                return new Avalonia.Point(stroke * 0.5, h);
+            }
+
+            return new Avalonia.Point(w, h);
+        }
+    }
+
+    public double LineStrokeThicknessPx =>
+        Math.Max(1, StrokeThickness * TemplateEditorViewModel.PxPerMm * _zoom());
+
+    public Avalonia.Collections.AvaloniaList<double>? LineDashArray =>
+        Dashed ? [4, 3] : null;
+
+    /// <summary>Always center — line geom box equals the segment, matching Skia midpoint pivot.</summary>
+    public Avalonia.RelativePoint RotateOrigin => Avalonia.RelativePoint.Center;
 
     public string DisplayText =>
         BindingMode == TextBindingMode.Variable && !string.IsNullOrWhiteSpace(ValueBinding)
             ? "{{" + ValueBinding + "}}"
-            : (Content ?? Name);
+            : Type is TemplateElementType.Image
+                ? (ImagePath ?? ValueBinding ?? "Иконка")
+                : (Content ?? Name);
 
     public bool IsText => Type is TemplateElementType.Text;
     public bool IsBarcode => Type is TemplateElementType.Barcode or TemplateElementType.QrCode;
-    public bool IsRectangle => Type is TemplateElementType.Rectangle or TemplateElementType.Line;
+    public bool IsRectangleShape => Type is TemplateElementType.Rectangle;
+    public bool IsLine => Type is TemplateElementType.Line;
     public bool IsEllipse => Type is TemplateElementType.Ellipse;
+    public bool IsImage => Type is TemplateElementType.Image;
     public bool IsQrCode => Type is TemplateElementType.QrCode;
+    public bool IsShape => Type is TemplateElementType.Rectangle or TemplateElementType.Ellipse or TemplateElementType.Line;
+    public bool IsLineSolid => IsLine && !Dashed;
+    public bool IsLineDashed => IsLine && Dashed;
+    public bool IsAddonsKitchen =>
+        IsText
+        && BindingMode == TextBindingMode.Variable
+        && string.Equals(ValueBinding, "AddonsKitchen", StringComparison.OrdinalIgnoreCase);
+
+    public bool IsVariableBinding => BindingMode == TextBindingMode.Variable;
+    public bool IsLiteralBinding => BindingMode != TextBindingMode.Variable;
+    public bool ShowsLiteralContent => IsText && IsLiteralBinding;
+    public bool ShowsVariablePicker => (IsText || IsBarcode) && IsVariableBinding;
+
+    public string BindingModeLabel
+    {
+        get => BindingMode == TextBindingMode.Variable ? "Переменная" : "Текст";
+        set
+        {
+            var next = string.Equals(value, "Переменная", StringComparison.OrdinalIgnoreCase)
+                ? TextBindingMode.Variable
+                : TextBindingMode.Literal;
+            if (BindingMode == next)
+            {
+                return;
+            }
+
+            BindingMode = next;
+            if (next == TextBindingMode.Variable && string.IsNullOrWhiteSpace(ValueBinding))
+            {
+                ValueBinding = "ProductName";
+            }
+
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsVariableBinding));
+            OnPropertyChanged(nameof(IsLiteralBinding));
+            OnPropertyChanged(nameof(ShowsLiteralContent));
+            OnPropertyChanged(nameof(ShowsVariablePicker));
+            OnPropertyChanged(nameof(IsAddonsKitchen));
+        }
+    }
+
+    public Avalonia.Media.IBrush EditorChromeBrush =>
+        IsLine
+            ? Avalonia.Media.Brushes.Transparent
+            : Invert
+                ? Avalonia.Media.Brushes.Black
+                : new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromArgb(0x18, 0, 0, 0));
+
+    public double EditorBorderThickness => IsLine ? 0 : 1;
+
+    public Avalonia.Media.IBrush EditorTextBrush =>
+        Invert ? Avalonia.Media.Brushes.White : Avalonia.Media.Brushes.Black;
+
+    public Avalonia.Media.IBrush EditorShapeFill =>
+        IsRectangleShape && Filled
+            ? (Invert ? Avalonia.Media.Brushes.White : Avalonia.Media.Brushes.Black)
+            : Avalonia.Media.Brushes.Transparent;
+
+    public Avalonia.Media.IBrush EditorShapeStroke =>
+        Invert ? Avalonia.Media.Brushes.White : Avalonia.Media.Brushes.Black;
+    public bool UseProductIcon
+    {
+        get => IsImage && BindingMode == TextBindingMode.Variable
+               && string.Equals(ValueBinding, "ProductIconKey", StringComparison.OrdinalIgnoreCase);
+        set
+        {
+            if (!IsImage)
+            {
+                return;
+            }
+
+            if (value)
+            {
+                BindingMode = TextBindingMode.Variable;
+                ValueBinding = "ProductIconKey";
+            }
+            else
+            {
+                BindingMode = TextBindingMode.Literal;
+                ValueBinding = null;
+            }
+
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(DisplayText));
+            Changed?.Invoke();
+        }
+    }
+
+    /// <summary>Editor label for <see cref="Invert"/> on image elements (black / white ink).</summary>
+    public string IconColor
+    {
+        get => Invert ? "Белый" : "Чёрный";
+        set
+        {
+            var white = string.Equals(value, "Белый", StringComparison.OrdinalIgnoreCase);
+            if (Invert == white)
+            {
+                return;
+            }
+
+            Invert = white;
+            OnPropertyChanged();
+        }
+    }
 
     public Avalonia.Media.TextAlignment TextAlignment => HorizontalAlign switch
     {
@@ -1099,6 +1528,17 @@ public partial class CanvasElementViewModel : ObservableObject
     partial void OnValueBindingChanged(string? value)
     {
         OnPropertyChanged(nameof(DisplayText));
+        OnPropertyChanged(nameof(IsAddonsKitchen));
+        if (!string.IsNullOrWhiteSpace(value) && BindingMode != TextBindingMode.Variable)
+        {
+            BindingMode = TextBindingMode.Variable;
+            OnPropertyChanged(nameof(BindingModeLabel));
+            OnPropertyChanged(nameof(IsVariableBinding));
+            OnPropertyChanged(nameof(IsLiteralBinding));
+            OnPropertyChanged(nameof(ShowsLiteralContent));
+            OnPropertyChanged(nameof(ShowsVariablePicker));
+        }
+
         if (!_previewModeActive)
         {
             PreviewText = DisplayText;
@@ -1110,6 +1550,13 @@ public partial class CanvasElementViewModel : ObservableObject
     partial void OnBindingModeChanged(TextBindingMode value)
     {
         OnPropertyChanged(nameof(DisplayText));
+        OnPropertyChanged(nameof(UseProductIcon));
+        OnPropertyChanged(nameof(BindingModeLabel));
+        OnPropertyChanged(nameof(IsVariableBinding));
+        OnPropertyChanged(nameof(IsLiteralBinding));
+        OnPropertyChanged(nameof(ShowsLiteralContent));
+        OnPropertyChanged(nameof(ShowsVariablePicker));
+        OnPropertyChanged(nameof(IsAddonsKitchen));
         if (!_previewModeActive)
         {
             PreviewText = DisplayText;
@@ -1135,6 +1582,45 @@ public partial class CanvasElementViewModel : ObservableObject
 
     partial void OnIsLockedChanged(bool value) => Changed?.Invoke();
     partial void OnGroupIdChanged(string? value) => Changed?.Invoke();
+    partial void OnDashedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsLineSolid));
+        OnPropertyChanged(nameof(IsLineDashed));
+        OnPropertyChanged(nameof(LineDashArray));
+        Changed?.Invoke();
+    }
+
+    partial void OnStrokeThicknessChanged(double value)
+    {
+        OnPropertyChanged(nameof(LineStrokeThicknessPx));
+        Changed?.Invoke();
+    }
+    partial void OnFilledChanged(bool value)
+    {
+        OnPropertyChanged(nameof(EditorShapeFill));
+        Changed?.Invoke();
+    }
+
+    partial void OnInvertChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IconColor));
+        OnPropertyChanged(nameof(EditorChromeBrush));
+        OnPropertyChanged(nameof(EditorTextBrush));
+        OnPropertyChanged(nameof(EditorShapeFill));
+        OnPropertyChanged(nameof(EditorShapeStroke));
+        Changed?.Invoke();
+    }
+    partial void OnCornerRadiusMmChanged(double value) => Changed?.Invoke();
+    partial void OnImagePathChanged(string? value)
+    {
+        OnPropertyChanged(nameof(DisplayText));
+        if (!_previewModeActive && IsImage)
+        {
+            PreviewText = DisplayText;
+        }
+
+        Changed?.Invoke();
+    }
 
     public void UpdatePreviewText(IReadOnlyDictionary<string, string> variables, bool previewMode)
     {
@@ -1152,7 +1638,14 @@ public partial class CanvasElementViewModel : ObservableObject
         OnPropertyChanged(nameof(TopPx));
         OnPropertyChanged(nameof(WidthPx));
         OnPropertyChanged(nameof(HeightPx));
+        OnPropertyChanged(nameof(HitWidthPx));
+        OnPropertyChanged(nameof(HitHeightPx));
         OnPropertyChanged(nameof(FontSizePx));
+        OnPropertyChanged(nameof(LineStartPoint));
+        OnPropertyChanged(nameof(LineEndPoint));
+        OnPropertyChanged(nameof(LineStrokeThicknessPx));
+        OnPropertyChanged(nameof(RotateOrigin));
+        OnPropertyChanged(nameof(SizeMinimumMm));
     }
 
     public void MoveByPixels(double dx, double dy, bool snap)

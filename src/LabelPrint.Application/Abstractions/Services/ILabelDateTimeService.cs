@@ -18,4 +18,7 @@ public interface ILabelDateTimeService
     string FormatDate(DateTimeOffset value) => value.ToLocalTime().ToString("dd.MM.yyyy");
 
     string FormatTime(DateTimeOffset value) => value.ToLocalTime().ToString("HH:mm");
+
+    string FormatDateTime(DateTimeOffset value) =>
+        $"{FormatDate(value)} {FormatTime(value)}";
 }

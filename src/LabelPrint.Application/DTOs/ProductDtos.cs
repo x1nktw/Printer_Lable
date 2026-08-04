@@ -29,6 +29,8 @@ public sealed class ProductUpsertDto
 
     public string? TemperatureRegime { get; set; }
 
+    public string? IconKey { get; set; }
+
     public Guid? CategoryId { get; set; }
 
     public Guid? DefaultTemplateId { get; set; }
@@ -61,6 +63,8 @@ public sealed class ProductListItemDto
     public string? ShelfLifeDisplay { get; init; }
 
     public string? TemperatureRegime { get; init; }
+
+    public string? IconKey { get; init; }
 
     public Guid? CategoryId { get; init; }
 

@@ -2,7 +2,7 @@
 
 Порядок из MASTER_SPEC v2.0 + аудит FrontPad.
 
-**Текущий релиз: LabelPrint Pro 0.9.1 · FrontPad Bridge 1.3.4**
+**Текущий релиз: LabelPrint Pro 0.9.1 · FrontPad Bridge 1.3.5**
 
 | Этап | Статус | Содержание |
 |------|--------|------------|
