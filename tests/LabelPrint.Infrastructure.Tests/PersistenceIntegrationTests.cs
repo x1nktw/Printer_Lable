@@ -81,7 +81,7 @@ public class PersistenceIntegrationTests : IAsyncLifetime
 
         (await _db.Users.CountAsync()).Should().BeGreaterThanOrEqualTo(2);
         (await _db.LabelTemplates.CountAsync(t => t.IsSystemPreset)).Should().Be(7);
-        (await _db.LabelTemplates.AnyAsync(t => t.Name == "Сырьё 58×40")).Should().BeTrue();
+        (await _db.LabelTemplates.AnyAsync(t => t.Name == "Маркировка 58×40")).Should().BeTrue();
         (await _db.LabelTemplates.AnyAsync(t => t.Name == "Кухня чек 40×58")).Should().BeTrue();
         (await _db.Categories.AnyAsync(c => c.Name == "Сырьё" && !c.IsArchived)).Should().BeTrue();
         (await _db.Products.CountAsync(p => p.Sku.StartsWith("RAW-"))).Should().BeGreaterThanOrEqualTo(7);
