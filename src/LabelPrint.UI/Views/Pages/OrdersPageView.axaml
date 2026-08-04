@@ -76,14 +76,15 @@
                     GridLinesVisibility="Horizontal"
                     BorderThickness="0"
                     Background="Transparent"
-                    RowBackground="Transparent">
+                    RowBackground="Transparent"
+                    ScrollViewer.HorizontalScrollBarVisibility="Auto">
             <DataGrid.Columns>
-              <DataGridTextColumn Header="Номер" Binding="{Binding Number}" Width="SizeToHeader" />
-              <DataGridTextColumn Header="Статус" Binding="{Binding StatusLabel}" Width="SizeToHeader" />
-              <DataGridTextColumn Header="Клиент" Binding="{Binding CustomerName}" Width="*" MinWidth="120" />
-              <DataGridTextColumn Header="Позиции" Binding="{Binding ItemCount}" Width="SizeToHeader" />
-              <DataGridTextColumn Header="В каталоге" Binding="{Binding MatchedItemCount}" Width="SizeToHeader" />
-              <DataGridTextColumn Header="Сумма" Binding="{Binding TotalAmount, StringFormat=\{0:0.##\}}" Width="SizeToHeader" />
+              <DataGridTextColumn Header="№" Binding="{Binding Number}" Width="Auto" MinWidth="56" />
+              <DataGridTextColumn Header="Статус" Binding="{Binding StatusLabel}" Width="Auto" MinWidth="64" />
+              <DataGridTextColumn Header="Клиент" Binding="{Binding CustomerName}" Width="*" MinWidth="80" />
+              <DataGridTextColumn Header="Поз." Binding="{Binding ItemCount}" Width="Auto" MinWidth="40" />
+              <DataGridTextColumn Header="Кат." Binding="{Binding MatchedItemCount}" Width="Auto" MinWidth="40" />
+              <DataGridTextColumn Header="Сумма" Binding="{Binding TotalAmount, StringFormat=\{0:0.##\}}" Width="Auto" MinWidth="56" />
             </DataGrid.Columns>
           </DataGrid>
         </DockPanel>
@@ -109,9 +110,10 @@
                     GridLinesVisibility="Horizontal"
                     BorderThickness="0"
                     Background="Transparent"
-                    RowBackground="Transparent">
+                    RowBackground="Transparent"
+                    ScrollViewer.HorizontalScrollBarVisibility="Auto">
             <DataGrid.Columns>
-              <DataGridTemplateColumn Header=" " Width="48" MinWidth="48">
+              <DataGridTemplateColumn Header=" " Width="40" MinWidth="40">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate x:DataType="vm:OrderItemRowVm">
                     <CheckBox IsChecked="{Binding IsSelected}"
@@ -120,12 +122,24 @@
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
-              <DataGridTextColumn Header="Позиция" Binding="{Binding PositionLabel}" Width="SizeToHeader" />
-              <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="*" MinWidth="140" />
-              <DataGridTextColumn Header="Артикул" Binding="{Binding Sku}" Width="SizeToHeader" />
-              <DataGridTextColumn Header="Количество" Binding="{Binding Quantity}" Width="SizeToHeader" />
-              <DataGridTextColumn Header="Связь" Binding="{Binding MatchLabel}" Width="SizeToHeader" />
-              <DataGridTemplateColumn Header="Готово" Width="SizeToHeader" MinWidth="70">
+              <DataGridTextColumn Header="#" Binding="{Binding PositionLabel}" Width="Auto" MinWidth="40" />
+              <DataGridTemplateColumn Header="Название" Width="*" MinWidth="100">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate x:DataType="vm:OrderItemRowVm">
+                    <StackPanel Margin="4,2" Spacing="2">
+                      <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding AddonsDisplay}"
+                                 Classes="page-subtitle"
+                                 TextWrapping="Wrap"
+                                 IsVisible="{Binding HasAddons}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTextColumn Header="Арт." Binding="{Binding Sku}" Width="Auto" MinWidth="48" />
+              <DataGridTextColumn Header="Кол." Binding="{Binding Quantity}" Width="Auto" MinWidth="40" />
+              <DataGridTextColumn Header="Связь" Binding="{Binding MatchLabel}" Width="Auto" MinWidth="48" />
+              <DataGridTemplateColumn Header="✓" Width="Auto" MinWidth="40">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate x:DataType="vm:OrderItemRowVm">
                     <CheckBox IsChecked="{Binding IsPrinted}"

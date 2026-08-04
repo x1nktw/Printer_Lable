@@ -19,6 +19,9 @@ public interface ITemplateService
 
     Task<Result<Guid>> CreateAsync(string name, double widthMm, double heightMm, CancellationToken cancellationToken = default);
 
+    /// <summary>Creates a template from exported ContentJson (optionally renaming).</summary>
+    Task<Result<Guid>> ImportFromJsonAsync(string json, string? preferredName = null, CancellationToken cancellationToken = default);
+
     Task<Result> SaveDocumentAsync(Guid id, string name, TemplateDocument document, CancellationToken cancellationToken = default);
 
     Task<Result> ArchiveAsync(Guid id, CancellationToken cancellationToken = default);

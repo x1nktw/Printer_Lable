@@ -102,6 +102,32 @@ public sealed class AvaloniaUiDialogService : IUiDialogService
         return files.Count > 0 ? files[0].TryGetLocalPath() : null;
     }
 
+    /// <inheritdoc />
+    public async Task<string?> PickJsonFileAsync(string title = "Выберите JSON шаблона")
+    {
+        var owner = GetMainWindow();
+        if (owner is null)
+        {
+            return null;
+        }
+
+        var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = title,
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("JSON")
+                {
+                    Patterns = ["*.json"],
+                    MimeTypes = ["application/json"]
+                }
+            ]
+        });
+
+        return files.Count > 0 ? files[0].TryGetLocalPath() : null;
+    }
+
     private static Window CreateDialog(string title) => new()
     {
         Title = title,

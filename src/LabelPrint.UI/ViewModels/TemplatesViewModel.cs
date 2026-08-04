@@ -129,6 +129,40 @@ public partial class TemplatesViewModel : PageViewModelBase
     }
 
     [RelayCommand]
+    private async Task ImportJsonAsync()
+    {
+        var path = await _dialogs.PickJsonFileAsync();
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return;
+        }
+
+        string json;
+        try
+        {
+            json = await File.ReadAllTextAsync(path);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Не удалось прочитать файл: {ex.Message}";
+            return;
+        }
+
+        using var scope = _scopeFactory.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<ITemplateService>();
+        var result = await service.ImportFromJsonAsync(json);
+        if (result.IsFailure)
+        {
+            StatusMessage = result.Error;
+            return;
+        }
+
+        StatusMessage = "Шаблон импортирован";
+        await LoadAsync();
+        _openEditor?.Invoke(result.Value);
+    }
+
+    [RelayCommand]
     private async Task DeleteSelectedAsync()
     {
         if (Selected is null)

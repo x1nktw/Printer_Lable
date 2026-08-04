@@ -29,4 +29,9 @@ public interface IUiDialogService
     /// Opens a file picker for PNG icons. Returns the selected path or <c>null</c>.
     /// </summary>
     Task<string?> PickPngFileAsync(string title = "Выберите PNG-иконку");
+
+    /// <summary>
+    /// Opens a file picker for template JSON. Returns the selected path or <c>null</c>.
+    /// </summary>
+    Task<string?> PickJsonFileAsync(string title = "Выберите JSON шаблона");
 }

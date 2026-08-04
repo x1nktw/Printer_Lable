@@ -132,6 +132,32 @@ public sealed class TemplateService : ITemplateService
     }
 
     /// <inheritdoc />
+    public async Task<Result<Guid>> ImportFromJsonAsync(
+        string json,
+        string? preferredName = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (!TemplateDocumentSerializer.TryDeserialize(json, out var document))
+        {
+            return Result.Failure<Guid>("Некорректный JSON шаблона.");
+        }
+
+        var name = !string.IsNullOrWhiteSpace(preferredName)
+            ? preferredName.Trim()
+            : (string.IsNullOrWhiteSpace(document.Name) ? "Импортированный шаблон" : document.Name.Trim());
+
+        var create = await CreateAsync(name, document.Canvas.WidthMm, document.Canvas.HeightMm, cancellationToken);
+        if (create.IsFailure)
+        {
+            return create;
+        }
+
+        document.Name = name;
+        var save = await SaveDocumentAsync(create.Value, name, document, cancellationToken);
+        return save.IsFailure ? Result.Failure<Guid>(save.Error!) : Result.Success(create.Value);
+    }
+
+    /// <inheritdoc />
     public async Task<Result> SaveDocumentAsync(Guid id, string name, TemplateDocument document, CancellationToken cancellationToken = default)
     {
         var template = await _unitOfWork.Templates.GetByIdAsync(id, cancellationToken);

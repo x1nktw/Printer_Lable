@@ -413,6 +413,23 @@ public sealed partial class OrderItemRowVm : ObservableObject
 
     public decimal Quantity => Item.Quantity;
 
+    public bool HasAddons => !string.IsNullOrWhiteSpace(Item.Comment);
+
+    public string AddonsDisplay
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(Item.Comment))
+            {
+                return string.Empty;
+            }
+
+            var lines = Item.Comment
+                .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return lines.Length == 0 ? string.Empty : "Добавки: " + string.Join(", ", lines);
+        }
+    }
+
     public string MatchLabel => Item.MatchStatus switch
     {
         OrderItemMatchStatus.MatchedBySku => "Артикул",

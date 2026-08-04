@@ -17,6 +17,7 @@
           <Button Content="Изменить" Command="{Binding EditSelectedCommand}" Margin="0,0,8,8" />
           <Button Content="Копировать" Command="{Binding DuplicateSelectedCommand}" Margin="0,0,8,8" />
           <Button Content="Экспорт JSON" Command="{Binding ExportSelectedJsonCommand}" ToolTip.Tip="Экспорт JSON шаблона" Margin="0,0,8,8" />
+          <Button Content="Импорт JSON" Command="{Binding ImportJsonCommand}" ToolTip.Tip="Импорт JSON шаблона" Margin="0,0,8,8" />
           <Button Content="Удалить" Command="{Binding DeleteSelectedCommand}" Margin="0,0,8,8" />
         </WrapPanel>
       </Border>
@@ -48,23 +49,24 @@
                 CanUserResizeColumns="True"
                 BorderThickness="0"
                 Background="Transparent"
-                RowBackground="Transparent">
+                RowBackground="Transparent"
+                ScrollViewer.HorizontalScrollBarVisibility="Auto">
         <DataGrid.Columns>
           <DataGridTextColumn Header="Название"
                               Binding="{Binding Name}"
                               Width="*"
-                              MinWidth="180" />
-          <DataGridTextColumn Header="Ширина, мм"
+                              MinWidth="120" />
+          <DataGridTextColumn Header="Ширина"
                               Binding="{Binding WidthMm, StringFormat=\{0:0.#\}}"
-                              Width="110"
-                              MinWidth="100" />
-          <DataGridTextColumn Header="Высота, мм"
+                              Width="Auto"
+                              MinWidth="64" />
+          <DataGridTextColumn Header="Высота"
                               Binding="{Binding HeightMm, StringFormat=\{0:0.#\}}"
-                              Width="110"
-                              MinWidth="100" />
-          <DataGridTemplateColumn Header="Используется"
-                                  Width="150"
-                                  MinWidth="150">
+                              Width="Auto"
+                              MinWidth="64" />
+          <DataGridTemplateColumn Header="В работе"
+                                  Width="Auto"
+                                  MinWidth="72">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate x:DataType="svc:TemplateListItemDto">
                 <CheckBox IsChecked="{Binding IsInUse}"

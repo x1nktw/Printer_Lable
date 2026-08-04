@@ -35,15 +35,16 @@
                 GridLinesVisibility="Horizontal"
                 BorderThickness="0"
                 Background="Transparent"
-                RowBackground="Transparent">
+                RowBackground="Transparent"
+                ScrollViewer.HorizontalScrollBarVisibility="Auto">
         <DataGrid.Columns>
-          <DataGridTextColumn Header="Задание" Binding="{Binding Title}" Width="*" MinWidth="180" />
-          <DataGridTextColumn Header="Принтер" Binding="{Binding PrinterName}" Width="140" MinWidth="120" />
-          <DataGridTextColumn Header="Статус" Binding="{Binding Status}" Width="110" />
-          <DataGridTextColumn Header="Копии" Binding="{Binding Copies}" Width="70" />
-          <DataGridTextColumn Header="Повторы" Binding="{Binding RetryCount}" Width="80" />
-          <DataGridTextColumn Header="Ошибка" Binding="{Binding FailureReason}" Width="200" MinWidth="160" />
-          <DataGridTextColumn Header="Создано" Binding="{Binding CreatedAt}" Width="160" />
+          <DataGridTextColumn Header="Задание" Binding="{Binding Title}" Width="*" MinWidth="120" />
+          <DataGridTextColumn Header="Принтер" Binding="{Binding PrinterName}" Width="Auto" MinWidth="72" />
+          <DataGridTextColumn Header="Статус" Binding="{Binding Status}" Width="Auto" MinWidth="64" />
+          <DataGridTextColumn Header="Коп." Binding="{Binding Copies}" Width="Auto" MinWidth="40" />
+          <DataGridTextColumn Header="Повт." Binding="{Binding RetryCount}" Width="Auto" MinWidth="40" />
+          <DataGridTextColumn Header="Ошибка" Binding="{Binding FailureReason}" Width="2*" MinWidth="80" />
+          <DataGridTextColumn Header="Создано" Binding="{Binding CreatedAt}" Width="Auto" MinWidth="100" />
         </DataGrid.Columns>
       </DataGrid>
     </Border>
