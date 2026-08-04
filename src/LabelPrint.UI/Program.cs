@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Velopack;
 
 namespace LabelPrint.UI;
 
@@ -24,6 +25,9 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // Must run before any other startup logic (handles Velopack hooks / pending updates).
+        VelopackApp.Build().Run();
+
         try
         {
             var configuration = BuildConfiguration();

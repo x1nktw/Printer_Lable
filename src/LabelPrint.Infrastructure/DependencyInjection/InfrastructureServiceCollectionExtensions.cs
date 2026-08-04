@@ -1,5 +1,6 @@
 using LabelPrint.Application.Abstractions.Repositories;
 using LabelPrint.Application.Abstractions.Services;
+using LabelPrint.Application.Options;
 using LabelPrint.Infrastructure.FrontPad.DependencyInjection;
 using LabelPrint.Infrastructure.Persistence;
 using LabelPrint.Infrastructure.Persistence.Repositories;
@@ -53,7 +54,8 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddPrintingInfrastructure(configuration);
         services.AddFrontPadInfrastructure();
-        services.AddSingleton<IUpdateChecker, StubUpdateChecker>();
+        services.Configure<UpdateOptions>(configuration.GetSection(UpdateOptions.SectionName));
+        services.AddSingleton<IUpdateChecker, VelopackUpdateChecker>();
         services.AddPluginInfrastructure();
         return services;
     }

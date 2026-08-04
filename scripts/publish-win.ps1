@@ -1,57 +1,30 @@
-# Publishes LabelPrint Pro as a self-contained, single-file win-x64 app
-# with a clean folder layout (exe + config/ + plugins/ + extensions/).
+# Publishes LabelPrint Pro for Velopack packaging (self-contained win-x64 folder).
 param(
     [string]$Configuration = "Release",
-    [string]$OutputDir = "artifacts/publish/LabelPrintPro"
+    [string]$OutputDir = "artifacts/publish/vpk-app"
 )
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
-$staging = Join-Path $root "artifacts/publish/_staging-win-x64"
 
 Push-Location $root
 try {
-    if (Test-Path $staging) {
-        Remove-Item $staging -Recurse -Force
-    }
-
     $outputFull = Join-Path $root $OutputDir
     if (Test-Path $outputFull) {
         Remove-Item $outputFull -Recurse -Force
     }
 
-    Write-Host "Publishing single-file self-contained build..."
+    Write-Host "Publishing self-contained win-x64 (folder, not single-file) for Velopack..."
     dotnet publish src/LabelPrint.UI/LabelPrint.UI.csproj `
         -c $Configuration `
         -r win-x64 `
         --self-contained true `
-        -p:PublishSingleFile=true `
-        -p:IncludeNativeLibrariesForSelfExtract=true `
-        -p:EnableCompressionInSingleFile=true `
+        -p:PublishSingleFile=false `
         -p:DebugType=None `
         -p:DebugSymbols=false `
-        -o $staging
+        -o $outputFull
 
-    New-Item -ItemType Directory -Path $outputFull -Force | Out-Null
-    New-Item -ItemType Directory -Path (Join-Path $outputFull "config") -Force | Out-Null
-    New-Item -ItemType Directory -Path (Join-Path $outputFull "plugins") -Force | Out-Null
-
-    $exe = Join-Path $staging "LabelPrint.UI.exe"
-    if (-not (Test-Path $exe)) {
-        throw "Expected executable not found: $exe"
-    }
-
-    Copy-Item $exe (Join-Path $outputFull "LabelPrint.UI.exe") -Force
-
-    $settings = Join-Path $staging "appsettings.json"
-    if (Test-Path $settings) {
-        Copy-Item $settings (Join-Path $outputFull "config\appsettings.json") -Force
-    }
-    else {
-        throw "appsettings.json missing from publish output"
-    }
-
-    # FrontPad Bridge (unpacked Chrome/Edge extension)
+    # FrontPad Bridge next to the app
     $bridgeSrc = Join-Path $root "extensions\frontpad-bridge"
     if (-not (Test-Path $bridgeSrc)) {
         throw "FrontPad Bridge not found: $bridgeSrc"
@@ -66,14 +39,17 @@ try {
         Copy-Item $guidePath (Join-Path $bridgeDst "INSTALL.txt") -Force
     }
 
-    Remove-Item $staging -Recurse -Force
+    # Ensure config layout expected by Program.cs (config/appsettings.json preferred)
+    $configDir = Join-Path $outputFull "config"
+    New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+    $settings = Join-Path $outputFull "appsettings.json"
+    if (Test-Path $settings) {
+        Copy-Item $settings (Join-Path $configDir "appsettings.json") -Force
+    }
 
-    Write-Host ""
-    Write-Host "Published layout:"
-    Write-Host "  $OutputDir\LabelPrint.UI.exe"
-    Write-Host "  $OutputDir\config\appsettings.json"
-    Write-Host "  $OutputDir\plugins\"
-    Write-Host "  $OutputDir\extensions\frontpad-bridge\  (see INSTALL.txt)"
+    New-Item -ItemType Directory -Path (Join-Path $outputFull "plugins") -Force | Out-Null
+
+    Write-Host "Published to $OutputDir"
 }
 finally {
     Pop-Location

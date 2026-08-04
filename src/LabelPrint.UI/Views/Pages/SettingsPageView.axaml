@@ -110,6 +110,25 @@
                            Classes="page-subtitle"
                            TextWrapping="Wrap" />
                 <TextBlock Text="{Binding UpdateStatus}" Classes="page-subtitle" TextWrapping="Wrap" />
+                <ProgressBar Minimum="0" Maximum="1"
+                             Value="{Binding UpdateDownloadProgress}"
+                             IsVisible="{Binding IsInstallingUpdate}"
+                             Height="6" />
+                <WrapPanel Orientation="Horizontal">
+                  <Button Content="Проверить обновления"
+                          Command="{Binding CheckUpdatesCommand}"
+                          Margin="0,0,8,8"
+                          IsEnabled="{Binding !IsInstallingUpdate}" />
+                  <Button Classes="accent"
+                          Content="Обновить"
+                          Command="{Binding InstallUpdateCommand}"
+                          Margin="0,0,8,8"
+                          IsVisible="{Binding UpdateAvailable}"
+                          IsEnabled="{Binding !IsInstallingUpdate}" />
+                  <Button Content="Страница релизов"
+                          Command="{Binding OpenReleasePageCommand}"
+                          Margin="0,0,8,8" />
+                </WrapPanel>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <TextBlock Text="Макс. retry печати" VerticalAlignment="Center" Classes="page-subtitle" />
                   <NumericUpDown Value="{Binding MaxPrintRetries}"

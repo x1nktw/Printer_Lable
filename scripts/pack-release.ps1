@@ -1,9 +1,8 @@
-# Builds GitHub Release assets: portable ZIP + Setup.exe (+ optional Bridge ZIP).
+# Builds Velopack release assets (+ FrontPad Bridge zip) for GitHub Releases.
 param(
     [Parameter(Mandatory = $false)]
     [string]$Version = "",
-    [string]$Configuration = "Release",
-    [switch]$SkipInstaller
+    [string]$Configuration = "Release"
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,7 +13,7 @@ function Get-AppVersion {
     if (-not [string]::IsNullOrWhiteSpace($Fallback)) { return $Fallback.Trim() }
     $proj = Get-Content (Join-Path $root "src/LabelPrint.UI/LabelPrint.UI.csproj") -Raw
     if ($proj -match '<Version>([^<]+)</Version>') { return $Matches[1].Trim() }
-    throw "Version not found. Pass -Version 0.8.0"
+    throw "Version not found. Pass -Version 0.9.0"
 }
 
 function Get-BridgeVersion {
@@ -26,88 +25,62 @@ function Get-BridgeVersion {
     return [string]$manifest.version
 }
 
-function Find-ISCC {
-    $candidates = @(
-        ${env:INNO_SETUP_PATH},
-        (Join-Path ${env:LOCALAPPDATA} "Programs\Inno Setup 6\ISCC.exe"),
-        "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
-        "C:\Program Files\Inno Setup 6\ISCC.exe",
-        (Join-Path $root "tools\InnoSetup6\ISCC.exe")
-    ) | Where-Object { $_ }
-    foreach ($p in $candidates) {
-        if (Test-Path $p) { return (Resolve-Path $p).Path }
+function Ensure-Vpk {
+    $cmd = Get-Command vpk -ErrorAction SilentlyContinue
+    if ($cmd) { return }
+    Write-Host "Installing vpk 1.2.0 global tool..."
+    dotnet tool update -g vpk --version 1.2.0
+    if ($LASTEXITCODE -ne 0) {
+        dotnet tool install -g vpk --version 1.2.0
     }
-    $cmd = Get-Command ISCC.exe -ErrorAction SilentlyContinue
-    if ($cmd) { return $cmd.Source }
-    return $null
-}
-
-function Ensure-InnoSetup {
-    $existing = Find-ISCC
-    if ($existing) { return $existing }
-
-    # Prefer winget when available (no broken download.php HTML page).
-    $winget = Get-Command winget -ErrorAction SilentlyContinue
-    if ($winget) {
-        Write-Host "Installing Inno Setup via winget..."
-        & winget install --id JRSoftware.InnoSetup -e --accept-package-agreements --accept-source-agreements --disable-interactivity
-        $existing = Find-ISCC
-        if ($existing) { return $existing }
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+                [System.Environment]::GetEnvironmentVariable("Path", "User")
+    if (-not (Get-Command vpk -ErrorAction SilentlyContinue)) {
+        throw "vpk not found after install. Open a new shell or install: dotnet tool install -g vpk --version 1.2.0"
     }
-
-    Write-Host "Downloading Inno Setup 6 from files.jrsoftware.org..."
-    $cache = Join-Path $root "artifacts\cache"
-    New-Item -ItemType Directory -Path $cache -Force | Out-Null
-    $installer = Join-Path $cache "innosetup-6.7.3.exe"
-    # Direct binary URL (download.php returns HTML without a browser).
-    $uri = "https://files.jrsoftware.org/is/6/innosetup-6.7.3.exe"
-    Invoke-WebRequest -Uri $uri -OutFile $installer -UseBasicParsing
-    if ((Get-Item $installer).Length -lt 1MB) {
-        throw "Inno Setup download looks invalid ($((Get-Item $installer).Length) bytes). Install manually: https://jrsoftware.org/isinfo.php"
-    }
-
-    $dest = Join-Path ${env:LOCALAPPDATA} "Programs\Inno Setup 6"
-    $args = @(
-        "/VERYSILENT",
-        "/SUPPRESSMSGBOXES",
-        "/NORESTART",
-        "/CURRENTUSER",
-        "/DIR=`"$dest`""
-    )
-    $proc = Start-Process -FilePath $installer -ArgumentList $args -Wait -PassThru
-    if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 1) {
-        Write-Warning "Inno Setup installer exit code: $($proc.ExitCode)"
-    }
-
-    $iscc = Find-ISCC
-    if (-not $iscc) {
-        throw "ISCC.exe still not found after Inno Setup install. Install from https://jrsoftware.org/isinfo.php and re-run."
-    }
-    return $iscc
 }
 
 Push-Location $root
 try {
     $Version = Get-AppVersion -Fallback $Version
     $BridgeVersion = Get-BridgeVersion
-    Write-Host "Packing release app=$Version bridge=$BridgeVersion ..."
+    Write-Host "Packing Velopack release app=$Version bridge=$BridgeVersion ..."
 
+    Ensure-Vpk
     & "$PSScriptRoot/publish-win.ps1" -Configuration $Configuration
 
     $out = Join-Path $root "artifacts/release"
+    $vpkOut = Join-Path $out "velopack"
     New-Item -ItemType Directory -Path $out -Force | Out-Null
+    if (Test-Path $vpkOut) { Remove-Item $vpkOut -Recurse -Force }
+    New-Item -ItemType Directory -Path $vpkOut -Force | Out-Null
 
-    # Remove stale assets from previous packs
+    # Remove stale top-level release assets
     Get-ChildItem $out -File -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -like "LabelPrintPro-*" -or $_.Name -like "frontpad-bridge-*" } |
         Remove-Item -Force
 
-    # --- Portable ZIP ---
-    $appZip = Join-Path $out "LabelPrintPro-$Version-win-x64.zip"
-    Compress-Archive -Path (Join-Path $root "artifacts/publish/LabelPrintPro\*") `
-        -DestinationPath $appZip -Force
+    $packDir = Join-Path $root "artifacts/publish/vpk-app"
+    $icon = Join-Path $root "src/LabelPrint.UI/Assets/app-icon.ico"
 
-    # --- Bridge-only ZIP (version from extension manifest.json) ---
+    Write-Host "Running vpk pack..."
+    & vpk pack `
+        --packId "LabelPrintPro" `
+        --packVersion $Version `
+        --packDir $packDir `
+        --mainExe "LabelPrint.UI.exe" `
+        --packTitle "LabelPrint Pro" `
+        --packAuthors "LabelPrint Pro" `
+        --icon $icon `
+        --outputDir $vpkOut `
+        --channel "win" `
+        --shortcuts "Desktop,StartMenuRoot"
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "vpk pack failed (exit $LASTEXITCODE)"
+    }
+
+    # Bridge-only ZIP
     $bridgeZip = Join-Path $out "frontpad-bridge-$BridgeVersion.zip"
     $bridgeStaging = Join-Path $root "artifacts/publish/_bridge-zip"
     if (Test-Path $bridgeStaging) { Remove-Item $bridgeStaging -Recurse -Force }
@@ -120,35 +93,24 @@ try {
     }
     Compress-Archive -Path (Join-Path $bridgeStaging "*") -DestinationPath $bridgeZip -Force
     Remove-Item $bridgeStaging -Recurse -Force
-    # --- Setup.exe (Inno Setup) ---
-    if (-not $SkipInstaller) {
-        $iscc = Ensure-InnoSetup
-        Write-Host "Building installer with: $iscc"
-        $iss = Join-Path $root "installer\LabelPrintPro.iss"
-        $publishAbs = ((Join-Path $root "artifacts\publish\LabelPrintPro") -replace '\\', '/')
-        $outAbs = ($out -replace '\\', '/')
-        & $iscc `
-            "/DMyAppVersion=$Version" `
-            "/DPublishDir=$publishAbs" `
-            "/DOutputDir=$outAbs" `
-            $iss
-        if ($LASTEXITCODE -ne 0) {
-            throw "Inno Setup compilation failed (exit $LASTEXITCODE)"
-        }
-    }
-    else {
-        Write-Host "SkipInstaller: setup.exe not built."
+
+    # Convenience copies at release root (Setup + portable if present)
+    Get-ChildItem $vpkOut -File | ForEach-Object {
+        Copy-Item $_.FullName (Join-Path $out $_.Name) -Force
     }
 
     Write-Host ""
     Write-Host "Release assets:"
-    Get-ChildItem $out | Sort-Object Name | ForEach-Object {
-        Write-Host ("  {0}  ({1:N0} bytes)" -f $_.Name, $_.Length)
+    Get-ChildItem $out -Recurse -File | Sort-Object FullName | ForEach-Object {
+        $rel = $_.FullName.Substring($out.Length).TrimStart('\')
+        Write-Host ("  {0}  ({1:N0} bytes)" -f $rel, $_.Length)
     }
     Write-Host ""
-    Write-Host "GitHub release:"
-    Write-Host "  git tag v$Version && git push origin v$Version"
-    Write-Host "  # or: gh release create v$Version artifacts/release/*"
+    Write-Host "GitHub:"
+    Write-Host "  1. Commit & push main"
+    Write-Host "  2. git tag v$Version && git push origin v$Version"
+    Write-Host "  3. Upload artifacts/release/* (Setup.exe, *.nupkg, releases*.json, bridge zip)"
+    Write-Host "     or: vpk upload github --repoUrl https://github.com/x1nktw/Printer_Lable --outputDir artifacts/release/velopack --publish --token `$env:GITHUB_TOKEN"
 }
 finally {
     Pop-Location

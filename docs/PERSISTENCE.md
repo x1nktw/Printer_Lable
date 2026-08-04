@@ -1,6 +1,6 @@
 # Документация Persistence
 
-Актуально для **LabelPrint Pro 0.8.0**.
+Актуально для **LabelPrint Pro 0.9.0**.
 
 ## Старт
 

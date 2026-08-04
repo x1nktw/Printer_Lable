@@ -1,10 +1,10 @@
 # LabelPrint Pro
 
-**Версия приложения: 0.8.0** · **FrontPad Bridge: 1.3.4** · [.NET 8 / Windows x64](docs/INSTALLER.md)
+**Версия приложения: 0.9.0** · **FrontPad Bridge: 1.3.4** · [.NET 8 / Windows x64](docs/INSTALLER.md)
 
 Коммерческое Windows-приложение для печати термоэтикеток: каталог, маркировка, кухонные заказы FrontPad, очередь печати.
 
-## Что умеет (0.8.0)
+## Что умеет (0.9.0)
 
 - **Каталог** — товары, маркировка (4 корня + подкатегории, срок годности, температурный режим), добавки с иконками
 - **Маркировка / Сырьё** — быстрая печать сырья и маркировочных этикеток
@@ -36,7 +36,6 @@ src/
   LabelPrint.UI
 extensions/
   frontpad-bridge/   # Chrome/Edge v1.3.4: заказы FrontPad → webhook
-installer/           # Inno Setup (LabelPrintPro.iss)
 scripts/             # publish-win.ps1, pack-release.ps1
 tests/
 docs/
@@ -50,8 +49,9 @@ docs/
 
 | Файл | Назначение |
 |------|------------|
-| `LabelPrintPro-0.8.0-win-x64-setup.exe` | Установщик |
-| `LabelPrintPro-0.8.0-win-x64.zip` | Portable |
+| `LabelPrintPro-win-Setup.exe` | Установщик Velopack |
+| `LabelPrintPro-win-Portable.zip` | Portable |
+| `LabelPrintPro-0.9.0-full.nupkg` + `releases.win.json` | Канал автообновления |
 | `frontpad-bridge-1.3.4.zip` | Только Bridge (версия из `manifest.json`) |
 
 ## Быстрый старт (разработка)

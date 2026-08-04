@@ -368,13 +368,54 @@ public partial class HomeViewModel : PageViewModelBase, IDisposable
         using var scope = _scopeFactory.CreateScope();
         var sp = scope.ServiceProvider;
 
-        await LoadVersionAsync(sp);
+        await AddUpdateStatusOnceAsync(sp, next);
         AddBridgeAndWebhookStatus(sp, next);
         AddFrontPadStatus(sp, next);
         await AddPrinterStatusAsync(sp, next);
         await AddQueueStatusAsync(sp, next);
         await AddLastPrintStatusAsync(sp, next);
         ReplaceStatusItems(next);
+    }
+
+    private bool _updateStatusChecked;
+    private SystemStatusItem? _cachedUpdateStatusItem;
+
+    private async Task AddUpdateStatusOnceAsync(IServiceProvider sp, List<SystemStatusItem> items)
+    {
+        var version = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version;
+        var current = version is null
+            ? "0.8.0"
+            : $"{version.Major}.{version.Minor}.{version.Build}";
+        VersionLabel = $"LabelPrint Pro v{current}";
+
+        if (!_updateStatusChecked)
+        {
+            _updateStatusChecked = true;
+            try
+            {
+                var updates = sp.GetRequiredService<IUpdateChecker>();
+                var result = await updates.CheckAsync();
+                if (result.IsSuccess && result.Value.UpdateAvailable)
+                {
+                    _cachedUpdateStatusItem = new SystemStatusItem
+                    {
+                        Level = SystemStatusLevel.Warning,
+                        Icon = "⬆",
+                        Title = $"Доступно обновление v{result.Value.LatestVersion}",
+                        Detail = "Настройки → Система → Установить обновление"
+                    };
+                }
+            }
+            catch
+            {
+                // ignore — status strip should not fail
+            }
+        }
+
+        if (_cachedUpdateStatusItem is not null)
+        {
+            items.Add(_cachedUpdateStatusItem);
+        }
     }
 
     private void ReplaceStatusItems(IReadOnlyList<SystemStatusItem> next)
@@ -395,16 +436,6 @@ public partial class HomeViewModel : PageViewModelBase, IDisposable
         else
         {
             Dispatcher.UIThread.Post(Apply);
-        }
-    }
-
-    private async Task LoadVersionAsync(IServiceProvider sp)
-    {
-        var updates = sp.GetRequiredService<IUpdateChecker>();
-        var result = await updates.CheckAsync();
-        if (result.IsSuccess)
-        {
-            VersionLabel = $"LabelPrint Pro v{result.Value.CurrentVersion}";
         }
     }
 

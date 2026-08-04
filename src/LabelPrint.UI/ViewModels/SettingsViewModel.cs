@@ -79,6 +79,11 @@ public partial class SettingsViewModel : PageViewModelBase
     private Guid? _markingPrintTemplateId;
     [ObservableProperty] private string? _statusMessage;
     [ObservableProperty] private string _updateStatus = string.Empty;
+    [ObservableProperty] private bool _updateAvailable;
+    [ObservableProperty] private bool _isCheckingUpdates;
+    [ObservableProperty] private bool _isInstallingUpdate;
+    [ObservableProperty] private double _updateDownloadProgress;
+    [ObservableProperty] private UpdateCheckResult? _pendingUpdate;
     [ObservableProperty] private LabelDateTimeMode _labelDateTimeMode = LabelDateTimeMode.Realtime;
     [ObservableProperty] private DateTime? _manualLabelDate = DateTime.Today;
     [ObservableProperty] private TimeSpan? _manualLabelTime = DateTime.Now.TimeOfDay;
@@ -177,9 +182,7 @@ public partial class SettingsViewModel : PageViewModelBase
 
                 var updates = scope.ServiceProvider.GetRequiredService<IUpdateChecker>();
                 var updateResult = await updates.CheckAsync();
-                UpdateStatus = updateResult.IsSuccess
-                    ? $"v{updateResult.Value.CurrentVersion} — {updateResult.Value.Message}"
-                    : updateResult.Error ?? "Не удалось проверить обновления.";
+                ApplyUpdateCheck(updateResult);
             }
         }
 
@@ -187,6 +190,134 @@ public partial class SettingsViewModel : PageViewModelBase
         await Printers.LoadCommand.ExecuteAsync(null);
         await Queue.LoadCommand.ExecuteAsync(null);
         await History.LoadCommand.ExecuteAsync(null);
+    }
+
+    [RelayCommand]
+    private async Task CheckUpdatesAsync()
+    {
+        if (IsCheckingUpdates || IsInstallingUpdate)
+        {
+            return;
+        }
+
+        IsCheckingUpdates = true;
+        UpdateStatus = "Проверка обновлений…";
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var updates = scope.ServiceProvider.GetRequiredService<IUpdateChecker>();
+            var updateResult = await updates.CheckAsync();
+            ApplyUpdateCheck(updateResult);
+        }
+        finally
+        {
+            IsCheckingUpdates = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallUpdateAsync()
+    {
+        if (IsInstallingUpdate || IsCheckingUpdates)
+        {
+            return;
+        }
+
+        IsInstallingUpdate = true;
+        UpdateDownloadProgress = 0;
+        UpdateStatus = "Скачивание обновления…";
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var updates = scope.ServiceProvider.GetRequiredService<IUpdateChecker>();
+
+            // Refresh check so we know Velopack is available.
+            var check = await updates.CheckAsync();
+            ApplyUpdateCheck(check);
+            if (check.IsFailure)
+            {
+                return;
+            }
+
+            if (!check.Value.IsVelopackInstall)
+            {
+                UpdateStatus = check.Value.Message;
+                if (!string.IsNullOrWhiteSpace(check.Value.ReleasePageUrl))
+                {
+                    OpenUrl(check.Value.ReleasePageUrl);
+                }
+
+                return;
+            }
+
+            if (!check.Value.UpdateAvailable)
+            {
+                UpdateStatus = check.Value.Message;
+                return;
+            }
+
+            var progress = new Progress<double>(p =>
+            {
+                UpdateDownloadProgress = p;
+                UpdateStatus = $"Скачивание… {(int)(p * 100)}%";
+            });
+
+            var apply = await updates.DownloadAndApplyAsync(progress);
+            // Success path restarts the process and does not return.
+            if (apply.IsFailure)
+            {
+                UpdateStatus = apply.Error ?? "Не удалось применить обновление.";
+            }
+        }
+        finally
+        {
+            IsInstallingUpdate = false;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenReleasePage()
+    {
+        var url = PendingUpdate?.ReleasePageUrl;
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            url = "https://github.com/x1nktw/Printer_Lable/releases/latest";
+        }
+
+        OpenUrl(url);
+    }
+
+    private void ApplyUpdateCheck(LabelPrint.Application.Common.Result<UpdateCheckResult> updateResult)
+    {
+        if (updateResult.IsFailure)
+        {
+            PendingUpdate = null;
+            UpdateAvailable = false;
+            UpdateStatus = updateResult.Error ?? "Не удалось проверить обновления.";
+            return;
+        }
+
+        PendingUpdate = updateResult.Value;
+        UpdateAvailable = updateResult.Value.UpdateAvailable;
+        UpdateStatus = updateResult.Value.UpdateAvailable
+            ? $"v{updateResult.Value.CurrentVersion} → v{updateResult.Value.LatestVersion}: {updateResult.Value.Message}"
+            : $"v{updateResult.Value.CurrentVersion} — {updateResult.Value.Message}";
+    }
+
+    private static void OpenUrl(string url)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = url,
+                UseShellExecute = true
+            });
+        }
+        catch
+        {
+            // ignore
+        }
     }
 
     [RelayCommand]

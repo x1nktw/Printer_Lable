@@ -7,6 +7,18 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-08-04
+
+### Added
+
+- Автообновление через Velopack: **Настройки → Система → Обновить** скачивает пакет, применяет обновление и перезапускает приложение.
+
+### Changed
+
+- Дистрибуция переведена с Inno Setup на **Velopack 1.2.0**: release-ассеты теперь включают `LabelPrintPro-win-Setup.exe`, `LabelPrintPro-win-Portable.zip`, `.nupkg` и `releases.win.json`.
+- Publish/layout для Windows перестроен под Velopack folder build (`artifacts/publish/vpk-app`, `config/`, `plugins/`, `extensions/frontpad-bridge/`).
+- Проверка обновлений использует `UpdateManager` + GitHub Releases; portable и перенесённые Velopack-установки получают one-click update.
+
 ## [0.8.0] - 2026-08-04
 
 ### Added

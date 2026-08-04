@@ -1,6 +1,6 @@
 # Installer & distribution
 
-LabelPrint Pro **0.8.0** — self-contained .NET 8 Windows x64.  
+LabelPrint Pro **0.9.0** — self-contained .NET 8 Windows x64.  
 FrontPad Bridge **1.3.4** (версия в `extensions/frontpad-bridge/manifest.json`).
 
 ## GitHub Releases (recommended)
@@ -9,31 +9,30 @@ FrontPad Bridge **1.3.4** (версия в `extensions/frontpad-bridge/manifest.
 2. Tag and push (triggers [.github/workflows/release.yml](../.github/workflows/release.yml)):
 
 ```powershell
-git tag v0.8.0
-git push origin v0.8.0
+git tag v0.9.0
+git push origin v0.9.0
 ```
 
 3. Assets on the release page:
 
 | Asset | Purpose |
 |-------|---------|
-| `LabelPrintPro-0.8.0-win-x64-setup.exe` | **Установщик** (Inno Setup) — Program Files, ярлыки, uninstall |
-| `LabelPrintPro-0.8.0-win-x64.zip` | **Portable** — распаковать и запустить `LabelPrint.UI.exe` |
+| `LabelPrintPro-win-Setup.exe` | **Velopack Setup** — первая установка и база для автообновлений |
+| `LabelPrintPro-win-Portable.zip` | **Portable** — распаковать и запустить `LabelPrint.UI.exe` |
+| `LabelPrintPro-0.9.0-full.nupkg` + `releases.win.json` | Канал автообновлений Velopack |
 | `frontpad-bridge-1.3.4.zip` | Только Chrome/Edge расширение (не путать с версией приложения) |
 
 Имена: app = `<Version>` из `LabelPrint.UI.csproj`; Bridge = `version` из `manifest.json`.
 
-Local pack (publish + zip + setup):
+Local pack:
 
 ```powershell
 ./scripts/pack-release.ps1
 # → artifacts/release/
 ```
 
-Если Inno Setup не установлен, скрипт попытается поставить его через winget / скачать.  
-Только zip без установщика: `./scripts/pack-release.ps1 -SkipInstaller`
-
-Скрипт установщика: [installer/LabelPrintPro.iss](../installer/LabelPrintPro.iss).
+Скрипт сам ставит `vpk 1.2.0`, если его нет.  
+Результат: `artifacts/release/` и `artifacts/release/velopack/`.
 
 ## Build publish folder
 
@@ -41,22 +40,24 @@ Local pack (publish + zip + setup):
 ./scripts/publish-win.ps1
 ```
 
-Output: `artifacts/publish/LabelPrintPro/`
+Output: `artifacts/publish/vpk-app/`
 
 ```
-LabelPrintPro/
-  LabelPrint.UI.exe          # self-contained single-file (~50 MB)
+vpk-app/
+  LabelPrint.UI.exe          # self-contained folder build for Velopack
   config/appsettings.json
   plugins/                   # optional plugin DLLs
   extensions/
     frontpad-bridge/         # Bridge 1.3.4 — см. INSTALL.txt
 ```
 
-## Manual / portable install
+## Install / portable
 
-1. Распакуйте zip или скопируйте publish-папку (или запустите `*-setup.exe`).
-2. Запустите `LabelPrint.UI.exe`.
-3. Optional: drop plugin DLLs into `plugins/` (see [README](../README.md#plugins)).
+1. Для нормальной установки и автообновлений запустите `LabelPrintPro-win-Setup.exe`.
+2. Для portable-режима распакуйте `LabelPrintPro-win-Portable.zip`.
+3. Либо скопируйте publish-папку вручную.
+4. Запустите `LabelPrint.UI.exe`.
+5. Optional: drop plugin DLLs into `plugins/` (see [README](../README.md#plugins)).
 
 ### FrontPad Bridge 1.3.4 (Chrome / Edge)
 
@@ -69,6 +70,31 @@ LabelPrintPro/
 
 Краткая памятка: `extensions\frontpad-bridge\INSTALL.txt`. Подробнее: [FRONTPAD_KITCHEN.md](FRONTPAD_KITCHEN.md).
 
+## Автообновление (из приложения)
+
+Начиная с **0.9.0** приложение использует **Velopack** и проверяет [GitHub Releases](https://github.com/x1nktw/Printer_Lable/releases):
+
+1. Один раз установите приложение через **LabelPrintPro-win-Setup.exe**.
+2. Дальше: **Настройки → Общие → Система** → **Обновить**.
+3. Приложение скачает пакет, применит обновление и перезапустится автоматически.
+4. На **Главной** при старте один раз проверяется наличие обновления.
+
+Конфигурация в `config/appsettings.json` (или рядом с exe):
+
+```json
+"Updates": {
+  "Enabled": true,
+  "RepoUrl": "https://github.com/x1nktw/Printer_Lable",
+  "IncludePrerelease": false
+}
+```
+
+Важно:
+
+- In-app обновление работает только для копий, установленных через **Velopack Setup**.
+- Пользователям **0.8.x** на Inno Setup нужно один раз поставить новый `LabelPrintPro-win-Setup.exe`.
+- После этого обновления ставятся в один клик, даже если папка приложения была перемещена.
+
 Data defaults:
 
 - Database: `%LocalAppData%\LabelPrintPro\labelprint.db`
@@ -80,14 +106,14 @@ Data defaults:
 
 ```yaml
 PackageIdentifier: LabelPrintPro.LabelPrintPro
-PackageVersion: 0.8.0
+PackageVersion: 0.9.0
 Installers:
   - Architecture: x64
-    InstallerType: inno
-    InstallerUrl: https://github.com/x1nktw/Printer_Lable/releases/download/v0.8.0/LabelPrintPro-0.8.0-win-x64-setup.exe
+    InstallerType: exe
+    InstallerUrl: https://github.com/x1nktw/Printer_Lable/releases/download/v0.9.0/LabelPrintPro-win-Setup.exe
     InstallerSha256: <sha256>
 ```
 
 ## Code signing
 
-Sign `LabelPrintPro-*-setup.exe` (and ideally the app exe) with Authenticode before wide distribution to avoid SmartScreen warnings.
+Sign `LabelPrintPro-win-Setup.exe` (and ideally app binaries / packages) with Authenticode before wide distribution to avoid SmartScreen warnings.

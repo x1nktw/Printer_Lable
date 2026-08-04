@@ -29,11 +29,14 @@ jobs:
           "tag=$tag" >> $env:GITHUB_OUTPUT
           "version=$version" >> $env:GITHUB_OUTPUT
 
-      - name: Install Inno Setup
+      - name: Install vpk
         shell: pwsh
-        run: choco install innosetup -y --no-progress
+        run: |
+          dotnet tool update -g vpk --version 1.2.0
+          if ($LASTEXITCODE -ne 0) { dotnet tool install -g vpk --version 1.2.0 }
+          echo "$env:USERPROFILE\.dotnet\tools" >> $env:GITHUB_PATH
 
-      - name: Pack zip + installer
+      - name: Pack Velopack + Bridge
         id: pack
         shell: pwsh
         run: |
@@ -53,20 +56,20 @@ jobs:
 
             | Файл | Назначение |
             |------|------------|
-            | **LabelPrintPro-${{ steps.ver.outputs.version }}-win-x64-setup.exe** | Установщик (ярлык в меню Пуск / рабочий стол) |
-            | **LabelPrintPro-${{ steps.ver.outputs.version }}-win-x64.zip** | Portable — распаковать и запустить `LabelPrint.UI.exe` |
-            | **frontpad-bridge-${{ steps.pack.outputs.bridge_version }}.zip** | FrontPad Bridge **v${{ steps.pack.outputs.bridge_version }}** (только расширение) |
+            | **LabelPrintPro-win-Setup.exe** | Первая установка (Velopack) |
+            | **\*.nupkg** + **releases\*.json** | Канал автообновления |
+            | **frontpad-bridge-${{ steps.pack.outputs.bridge_version }}.zip** | Только расширение |
 
-            ## После установки
+            ## Обновление
 
-            1. Запустите **LabelPrint Pro**
-            2. FrontPad Bridge лежит в папке приложения: `extensions\frontpad-bridge\`
-               - Chrome/Edge → Режим разработчика → «Загрузить распакованное» → эта папка
-               - см. `INSTALL.txt`
-            3. В **Настройках** проверьте webhook (обычно `http://127.0.0.1:8765/`)
+            После Velopack Setup: **Настройки → Система → Обновить** (один клик).
 
-            Подробнее: [INSTALLER.md](https://github.com/x1nktw/Printer_Lable/blob/main/docs/INSTALLER.md) · [CHANGELOG](https://github.com/x1nktw/Printer_Lable/blob/main/CHANGELOG.md)
+            Пользователям **0.8.x (Inno)** — однократно поставить новый Setup.
+
+            Подробнее: [INSTALLER.md](https://github.com/x1nktw/Printer_Lable/blob/main/docs/INSTALLER.md)
           files: |
-            artifacts/release/LabelPrintPro-*-win-x64-setup.exe
-            artifacts/release/LabelPrintPro-*-win-x64.zip
+            artifacts/release/*.exe
+            artifacts/release/*.nupkg
+            artifacts/release/*.json
             artifacts/release/frontpad-bridge-*.zip
+            artifacts/release/*.zip

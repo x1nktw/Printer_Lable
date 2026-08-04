@@ -1,6 +1,6 @@
 # Open questions (LabelPrint Pro)
 
-Актуально на **0.8.0** / Bridge **1.3.4**.  
+Актуально на **0.9.0** / Bridge **1.3.4**.  
 Tracked decisions that must not be silently assumed in schema or plugin contracts.
 
 ## FrontPad
@@ -21,4 +21,4 @@ Shop API (`get_products`, `new_order`, …) **не используется**.
 - Dual templates: `DefaultTemplateId` + `OrderItemTemplateId`.
 - Unmatched order items print without auto-creating products.
 - Marking category tree + `TemperatureRegime` (0.8.0).
-- Distribution: Inno Setup + portable ZIP + Bridge zip named by extension version.
+- Distribution: Velopack Setup + Portable + auto-update channel; Bridge zip named by extension version.
