@@ -1,16 +1,18 @@
 # LabelPrint Pro
 
-**Версия приложения: 0.9.1** · **FrontPad Bridge: 1.3.6** · [.NET 8 / Windows x64](docs/INSTALLER.md)
+**Версия приложения: 1.0.0** · **FrontPad Bridge: 1.3.15** · [.NET 8 / Windows x64](docs/INSTALLER.md)
 
 Коммерческое Windows-приложение для печати термоэтикеток: каталог, маркировка, кухонные заказы FrontPad, очередь печати.
 
-## Что умеет (0.9.1)
+## Что умеет (1.0.0)
 
-- **Каталог** — товары, маркировка (4 корня + подкатегории, срок годности, температурный режим), добавки с иконками
-- **Маркировка / Сырьё** — быстрая печать сырья и маркировочных этикеток
-- **Заказы** — FrontPad Bridge → локальный webhook → кухонный чек 40×58
-- **Настройки** — общие, принтеры, очередь, история, шаблоны (вкладки); тема и акцентный цвет
-- **Главная** — статус Bridge / FrontPad / принтер / очередь
+- **Каталог** — товары (SKU, штрихкод, EAV), маркировка (корни + подкатегории, срок, температура, иконки), добавки с иконками
+- **Маркировка** — быстрая печать сырья / заготовок / полуфабрикатов / соусов
+- **Заказы** — FrontPad Bridge → локальный webhook → кухонный чек **40×58**; inbox JSON
+- **Шаблоны** — визуальный редактор, превью = печать, импорт/экспорт JSON, системные пресеты
+- **Принтеры** — File (PNG), Windows, TSPL, CPCL; очередь, история, reprint
+- **Главная** — статус Bridge / FrontPad / принтер / очередь / обновления
+- **Система** — тема Fluent + акцент, Velopack-автообновление, плагины
 
 ## Стек
 
@@ -21,6 +23,7 @@
 | Domain | Чистый C#, DDD-элементы (PrintJob, Template) |
 | Persistence | SQLite + EF Core |
 | Logging | Serilog (file rolling) |
+| Updates | Velopack 1.2 + GitHub Releases |
 | Tests | xUnit, FluentAssertions, NSubstitute, NetArchTest |
 
 ## Структура solution
@@ -35,7 +38,7 @@ src/
   LabelPrint.Infrastructure.FrontPad
   LabelPrint.UI
 extensions/
-  frontpad-bridge/   # Chrome/Edge v1.3.5: заказы FrontPad → webhook
+  frontpad-bridge/   # Chrome/Edge v1.3.15: заказы + тёмная тема FrontPad
 scripts/             # publish-win.ps1, pack-release.ps1
 tests/
 docs/
@@ -49,10 +52,15 @@ docs/
 
 | Файл | Назначение |
 |------|------------|
-| `LabelPrintPro-win-Setup.exe` | Установщик Velopack |
+| `LabelPrintPro-win-Setup.exe` | Установщик Velopack (рекомендуется) |
 | `LabelPrintPro-win-Portable.zip` | Portable |
-| `LabelPrintPro-0.9.1-full.nupkg` + `releases.win.json` | Канал автообновления |
-| `frontpad-bridge-1.3.5.zip` | Только Bridge (версия из `manifest.json`) |
+| `LabelPrintPro-1.0.0-full.nupkg` + `releases.win.json` | Канал автообновления |
+| `frontpad-bridge-1.3.15.zip` | Только Bridge (версия из `manifest.json`) |
+
+```powershell
+git tag v1.0.0
+git push origin v1.0.0
+```
 
 ## Быстрый старт (разработка)
 
@@ -77,6 +85,8 @@ dotnet run --project src/LabelPrint.UI
 - БД: `%LocalAppData%\LabelPrintPro\labelprint.db`
 - Логи: `%LocalAppData%\LabelPrintPro\logs\`
 - Бэкапы перед миграцией: `%LocalAppData%\LabelPrintPro\backups\`
+- Печать File: `%LocalAppData%\LabelPrintPro\prints\`
+- Inbox заказов: `%LocalAppData%\LabelPrintPro\orders-inbox\`
 
 ## Документация
 
@@ -100,7 +110,7 @@ dotnet run --project src/LabelPrint.UI
 
 ## Plugins
 
-Drop compiled plugin DLLs into `plugins/` next to the executable (or `%ProgramFiles%\LabelPrint Pro\plugins\` after install). At startup, Infrastructure loads assemblies via `AssemblyLoadContext` and registers types implementing:
+Drop compiled plugin DLLs into `plugins/` next to the executable (Velopack: `%LocalAppData%\LabelPrintPro\current\plugins\`). At startup, Infrastructure loads assemblies via `AssemblyLoadContext` and registers types implementing:
 
 - `IVariableProvider`
 - `ITemplateElementRenderer`
@@ -108,7 +118,7 @@ Drop compiled plugin DLLs into `plugins/` next to the executable (or `%ProgramFi
 
 Reference `LabelPrint.Plugins.Abstractions` from your plugin project; do not bundle duplicate copies of Domain/Abstractions assemblies.
 
-## MVP-сценарий эксплуатации
+## Сценарий эксплуатации
 
 Один ПК, локальный SQLite (сценарий A). Пользователи Admin/Operator — локально, для истории и ACL. При старте выполняется вход от имени администратора.
 

@@ -13,7 +13,7 @@ function Get-AppVersion {
     if (-not [string]::IsNullOrWhiteSpace($Fallback)) { return $Fallback.Trim() }
     $proj = Get-Content (Join-Path $root "src/LabelPrint.UI/LabelPrint.UI.csproj") -Raw
     if ($proj -match '<Version>([^<]+)</Version>') { return $Matches[1].Trim() }
-    throw "Version not found. Pass -Version 0.9.0"
+    throw "Version not found. Pass -Version 1.0.0"
 }
 
 function Get-BridgeVersion {

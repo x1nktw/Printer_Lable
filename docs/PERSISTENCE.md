@@ -1,6 +1,6 @@
 # Документация Persistence
 
-Актуально для **LabelPrint Pro 0.9.0**.
+Актуально для **LabelPrint Pro 1.0.0**.
 
 ## Старт
 
@@ -9,7 +9,14 @@
 1. Если файл БД существует — копия в `%LocalAppData%\LabelPrintPro\backups\labelprint_yyyyMMdd_HHmmss.db.bak`  
    (чтение пути бэкапа устойчиво к ещё не применённым миграциям колонок `AppSettings`)
 2. `MigrateAsync()` применяет EF-миграции
-3. Seed: пользователи Admin/Operator, `AppSettings`, системные шаблоны, категории маркировки (корни + подкатегории Сырья), примеры сырья, каталог добавок
+3. Seed:
+   - пользователи Admin / Operator
+   - `AppSettings`
+   - системные шаблоны (upsert; устаревшие kitchen-пресеты архивируются)
+   - категории-корни маркировки (Сырьё, Заготовки, Полуфабрикаты, Соусы)
+   - примеры сырья (по необходимости)
+   - каталог добавок (базовый seed имён)
+4. Подкатегории маркировки **не** сидятся автоматически — создаются вручную; legacy-сиды архивируются при апгрейде
 
 ## Индексы
 
@@ -22,11 +29,21 @@
 
 SQLite: все `DateTimeOffset` хранятся как `long` UTC ticks (value converter в `LabelPrintDbContext`), чтобы `ORDER BY` работал без client evaluation.
 
-## Миграции (накопительно к 0.8.0)
+## Миграции (накопительно к 1.0.0)
 
 Помимо `InitialCreate`:
 
-- `AddLabelDateTimeSettings` — `AppSettings.LabelDateTimeMode`, `ManualLabelDateTime`
-- `AddPrinterRotate90` — `Printers.Rotate90`
-- `AddPrinterPrintOffset` — `PrintOffsetXMm` / `PrintOffsetYMm`
-- `AddProductTemperatureRegime` — `Products.TemperatureRegime`
+| Миграция | Суть |
+|----------|------|
+| `AddLabelDateTimeSettings` | `AppSettings.LabelDateTimeMode`, `ManualLabelDateTime` |
+| `AddPrinterRotate90` | `Printers.Rotate90` |
+| `AddPrinterPrintOffset` | `PrintOffsetXMm` / `PrintOffsetYMm` |
+| `AddAddons` | таблица добавок / иконки |
+| `AddProductShelfLifeUnit` | единицы срока годности |
+| `AddPrintTemplateSelections` | выбранные шаблоны заказов/маркировки |
+| `AddAccentColor` | `AppSettings.AccentColor` |
+| `AddProductTemperatureRegime` | `Products.TemperatureRegime` |
+| `AddProductIconKey` | `Products.ProductIconKey` (иконка маркировки) |
+
+Путь БД по умолчанию: `%LocalAppData%\LabelPrintPro\labelprint.db`  
+(override: `LabelPrint:DatabasePath` / `DatabaseFileName` в `appsettings.json`).

@@ -1,5 +1,7 @@
 # Architecture
 
+Актуально для **LabelPrint Pro 1.0.0**.
+
 ## Направление зависимостей
 
 ```
@@ -29,29 +31,37 @@ Plugins.Abstractions ──▶ Domain
 
 ### LabelTemplate
 
-Метаданные в таблице + `ContentJson` со `schemaVersion`. Миграция схемы — `ITemplateSchemaMigrator`.
+Метаданные в таблице + `ContentJson` со `schemaVersion`. Миграция схемы — `ITemplateSchemaMigrator`.  
+Элементы: текст, цена, штрихкод, QR, фигуры, линия, иконка (`ProductIconKey` / файл), `AddonsKitchen`.
 
 ### Product
 
 - Unique `Sku` / `Barcode` (индексы БД).
 - `DefaultTemplateId` + `OrderItemTemplateId` (fallback на default).
 - Custom fields — EAV (`CustomFieldDefinition` + `ProductCustomField`), не JSON-blob.
-- Маркировка (0.8.0): категории-корни + подкатегории; `ShelfLife` / единицы; `TemperatureRegime` (переменная печати `TemperatureRegime`).
+- Маркировка: категории-корни + подкатегории (создаются вручную); `ShelfLife` / единицы; `TemperatureRegime`; `ProductIconKey`.
 
 ## Порты плагинов
 
 | Порт | Назначение |
 |------|------------|
-| `IPrinterGateway` | Печать / статус устройства |
+| `IPrinterGateway` | Печать / статус устройства (File, Windows, TSPL, CPCL, EscPos stub) |
 | `IOrderProvider` | Внешние заказы (FrontPad Bridge / inbox) |
-| `IVariableProvider` | `{{ProductName}}`, `{{TemperatureRegime}}`, `{{Custom.*}}`, … |
+| `IVariableProvider` | `{{ProductName}}`, `{{TemperatureRegime}}`, `{{ProductIconKey}}`, `{{Custom.*}}`, … |
 | `ITemplateElementRenderer` | Кастомные элементы шаблона |
 
-## UI composition (0.8.0)
+## UI composition (1.0.0)
 
-Сайдбар: Главная · Заказы · Маркировка · Каталог · Настройки.  
-Вкладки **Настройки**: Общие · Принтеры · Очередь · История · Шаблоны.  
-Тема и акцентный цвет — в Общих; акцент красит содержимое контролов, не заливку кнопок.
+Сайдбар: **Главная** · **Заказы** · **Маркировка** · **Каталог** · **Настройки**.  
+Каталог — вкладки: Товары · Маркировка · Добавки.  
+Настройки — вкладки: Общие (Admin) · Шаблоны · Принтеры · Очередь · История.  
+Тема и акцентный цвет — в Общих; акцент красит содержимое контролов, не заливку кнопок.  
+Версия сборки показывается на Главной (`LabelPrint Pro v{Major.Minor.Build}`).
+
+## FrontPad
+
+Shop API не используется. Заказы: browser extension → локальный webhook (`OrderWebhookListener`) → inbox/БД.  
+Heartbeat Bridge обновляет статус на Главной.
 
 ## Ошибки
 
@@ -64,3 +74,9 @@ Plugins.Abstractions ──▶ Domain
 - SQLite file, EF Core Code-First + миграции при старте.
 - Перед migrate — копия `.bak` с меткой версии.
 - История: keyset pagination (`CreatedAt` cursor), не `OFFSET` на больших объёмах.
+- Подробнее: [PERSISTENCE.md](PERSISTENCE.md).
+
+## Updates
+
+Velopack `UpdateManager` + GitHub Releases (`Updates` в `appsettings.json`).  
+Проверка неблокирующая (таймаут), UI Настроек/Главной остаётся отзывчивым.

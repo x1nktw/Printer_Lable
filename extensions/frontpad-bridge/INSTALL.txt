@@ -5,16 +5,15 @@ LabelPrint FrontPad Bridge 1.3.15 — установка
    chrome://extensions
    edge://extensions
 3. Включите «Режим разработчика».
-4. «Загрузить распакованное расширение» → выберите эту папку:
-   extensions\frontpad-bridge
+4. «Загрузить распакованное расширение» → выберите эту папку
+   (в установленной копии: …\current\extensions\frontpad-bridge).
 5. Откройте FrontPad, при необходимости перезагрузите вкладку (Ctrl+Shift+R).
 6. URL webhook: LabelPrint → Настройки → Общие.
 7. Опционально: в popup расширения включите «Тёмная тема FrontPad».
 
-После обновления LabelPrint Pro или файлов расширения: на странице расширений
-нажмите «Обновить» у FrontPad Bridge (или удалите и загрузите папку снова),
+После обновления: на chrome://extensions нажмите «Обновить» у Bridge,
 затем жёстко перезагрузите вкладку FrontPad.
 
-Отдельный архив на GitHub Releases: frontpad-bridge-1.3.15.zip
+Отдельный архив: frontpad-bridge-1.3.15.zip (GitHub Releases).
 
-Подробнее: docs/FRONTPAD_KITCHEN.md и README.md в этой папке.
+Подробнее: README.md рядом и docs/FRONTPAD_KITCHEN.md в репозитории.

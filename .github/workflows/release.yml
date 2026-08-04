@@ -52,21 +52,28 @@ jobs:
           draft: false
           generate_release_notes: true
           body: |
+            ## LabelPrint Pro ${{ steps.ver.outputs.version }}
+
+            Первый стабильный контур: каталог, маркировка, заказы FrontPad, шаблоны, очередь печати, Velopack.
+
             ## Скачать
 
             | Файл | Назначение |
             |------|------------|
             | **LabelPrintPro-win-Setup.exe** | Первая установка (Velopack) |
+            | **LabelPrintPro-win-Portable.zip** | Portable |
             | **\*.nupkg** + **releases\*.json** | Канал автообновления |
-            | **frontpad-bridge-${{ steps.pack.outputs.bridge_version }}.zip** | Только расширение |
+            | **frontpad-bridge-${{ steps.pack.outputs.bridge_version }}.zip** | Только расширение Chrome/Edge |
 
             ## Обновление
 
             После Velopack Setup: **Настройки → Система → Обновить** (один клик).
 
-            Пользователям **0.8.x (Inno)** — однократно поставить новый Setup.
+            - С **0.9.x** — Обновить в приложении или новый Setup.
+            - С **0.8.x (Inno)** — однократно поставить новый Setup.
+            - Bridge: обновить расширение и перезагрузить вкладку FrontPad.
 
-            Подробнее: [INSTALLER.md](https://github.com/x1nktw/Printer_Lable/blob/main/docs/INSTALLER.md)
+            Changelog: [CHANGELOG.md](https://github.com/x1nktw/Printer_Lable/blob/main/CHANGELOG.md) · Install: [INSTALLER.md](https://github.com/x1nktw/Printer_Lable/blob/main/docs/INSTALLER.md) · Кухня: [FRONTPAD_KITCHEN.md](https://github.com/x1nktw/Printer_Lable/blob/main/docs/FRONTPAD_KITCHEN.md)
           files: |
             artifacts/release/*.exe
             artifacts/release/*.nupkg

@@ -1,0 +1,564 @@
+/**
+ * Claude-like warm dark theme for FrontPad.
+ * Selective surfaces + instant white overrides (anti-flash on tab switch).
+ */
+html.lp-fp-dark {
+  color-scheme: dark;
+  --lp-bg: #141413;
+  --lp-surface-1: #1c1b19;
+  --lp-surface-2: #262624;
+  --lp-surface-3: #30302e;
+  --lp-bg-input: #0f0e0d;
+  --lp-border: #3d3d3a;
+  --lp-border-soft: #2a2926;
+  --lp-text: #f5f4ef;
+  --lp-text-muted: #b0aea5;
+  --lp-link: #e8a87c;
+  --lp-link-hover: #f0c4a0;
+  --lp-accent: #c96442;
+  --lp-accent-hover: #d47856;
+  --lp-accent-text: #faf9f5;
+  --lp-info: #c4b5a0;
+  --lp-ok: #a3c9a8;
+  --lp-warn: #d4b483;
+  --lp-err: #e0a0a0;
+  --lp-selection: rgba(201, 100, 66, 0.35);
+}
+
+html.lp-fp-dark,
+html.lp-fp-dark body {
+  background-color: var(--lp-bg) !important;
+  background-image: none !important;
+  color: var(--lp-text) !important;
+}
+
+/*
+ * Instant anti-flash: paint common FrontPad whites before JS marks them.
+ * Excludes status cells already tagged keep-bg.
+ */
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center, ul, ol, li, section, main, aside, header, footer, nav):not([data-lp-keep-bg])[bgcolor="#ffffff"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#FFFFFF"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#fff"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#FFF"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="white"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#f5f5f5"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#F5F5F5"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#fafafa"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#FAFAFA"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#eeeeee"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#EEEEEE"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#eee"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#f0f0f0"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#F0F0F0"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#e8e8e8"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#E8E8E8"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#dddddd"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#DDDDDD"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#ddd"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#cccccc"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#CCC"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#fcfcfc"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#f8f8f8"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#f9f9f9"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#efefef"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#e5e5e5"],
+html.lp-fp-dark :is(td, th, tr, table, div, form, fieldset, body, center):not([data-lp-keep-bg])[bgcolor="#e0e0e0"] {
+  background-color: var(--lp-surface-2) !important;
+  color: var(--lp-text) !important;
+}
+
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color:#fff"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color: #fff"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color:#FFF"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color: #FFF"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color:#ffffff"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color: #ffffff"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color:#FFFFFF"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color: #FFFFFF"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color:white"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color: white"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background:#fff"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background: #fff"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background:#ffffff"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background: #ffffff"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background:white"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background: white"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color:rgb(255"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color: rgb(255"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color:#f5f5f5"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color: #f5f5f5"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color:#eee"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color: #eee"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color:#f0f0f0"],
+html.lp-fp-dark :not([data-lp-keep-bg])[style*="background-color: #f0f0f0"] {
+  background-color: var(--lp-surface-2) !important;
+  color: var(--lp-text) !important;
+}
+
+/* Hierarchy from original lightness — set by theme.js */
+html.lp-fp-dark [data-lp-dark-surface="1"] {
+  background-color: var(--lp-surface-1) !important;
+  background-image: none !important;
+  color: var(--lp-text) !important;
+}
+
+html.lp-fp-dark [data-lp-dark-surface="2"],
+html.lp-fp-dark [data-lp-dark-surface]:not([data-lp-dark-surface="1"]):not([data-lp-dark-surface="3"]) {
+  background-color: var(--lp-surface-2) !important;
+  background-image: none !important;
+  color: var(--lp-text) !important;
+}
+
+html.lp-fp-dark [data-lp-dark-surface="3"] {
+  background-color: var(--lp-surface-3) !important;
+  background-image: none !important;
+  color: var(--lp-text) !important;
+}
+
+html.lp-fp-dark table {
+  border-color: var(--lp-border-soft) !important;
+}
+
+html.lp-fp-dark td,
+html.lp-fp-dark th {
+  border-color: var(--lp-border-soft) !important;
+  color: var(--lp-text);
+}
+
+html.lp-fp-dark th:not([data-lp-keep-bg]),
+html.lp-fp-dark thead td:not([data-lp-keep-bg]) {
+  background-color: var(--lp-surface-3) !important;
+  color: var(--lp-text) !important;
+  font-weight: 600;
+}
+
+html.lp-fp-dark a,
+html.lp-fp-dark a:link,
+html.lp-fp-dark a:visited {
+  color: var(--lp-link) !important;
+}
+
+html.lp-fp-dark a:hover,
+html.lp-fp-dark a:focus {
+  color: var(--lp-link-hover) !important;
+}
+
+html.lp-fp-dark hr {
+  border-color: var(--lp-border) !important;
+  background-color: var(--lp-border) !important;
+}
+
+html.lp-fp-dark input:not([type="image"]):not([type="checkbox"]):not([type="radio"]),
+html.lp-fp-dark textarea,
+html.lp-fp-dark select {
+  background-color: var(--lp-bg-input) !important;
+  background-image: none !important;
+  color: var(--lp-text) !important;
+  border: 1px solid var(--lp-border) !important;
+  border-radius: 6px;
+  caret-color: var(--lp-text);
+}
+
+html.lp-fp-dark input::placeholder,
+html.lp-fp-dark textarea::placeholder {
+  color: var(--lp-text-muted) !important;
+  opacity: 1;
+}
+
+html.lp-fp-dark input:focus,
+html.lp-fp-dark textarea:focus,
+html.lp-fp-dark select:focus {
+  outline: 1px solid var(--lp-accent) !important;
+  border-color: var(--lp-accent) !important;
+}
+
+html.lp-fp-dark input[type="checkbox"],
+html.lp-fp-dark input[type="radio"] {
+  accent-color: var(--lp-accent);
+}
+
+html.lp-fp-dark option {
+  background-color: var(--lp-surface-2) !important;
+  color: var(--lp-text) !important;
+}
+
+/* Force readable text on chrome — FrontPad loves color=black on fonts */
+html.lp-fp-dark td:not([data-lp-keep-bg]),
+html.lp-fp-dark th:not([data-lp-keep-bg]),
+html.lp-fp-dark a:not([data-lp-keep-bg]),
+html.lp-fp-dark font:not([data-lp-keep-bg]),
+html.lp-fp-dark span:not([data-lp-keep-bg]),
+html.lp-fp-dark b:not([data-lp-keep-bg]),
+html.lp-fp-dark strong:not([data-lp-keep-bg]),
+html.lp-fp-dark label:not([data-lp-keep-bg]),
+html.lp-fp-dark li:not([data-lp-keep-bg]),
+html.lp-fp-dark p:not([data-lp-keep-bg]),
+html.lp-fp-dark div:not([data-lp-keep-bg]),
+html.lp-fp-dark button,
+html.lp-fp-dark input[type="button"],
+html.lp-fp-dark input[type="submit"],
+html.lp-fp-dark input[type="reset"],
+html.lp-fp-dark .ui-tabs-nav,
+html.lp-fp-dark .ui-tabs-nav *,
+html.lp-fp-dark .ui-state-default,
+html.lp-fp-dark .ui-state-default *,
+html.lp-fp-dark .ui-state-active,
+html.lp-fp-dark .ui-state-active *,
+html.lp-fp-dark .ui-button,
+html.lp-fp-dark .ui-button * {
+  color: var(--lp-text) !important;
+  -webkit-text-fill-color: var(--lp-text) !important;
+}
+
+html.lp-fp-dark button,
+html.lp-fp-dark input[type="button"],
+html.lp-fp-dark input[type="submit"],
+html.lp-fp-dark input[type="reset"],
+html.lp-fp-dark .btn,
+html.lp-fp-dark .button,
+html.lp-fp-dark a.btn,
+html.lp-fp-dark a.button,
+html.lp-fp-dark [role="button"],
+html.lp-fp-dark .ui-button {
+  background-color: var(--lp-surface-3) !important;
+  background-image: none !important;
+  color: var(--lp-text) !important;
+  -webkit-text-fill-color: var(--lp-text) !important;
+  border: 1px solid var(--lp-border) !important;
+  border-radius: 6px;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* Nested black <font>/<span> inside buttons / toolbar cells */
+html.lp-fp-dark button *,
+html.lp-fp-dark .btn *,
+html.lp-fp-dark .button *,
+html.lp-fp-dark a.btn *,
+html.lp-fp-dark a.button *,
+html.lp-fp-dark [role="button"] *,
+html.lp-fp-dark .ui-button *,
+html.lp-fp-dark input[type="button"] *,
+html.lp-fp-dark td.button *,
+html.lp-fp-dark td.btn *,
+html.lp-fp-dark .toolbar *,
+html.lp-fp-dark .tools *,
+html.lp-fp-dark .buttons *,
+html.lp-fp-dark .btn-group *,
+html.lp-fp-dark [class*="button"] font,
+html.lp-fp-dark [class*="button"] span,
+html.lp-fp-dark [class*="button"] b,
+html.lp-fp-dark [class*="btn"] font,
+html.lp-fp-dark [class*="btn"] span,
+html.lp-fp-dark [class*="toolbar"] font,
+html.lp-fp-dark [class*="toolbar"] span,
+html.lp-fp-dark [class*="menu"] button,
+html.lp-fp-dark [class*="menu"] button * {
+  color: var(--lp-text) !important;
+  -webkit-text-fill-color: var(--lp-text) !important;
+  text-shadow: none !important;
+}
+
+html.lp-fp-dark button:hover,
+html.lp-fp-dark input[type="button"]:hover,
+html.lp-fp-dark input[type="submit"]:hover,
+html.lp-fp-dark input[type="reset"]:hover,
+html.lp-fp-dark .btn:hover,
+html.lp-fp-dark .button:hover,
+html.lp-fp-dark .ui-button:hover {
+  background-color: #3a3936 !important;
+  color: var(--lp-text) !important;
+  -webkit-text-fill-color: var(--lp-text) !important;
+}
+
+html.lp-fp-dark input[type="submit"],
+html.lp-fp-dark button[type="submit"],
+html.lp-fp-dark .btn-primary {
+  background-color: var(--lp-accent) !important;
+  border-color: #b55738 !important;
+  color: var(--lp-accent-text) !important;
+  -webkit-text-fill-color: var(--lp-accent-text) !important;
+}
+
+html.lp-fp-dark input[type="submit"]:hover,
+html.lp-fp-dark button[type="submit"]:hover {
+  background-color: var(--lp-accent-hover) !important;
+}
+
+/* Light-gray separators / borders → warm dark */
+html.lp-fp-dark table,
+html.lp-fp-dark td,
+html.lp-fp-dark th,
+html.lp-fp-dark tr,
+html.lp-fp-dark div,
+html.lp-fp-dark fieldset,
+html.lp-fp-dark ul,
+html.lp-fp-dark ol,
+html.lp-fp-dark li,
+html.lp-fp-dark hr,
+html.lp-fp-dark section,
+html.lp-fp-dark nav {
+  border-color: var(--lp-border-soft) !important;
+  outline-color: var(--lp-border-soft) !important;
+}
+
+html.lp-fp-dark [bordercolor],
+html.lp-fp-dark [bordercolor="#cccccc"],
+html.lp-fp-dark [bordercolor="#ccc"],
+html.lp-fp-dark [bordercolor="#dddddd"],
+html.lp-fp-dark [bordercolor="#ddd"],
+html.lp-fp-dark [bordercolor="#eeeeee"],
+html.lp-fp-dark [bordercolor="#eee"],
+html.lp-fp-dark [bordercolor="#c0c0c0"],
+html.lp-fp-dark [bordercolor="#999999"],
+html.lp-fp-dark [bordercolor="#999"],
+html.lp-fp-dark [bordercolor="#aaaaaa"],
+html.lp-fp-dark [bordercolor="#bbb"],
+html.lp-fp-dark [bordercolor="#bbbbbb"],
+html.lp-fp-dark [bordercolor="silver"],
+html.lp-fp-dark [bordercolor="gray"],
+html.lp-fp-dark [bordercolor="grey"] {
+  border-color: var(--lp-border) !important;
+}
+
+html.lp-fp-dark [style*="border"][style*="#ccc"],
+html.lp-fp-dark [style*="border"][style*="#CCC"],
+html.lp-fp-dark [style*="border"][style*="#ddd"],
+html.lp-fp-dark [style*="border"][style*="#DDD"],
+html.lp-fp-dark [style*="border"][style*="#eee"],
+html.lp-fp-dark [style*="border"][style*="#EEE"],
+html.lp-fp-dark [style*="border"][style*="#f0f0f0"],
+html.lp-fp-dark [style*="border"][style*="#e0e0e0"],
+html.lp-fp-dark [style*="border"][style*="#c0c0c0"],
+html.lp-fp-dark [style*="border"][style*="#999"],
+html.lp-fp-dark [style*="border"][style*="#aaa"],
+html.lp-fp-dark [style*="border"][style*="#bbb"],
+html.lp-fp-dark [style*="border"][style*="silver"],
+html.lp-fp-dark [style*="border"][style*="rgb(204"],
+html.lp-fp-dark [style*="border"][style*="rgb(221"],
+html.lp-fp-dark [style*="border"][style*="rgb(238"],
+html.lp-fp-dark [style*="border"][style*="rgb(192"] {
+  border-color: var(--lp-border) !important;
+}
+
+/* 1px separator cells / toolbar dividers with light gray fill */
+html.lp-fp-dark [bgcolor="#cccccc"],
+html.lp-fp-dark [bgcolor="#CCC"],
+html.lp-fp-dark [bgcolor="#ccc"],
+html.lp-fp-dark [bgcolor="#dddddd"],
+html.lp-fp-dark [bgcolor="#DDD"],
+html.lp-fp-dark [bgcolor="#ddd"],
+html.lp-fp-dark [bgcolor="#c0c0c0"],
+html.lp-fp-dark [bgcolor="#C0C0C0"],
+html.lp-fp-dark [bgcolor="#bbbbbb"],
+html.lp-fp-dark [bgcolor="#BBB"],
+html.lp-fp-dark [bgcolor="#aaaaaa"],
+html.lp-fp-dark [bgcolor="#AAA"],
+html.lp-fp-dark [bgcolor="#999999"],
+html.lp-fp-dark [bgcolor="#999"],
+html.lp-fp-dark [bgcolor="silver"] {
+  background-color: var(--lp-border) !important;
+  color: var(--lp-text) !important;
+}
+
+/* Dark / gray text → parchment */
+html.lp-fp-dark font[color="#000000"],
+html.lp-fp-dark font[color="#000"],
+html.lp-fp-dark font[color="black"],
+html.lp-fp-dark font[color="#333333"],
+html.lp-fp-dark font[color="#333"],
+html.lp-fp-dark font[color="#222222"],
+html.lp-fp-dark font[color="#444444"],
+html.lp-fp-dark font[color="#555555"],
+html.lp-fp-dark font[color="#666666"],
+html.lp-fp-dark font[color="#777777"],
+html.lp-fp-dark font[color="#888888"],
+html.lp-fp-dark font[color="#999999"],
+html.lp-fp-dark font[color="#111111"],
+html.lp-fp-dark font[color="#111"],
+html.lp-fp-dark font[color="#1a1a1a"],
+html.lp-fp-dark [color="#000000"],
+html.lp-fp-dark [color="#000"],
+html.lp-fp-dark [color="black"],
+html.lp-fp-dark [style*="color:#000"],
+html.lp-fp-dark [style*="color: #000"],
+html.lp-fp-dark [style*="color:black"],
+html.lp-fp-dark [style*="color: black"],
+html.lp-fp-dark [style*="color:#333"],
+html.lp-fp-dark [style*="color: #333"],
+html.lp-fp-dark [style*="color:#666"],
+html.lp-fp-dark [style*="color: #666"],
+html.lp-fp-dark [style*="color:rgb(0"],
+html.lp-fp-dark [style*="color: rgb(0"],
+html.lp-fp-dark [style*="color:rgb(51"],
+html.lp-fp-dark [style*="color: rgb(51"] {
+  color: var(--lp-text) !important;
+  -webkit-text-fill-color: var(--lp-text) !important;
+}
+
+/* Cold blues → warm sand link */
+html.lp-fp-dark font[color="blue"],
+html.lp-fp-dark font[color="#0000ff"],
+html.lp-fp-dark font[color="#0000FF"],
+html.lp-fp-dark font[color="#00f"],
+html.lp-fp-dark font[color="#00F"],
+html.lp-fp-dark font[color="#0066cc"],
+html.lp-fp-dark font[color="#0066CC"],
+html.lp-fp-dark font[color="#0066c0"],
+html.lp-fp-dark font[color="#3366cc"],
+html.lp-fp-dark font[color="#3366CC"],
+html.lp-fp-dark font[color="#0033cc"],
+html.lp-fp-dark font[color="#003399"],
+html.lp-fp-dark font[color="#1a73e8"],
+html.lp-fp-dark font[color="#2196f3"],
+html.lp-fp-dark font[color="#0088cc"],
+html.lp-fp-dark [color="blue"],
+html.lp-fp-dark [color="#0000ff"],
+html.lp-fp-dark [color="#0066cc"],
+html.lp-fp-dark [style*="color:blue"],
+html.lp-fp-dark [style*="color: blue"],
+html.lp-fp-dark [style*="color:#00f"],
+html.lp-fp-dark [style*="color:#0000ff"],
+html.lp-fp-dark [style*="color: #0000ff"],
+html.lp-fp-dark [style*="color:#0066cc"],
+html.lp-fp-dark [style*="color: #0066cc"],
+html.lp-fp-dark [style*="color:#3366cc"],
+html.lp-fp-dark [style*="color: #3366cc"] {
+  color: var(--lp-link) !important;
+}
+
+/* Harsh red/green → soft warm semantic */
+html.lp-fp-dark font[color="red"],
+html.lp-fp-dark font[color="#ff0000"],
+html.lp-fp-dark font[color="#FF0000"],
+html.lp-fp-dark font[color="#f00"],
+html.lp-fp-dark font[color="#cc0000"],
+html.lp-fp-dark font[color="#c00"],
+html.lp-fp-dark font[color="#d32f2f"],
+html.lp-fp-dark [color="red"],
+html.lp-fp-dark [color="#ff0000"],
+html.lp-fp-dark [style*="color:red"],
+html.lp-fp-dark [style*="color: red"],
+html.lp-fp-dark [style*="color:#f00"],
+html.lp-fp-dark [style*="color:#ff0000"],
+html.lp-fp-dark [style*="color: #ff0000"],
+html.lp-fp-dark [style*="color:#cc0000"] {
+  color: var(--lp-err) !important;
+}
+
+html.lp-fp-dark font[color="green"],
+html.lp-fp-dark font[color="#008000"],
+html.lp-fp-dark font[color="#00aa00"],
+html.lp-fp-dark font[color="#00a000"],
+html.lp-fp-dark font[color="#228b22"],
+html.lp-fp-dark font[color="#2e7d32"],
+html.lp-fp-dark [color="green"],
+html.lp-fp-dark [color="#008000"],
+html.lp-fp-dark [style*="color:green"],
+html.lp-fp-dark [style*="color: green"],
+html.lp-fp-dark [style*="color:#008000"],
+html.lp-fp-dark [style*="color: #008000"],
+html.lp-fp-dark [style*="color:#00aa00"] {
+  color: var(--lp-ok) !important;
+}
+
+html.lp-fp-dark font[color="orange"],
+html.lp-fp-dark font[color="#ffa500"],
+html.lp-fp-dark font[color="#ff9800"],
+html.lp-fp-dark font[color="#f57c00"],
+html.lp-fp-dark [color="orange"],
+html.lp-fp-dark [style*="color:orange"],
+html.lp-fp-dark [style*="color: orange"],
+html.lp-fp-dark [style*="color:#ffa500"] {
+  color: var(--lp-warn) !important;
+}
+
+/* Muted status fills (kitchen) — warm, readable light text */
+html.lp-fp-dark [data-lp-keep-bg] {
+  color: var(--lp-text) !important;
+  border-color: var(--lp-border-soft) !important;
+}
+
+html.lp-fp-dark [data-lp-keep-bg] a {
+  color: var(--lp-link) !important;
+}
+
+html.lp-fp-dark [data-lp-keep-bg] font,
+html.lp-fp-dark [data-lp-keep-bg] span,
+html.lp-fp-dark [data-lp-keep-bg] b,
+html.lp-fp-dark [data-lp-keep-bg] strong {
+  color: inherit !important;
+}
+
+html.lp-fp-dark {
+  scrollbar-color: #4d4c48 var(--lp-bg);
+}
+
+html.lp-fp-dark ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+html.lp-fp-dark ::-webkit-scrollbar-track {
+  background: var(--lp-bg);
+}
+
+html.lp-fp-dark ::-webkit-scrollbar-thumb {
+  background: #4d4c48;
+  border-radius: 6px;
+  border: 2px solid var(--lp-bg);
+}
+
+html.lp-fp-dark ::selection {
+  background: var(--lp-selection);
+  color: var(--lp-text);
+}
+
+html.lp-fp-dark .ui-widget-overlay {
+  background: rgba(20, 20, 19, 0.72) !important;
+  opacity: 1 !important;
+}
+
+html.lp-fp-dark .ui-dialog,
+html.lp-fp-dark .ui-widget-content,
+html.lp-fp-dark .ui-menu,
+html.lp-fp-dark .ui-autocomplete,
+html.lp-fp-dark .ui-tabs-panel,
+html.lp-fp-dark .ui-accordion-content {
+  background-color: var(--lp-surface-2) !important;
+  color: var(--lp-text) !important;
+  border-color: var(--lp-border) !important;
+}
+
+html.lp-fp-dark .ui-widget-header,
+html.lp-fp-dark .ui-tabs .ui-tabs-nav,
+html.lp-fp-dark .ui-accordion-header {
+  background-color: var(--lp-surface-3) !important;
+  color: var(--lp-text) !important;
+  border-color: var(--lp-border) !important;
+}
+
+html.lp-fp-dark .ui-state-default {
+  background: var(--lp-surface-3) !important;
+  color: var(--lp-text) !important;
+  border-color: var(--lp-border) !important;
+}
+
+html.lp-fp-dark .ui-state-hover,
+html.lp-fp-dark .ui-state-focus {
+  background: #3a3936 !important;
+  color: var(--lp-text) !important;
+  border-color: #4d4c48 !important;
+}
+
+html.lp-fp-dark .ui-state-active {
+  background: var(--lp-accent) !important;
+  color: var(--lp-accent-text) !important;
+  border-color: #b55738 !important;
+}
+
+html.lp-fp-dark .ui-tabs .ui-tabs-nav li.ui-tabs-active,
+html.lp-fp-dark .ui-tabs .ui-tabs-nav li.ui-state-active {
+  background: var(--lp-surface-2) !important;
+  border-color: var(--lp-border) !important;
+}

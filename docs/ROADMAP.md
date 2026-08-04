@@ -2,7 +2,7 @@
 
 Порядок из MASTER_SPEC v2.0 + аудит FrontPad.
 
-**Текущий релиз: LabelPrint Pro 0.9.1 · FrontPad Bridge 1.3.5**
+**Текущий релиз: LabelPrint Pro 1.0.0 · FrontPad Bridge 1.3.15**
 
 | Этап | Статус | Содержание |
 |------|--------|------------|
@@ -15,13 +15,14 @@
 | 6 | Done | Очередь, multi-printer, история, reprint |
 | 7 | Done | FrontPad Bridge → webhook + inbox JSON (без shop API) |
 | 8 | Done | Plugins loader, export, load tests, installer docs |
-| 9 | Done (0.8.0) | Маркировка (корни/подкатегории, температура), статус системы, тема/акцент, Inno Setup + single-file publish, CI/CD |
-| 10 | Done (0.9.0/0.9.1) | Velopack auto-update + single-file layout (`config/`/`plugins/`/`extensions/`), non-blocking Settings/status |
+| 9 | Done (0.8.0) | Маркировка, статус системы, тема/акцент, CI/CD, kitchen/сырьё |
+| 10 | Done (0.9.x) | Velopack auto-update, single-file layout, non-blocking Settings |
+| 11 | Done (**1.0.0**) | Стабильный релиз: маркировка 58×40 + иконки, импорт шаблонов, Bridge 1.3.15 (парсер + тёмная тема), UI laptop-fix |
 
 **Load-test target:** `LabelPrint.LoadTests` seeds ~1k products and asserts search &lt; 2s. Full **100k** catalog benchmark is a future hardening goal (indexes + keyset already in place).
 
 Правила этапа: build + tests + ArchitectureTests перед переходом дальше; неготовые UI-фичи скрыты/disabled, без имитации успеха.
 
-Дальше (идеи): MSI/winget, code signing, маппинг артикулов FrontPad ↔ каталог, hardening 100k.
+**Дальше (после 1.0.0):** MSI/winget, code signing, маппинг артикулов FrontPad ↔ каталог, hardening 100k, ESC/POS.
 
-Автообновление через Velopack + GitHub Releases (проверка, скачивание пакета, авто-apply/restart) — сделано в 0.9.0.
+Автообновление через Velopack + GitHub Releases — с 0.9.0 / 1.0.0.

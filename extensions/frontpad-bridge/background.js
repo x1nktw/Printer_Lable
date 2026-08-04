@@ -6,6 +6,7 @@ importScripts("parse-order.js");
 const DEFAULTS = {
   webhookUrl: "http://127.0.0.1:8765/",
   enabled: true,
+  darkTheme: false,
   lastStatus: "Ожидание заказов FrontPad…",
   lastOrderNumber: null,
   lastError: null,

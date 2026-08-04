@@ -3,6 +3,7 @@
 async function load() {
   const data = await chrome.storage.local.get({
     enabled: true,
+    darkTheme: false,
     lastStatus: "—",
     lastOrderNumber: null,
     lastError: null,
@@ -19,13 +20,15 @@ async function load() {
   const errorEl = document.getElementById("error");
   const debugEl = document.getElementById("debug");
   const enabledEl = document.getElementById("enabled");
+  const darkThemeEl = document.getElementById("darkTheme");
   const metaEl = document.getElementById("meta");
-  if (!statusEl || !errorEl || !debugEl || !enabledEl || !metaEl) return;
+  if (!statusEl || !errorEl || !debugEl || !enabledEl || !darkThemeEl || !metaEl) return;
 
   statusEl.textContent = data.lastStatus || "—";
   errorEl.textContent = data.lastError || data.lastHeartbeatError || "";
   debugEl.textContent = data.lastDebug || "";
   enabledEl.checked = !!data.enabled;
+  darkThemeEl.checked = !!data.darkTheme;
 
   let meta = `Webhook: ${data.webhookUrl} · отправлено: ${data.sentCount || 0}`;
   if (data.lastOrderNumber) meta += ` · последний №${data.lastOrderNumber}`;
@@ -54,6 +57,10 @@ document.getElementById("enabled").addEventListener("change", async (e) => {
     lastError: null
   });
   pingHeartbeat(true);
+});
+
+document.getElementById("darkTheme").addEventListener("change", async (e) => {
+  await chrome.storage.local.set({ darkTheme: e.target.checked });
 });
 
 document.getElementById("options").addEventListener("click", () => {
