@@ -34,4 +34,12 @@ public interface IUiDialogService
     /// Opens a file picker for template JSON. Returns the selected path or <c>null</c>.
     /// </summary>
     Task<string?> PickJsonFileAsync(string title = "Выберите JSON шаблона");
+
+    /// <summary>
+    /// Opens a save dialog for template JSON. Returns the selected path or <c>null</c>.
+    /// </summary>
+    Task<string?> SaveJsonFileAsync(
+        string suggestedFileName,
+        string? suggestedDirectory = null,
+        string title = "Сохранить JSON шаблона");
 }

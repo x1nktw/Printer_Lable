@@ -1,6 +1,6 @@
 # Installer & distribution
 
-LabelPrint Pro **1.0.0** — self-contained .NET 8 Windows x64.  
+LabelPrint Pro **1.0.1** — self-contained .NET 8 Windows x64.  
 FrontPad Bridge **1.3.15** (версия в `extensions/frontpad-bridge/manifest.json`).
 
 ## GitHub Releases (recommended)
@@ -111,7 +111,7 @@ Data defaults:
 
 - Database: `%LocalAppData%\LabelPrintPro\labelprint.db`
 - Logs: `%LocalAppData%\LabelPrintPro\logs\`
-- Exports: `%LocalAppData%\LabelPrintPro\exports\`
+- Exports: `%UserProfile%\Documents\LabelPrint Pro\exports\` (экспорт JSON через «Сохранить как…»; legacy: `%LocalAppData%\LabelPrintPro\exports\`)
 - Backups: `%LocalAppData%\LabelPrintPro\backups\` (override in **Настройки**)
 - Prints (File): `%LocalAppData%\LabelPrintPro\prints\`
 - Orders inbox: `%LocalAppData%\LabelPrintPro\orders-inbox\`

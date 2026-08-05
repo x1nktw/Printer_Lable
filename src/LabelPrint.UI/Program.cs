@@ -4,6 +4,7 @@ using Avalonia;
 using LabelPrint.Application.Abstractions.Services;
 using LabelPrint.Application.DependencyInjection;
 using LabelPrint.Application.Options;
+using LabelPrint.Application.Paths;
 using LabelPrint.Application.Queue;
 using LabelPrint.Infrastructure.DependencyInjection;
 using LabelPrint.Infrastructure.Persistence;
@@ -46,6 +47,12 @@ sealed class Program
             services.AddTransient<ViewModels.SettingsViewModel>();
             services.AddSingleton<LabelPrint.UI.Services.IUiDialogService, LabelPrint.UI.Services.AvaloniaUiDialogService>();
             Services = services.BuildServiceProvider();
+
+            var migratedExports = UserDataPaths.MigrateLegacyExportsIfNeeded();
+            if (migratedExports > 0)
+            {
+                Log.Information("Migrated {Count} template export(s) from legacy AppData folder", migratedExports);
+            }
 
             InitializeDatabaseAsync(Services).GetAwaiter().GetResult();
             StartBackgroundServices(Services);

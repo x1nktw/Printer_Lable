@@ -128,6 +128,54 @@ public sealed class AvaloniaUiDialogService : IUiDialogService
         return files.Count > 0 ? files[0].TryGetLocalPath() : null;
     }
 
+    /// <inheritdoc />
+    public async Task<string?> SaveJsonFileAsync(
+        string suggestedFileName,
+        string? suggestedDirectory = null,
+        string title = "Сохранить JSON шаблона")
+    {
+        var owner = GetMainWindow();
+        if (owner is null)
+        {
+            return null;
+        }
+
+        var options = new FilePickerSaveOptions
+        {
+            Title = title,
+            SuggestedFileName = suggestedFileName,
+            DefaultExtension = "json",
+            ShowOverwritePrompt = true,
+            FileTypeChoices =
+            [
+                new FilePickerFileType("JSON")
+                {
+                    Patterns = ["*.json"],
+                    MimeTypes = ["application/json"]
+                }
+            ]
+        };
+
+        if (!string.IsNullOrWhiteSpace(suggestedDirectory) && Directory.Exists(suggestedDirectory))
+        {
+            try
+            {
+                var folder = await owner.StorageProvider.TryGetFolderFromPathAsync(suggestedDirectory);
+                if (folder is not null)
+                {
+                    options.SuggestedStartLocation = folder;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // Storage provider may not support folder resolution on this platform.
+            }
+        }
+
+        var file = await owner.StorageProvider.SaveFilePickerAsync(options);
+        return file?.TryGetLocalPath();
+    }
+
     private static Window CreateDialog(string title) => new()
     {
         Title = title,

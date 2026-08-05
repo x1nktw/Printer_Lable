@@ -49,7 +49,7 @@ public sealed class DatabaseInitializer
         cancellationToken.ThrowIfCancellationRequested();
 
         var backupDir = ResolveBackupDirectory();
-        var stamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd_HHmmss");
+        var stamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd_HHmmss_fff");
         var backupPath = Path.Combine(backupDir, $"labelprint_{stamp}.db.bak");
         File.Copy(dbPath, backupPath, overwrite: false);
         _logger.LogInformation("Created database backup {BackupPath}", backupPath);
@@ -156,7 +156,8 @@ public sealed class DatabaseInitializer
         if (settings.MarkingPrintTemplateId is null)
         {
             settings.MarkingPrintTemplateId =
-                all.FirstOrDefault(t => t.Name.Contains("Сырьё", StringComparison.OrdinalIgnoreCase))?.Id
+                all.FirstOrDefault(t => t.Name.Contains("Маркировка", StringComparison.OrdinalIgnoreCase))?.Id
+                ?? all.FirstOrDefault(t => t.Name.Contains("Сырьё", StringComparison.OrdinalIgnoreCase))?.Id
                 ?? all.FirstOrDefault(t => t.Name.Contains("Срок", StringComparison.OrdinalIgnoreCase))?.Id
                 ?? all[0].Id;
             changed = true;
@@ -226,9 +227,9 @@ public sealed class DatabaseInitializer
             }
             else
             {
+                // Keep user-edited layout: only sync canvas size. Content updates ship via explicit migrations.
                 existing.WidthMm = w;
                 existing.HeightMm = h;
-                existing.ContentJson = json;
                 existing.UpdatedAt = DateTimeOffset.UtcNow;
             }
         }

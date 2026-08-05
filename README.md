@@ -1,6 +1,6 @@
 # LabelPrint Pro
 
-**Версия приложения: 1.0.0** · **FrontPad Bridge: 1.3.15** · [.NET 8 / Windows x64](docs/INSTALLER.md)
+**Версия приложения: 1.0.1** · **FrontPad Bridge: 1.3.15** · [.NET 8 / Windows x64](docs/INSTALLER.md)
 
 Коммерческое Windows-приложение для печати термоэтикеток: каталог, маркировка, кухонные заказы FrontPad, очередь печати.
 

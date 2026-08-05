@@ -91,6 +91,31 @@ public class PersistenceIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task DatabaseInitializer_Does_Not_Overwrite_Existing_System_Preset_Content()
+    {
+        var options = Options.Create(new DatabaseOptions
+        {
+            DatabasePath = _dbPath,
+            BackupRetentionCount = 3
+        });
+
+        var initializer = new DatabaseInitializer(_db, options, NullLogger<DatabaseInitializer>.Instance);
+        await initializer.InitializeAsync();
+
+        var marking = await _db.LabelTemplates
+            .FirstAsync(t => t.IsSystemPreset && t.Name == "Маркировка 58×40");
+        const string customJson = """{"schemaVersion":1,"name":"custom","canvas":{"widthMm":58,"heightMm":40,"dpi":203},"elements":[]}""";
+        marking.ContentJson = customJson;
+        await _db.SaveChangesAsync();
+
+        await initializer.InitializeAsync();
+
+        var after = await _db.LabelTemplates
+            .FirstAsync(t => t.IsSystemPreset && t.Name == "Маркировка 58×40");
+        after.ContentJson.Should().Be(customJson);
+    }
+
+    [Fact]
     public async Task PrintHistory_Uses_Keyset_Pagination()
     {
         var uow = new UnitOfWork(_db);

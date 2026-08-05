@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LabelPrint.Application.Abstractions.Services;
+using LabelPrint.Application.Paths;
 using LabelPrint.UI.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.ObjectModel;
@@ -117,15 +118,17 @@ public partial class TemplatesViewModel : PageViewModelBase
             return;
         }
 
-        var dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "LabelPrintPro",
-            "exports");
-        Directory.CreateDirectory(dir);
-        var safeName = string.Join("_", Selected.Name.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
-        var path = Path.Combine(dir, $"template_{safeName}_{DateTime.Now:yyyyMMdd_HHmmss}.json");
+        var suggestedName = UserDataPaths.BuildTemplateExportFileName(Selected.Name);
+        var suggestedDir = UserDataPaths.ResolveDefaultExportsDirectory();
+        var path = await _dialogs.SaveJsonFileAsync(suggestedName, suggestedDir);
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            StatusMessage = "Экспорт отменён.";
+            return;
+        }
+
         await File.WriteAllTextAsync(path, result.Value);
-        StatusMessage = $"JSON: {path}";
+        StatusMessage = $"JSON сохранён: {path}";
     }
 
     [RelayCommand]
