@@ -211,6 +211,16 @@
     return !!(el.closest && el.closest("[" + KEEP_ATTR + "]"));
   }
 
+  function insideBridgeUi(el) {
+    return !!(
+      el.closest &&
+      (el.closest("#lp-fp-overlay") ||
+        el.closest("#lp-fp-btn") ||
+        el.id === "lp-fp-overlay" ||
+        el.id === "lp-fp-btn")
+    );
+  }
+
   function forceLightText(el) {
     if (!el || el.nodeType !== 1 || insideKeepBg(el)) {
       return;
@@ -232,7 +242,7 @@
   }
 
   function fixDarkText(el) {
-    if (!el || el.nodeType !== 1 || insideKeepBg(el)) {
+    if (!el || el.nodeType !== 1 || insideKeepBg(el) || insideBridgeUi(el)) {
       return;
     }
 
@@ -346,7 +356,7 @@
   }
 
   function markElement(el) {
-    if (!el || el.nodeType !== 1 || skipTag(el.tagName)) {
+    if (!el || el.nodeType !== 1 || skipTag(el.tagName) || insideBridgeUi(el)) {
       return;
     }
 
@@ -386,7 +396,13 @@
   }
 
   function markComputedSurface(el) {
-    if (!el || el.nodeType !== 1 || skipTag(el.tagName) || el.hasAttribute(KEEP_ATTR)) {
+    if (
+      !el ||
+      el.nodeType !== 1 ||
+      skipTag(el.tagName) ||
+      el.hasAttribute(KEEP_ATTR) ||
+      insideBridgeUi(el)
+    ) {
       return;
     }
 

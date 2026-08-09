@@ -5,7 +5,7 @@ using LabelPrint.Domain.Entities;
 namespace LabelPrint.Application.Services;
 
 /// <summary>
-/// Resolves FrontPad add-on text to an icon key using the catalog, then built-in heuristics.
+/// Resolves FrontPad add-on text to an icon key using the user catalog only.
 /// </summary>
 public sealed class AddonIconResolver : IAddonIconResolver
 {
@@ -27,40 +27,18 @@ public sealed class AddonIconResolver : IAddonIconResolver
     {
         if (string.IsNullOrWhiteSpace(addonText))
         {
-            return "bullet";
+            return string.Empty;
         }
 
         var addons = await GetCachedAsync(cancellationToken);
         var text = addonText.Trim();
         var best = FindBestMatch(addons, text);
-        if (best is not null)
+        if (best is null || string.IsNullOrWhiteSpace(best.IconKey))
         {
-            return best.IconKey;
+            return string.Empty;
         }
 
-        return ResolveBuiltInHeuristic(text);
-    }
-
-    /// <summary>Synchronous helper for callers that already loaded mappings.</summary>
-    public static string ResolveBuiltInHeuristic(string addonText)
-    {
-        var t = addonText.ToLowerInvariant();
-        if (t.Contains("халапень") || t.Contains("перец") || t.Contains("chili") || t.Contains("jalap") || t.Contains("острый"))
-        {
-            return "pepper";
-        }
-
-        if (t.Contains("сыр") || t.Contains("cheese"))
-        {
-            return "cheese";
-        }
-
-        if (t.Contains("лук") || t.Contains("onion"))
-        {
-            return "onion";
-        }
-
-        return "bullet";
+        return best.IconKey;
     }
 
     private async Task<IReadOnlyList<Addon>> GetCachedAsync(CancellationToken cancellationToken)

@@ -7,6 +7,54 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-10
+
+Кухня и Bridge: выбор принтера заказов, qty→отдельные этикетки N/M, in-page кнопка **LP**, редактор layout добавок, темы UI, без встроенных иконок товаров/добавок.
+
+**Состав релиза:** приложение **1.1.0** · FrontPad Bridge **1.4.4**.
+
+### Added
+
+- **FrontPad Bridge 1.4.4:** кнопка **LP** в шапке FrontPad (слева от ФР); зелёная `#6AC579` / красная `#E74C3C` по heartbeat; окно **«Подключение LabelPrint»** (IP/Port, автоподключение, тест webhook, тёмная тема).
+- Popup расширения упрощён: подсказка нажать LP + статус; настройки подключения — в modal на странице.
+- **Заказы:** выбор принтера печати; сохранение `OrdersPrintPrinterId`; ручная и автопечать используют выбранные принтер и шаблон.
+- **Редактор шаблонов:** изоляция блока **AddonsKitchen** (двойной клик) — заголовок, подчёркивание, строка иконка/текст, разделитель, empty-state; хлебные крошки «← К шаблону».
+- Модель `AddonsKitchenLayout` / defaults + рендер Skia по layout.
+- **Темы UI:** Средняя, Синяя, Лесная, Фиолетовая, Океан, Тёплая (плюс Светлая / Тёмная / Системная).
+- Кастомный titlebar (свернуть / развернуть / закрыть), brand-mark в шапке.
+- Контрол **AppTimeBox** для ручного времени этикетки; адаптивные NumericUpDown (+/−).
+
+### Changed
+
+- Кухонная печать: **qty 2 → две этикетки** с индексами **1/N…N/N** (не одна позиция с `copies=2`).
+- Иконки добавок/товаров: только пользовательские PNG (`%LocalAppData%\LabelPrintPro\addon-icons\` и каталог); эвристики pepper/cheese/onion и default `bullet` убраны.
+- Seed добавок без готовых IconKey; при старте stale keys без файла очищаются.
+- UI: Path-иконки выравнивания в редакторе; обновлённые иконки навигации.
+
+### Fixed
+
+- Тёмная тема FrontPad не перекрашивает UI Bridge (`#lp-fp-btn`, overlay).
+- Каталог не показывает stale built-in IconKey без файла.
+- Логотип на Главной: `Uniform` + HighQuality.
+- Печать выбранных: явная ошибка, если ничего не выбрано.
+
+### Removed
+
+- Встроенные PNG иконок печати (beef, cheese, chicken, …, vegetables и др.).
+- Контрол `PlusMinusNumeric` (заменён NumericUpDown + глифы).
+
+### Database
+
+- `20260808200000_AddOrdersPrintPrinterId` — `AppSettings.OrdersPrintPrinterId` (`Guid?`).
+
+### Upgrade
+
+- С **1.0.x (Velopack):** Настройки → Система → Обновить, либо новый Setup; миграция применится при старте.
+- Bridge: обновить до **1.4.4**, на FrontPad нажать **LP → Подключить**, жёсткий reload вкладки (`Ctrl+Shift+R`).
+- **Заказы:** явно выбрать принтер (и шаблон) — влияет на автопечать.
+- Загрузить PNG иконок в каталог добавок/товаров при необходимости.
+- Учесть расход ленты: qty→несколько этикеток на кухне.
+
 ## [1.0.1] - 2026-08-05
 
 ### Fixed
@@ -120,7 +168,9 @@
 
 - Solution skeleton по MASTER_SPEC v2.0: Domain, Plugins.Abstractions, Infrastructure composition, UI shell.
 
-[Unreleased]: https://github.com/x1nktw/Printer_Lable/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/x1nktw/Printer_Lable/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/x1nktw/Printer_Lable/releases/tag/v1.1.0
+[1.0.1]: https://github.com/x1nktw/Printer_Lable/releases/tag/v1.0.1
 [1.0.0]: https://github.com/x1nktw/Printer_Lable/releases/tag/v1.0.0
 [0.9.1]: https://github.com/x1nktw/Printer_Lable/releases/tag/v0.9.1
 [0.9.0]: https://github.com/x1nktw/Printer_Lable/releases/tag/v0.9.0

@@ -31,11 +31,15 @@ public interface IPrintService
 
     /// <summary>
     /// Enqueues a print job for a single order line item.
+    /// When <paramref name="positionIndex"/> / <paramref name="positionTotal"/> are set,
+    /// they override the stored line indices (used when expanding quantity into unit labels).
     /// </summary>
     Task<Result<Guid>> PrintOrderItemAsync(
         Guid orderItemId,
         Guid? printerId = null,
         int copies = 1,
         Guid? templateId = null,
+        int? positionIndex = null,
+        int? positionTotal = null,
         CancellationToken cancellationToken = default);
 }

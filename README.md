@@ -1,18 +1,18 @@
 # LabelPrint Pro
 
-**Версия приложения: 1.0.1** · **FrontPad Bridge: 1.3.15** · [.NET 8 / Windows x64](docs/INSTALLER.md)
+**Версия приложения: 1.1.0** · **FrontPad Bridge: 1.4.4** · [.NET 8 / Windows x64](docs/INSTALLER.md)
 
 Коммерческое Windows-приложение для печати термоэтикеток: каталог, маркировка, кухонные заказы FrontPad, очередь печати.
 
-## Что умеет (1.0.0)
+## Что умеет (1.1.0)
 
-- **Каталог** — товары (SKU, штрихкод, EAV), маркировка (корни + подкатегории, срок, температура, иконки), добавки с иконками
+- **Каталог** — товары (SKU, штрихкод, EAV), маркировка (корни + подкатегории, срок, температура, пользовательские иконки), добавки с PNG-иконками
 - **Маркировка** — быстрая печать сырья / заготовок / полуфабрикатов / соусов
-- **Заказы** — FrontPad Bridge → локальный webhook → кухонный чек **40×58**; inbox JSON
-- **Шаблоны** — визуальный редактор, превью = печать, импорт/экспорт JSON, системные пресеты
+- **Заказы** — FrontPad Bridge (**LP** на странице) → webhook → кухонный чек **40×58**; выбор принтера; qty → отдельные этикетки N/M; inbox JSON
+- **Шаблоны** — визуальный редактор, layout блока добавок (AddonsKitchen), превью = печать, импорт/экспорт JSON
 - **Принтеры** — File (PNG), Windows, TSPL, CPCL; очередь, история, reprint
 - **Главная** — статус Bridge / FrontPad / принтер / очередь / обновления
-- **Система** — тема Fluent + акцент, Velopack-автообновление, плагины
+- **Система** — Fluent + набор тем и акцент, Velopack-автообновление, плагины
 
 ## Стек
 
@@ -38,13 +38,14 @@ src/
   LabelPrint.Infrastructure.FrontPad
   LabelPrint.UI
 extensions/
-  frontpad-bridge/   # Chrome/Edge v1.3.15: заказы + тёмная тема FrontPad
+  frontpad-bridge/   # Chrome/Edge v1.4.4: LP-кнопка, заказы, тёмная тема FrontPad
 scripts/             # publish-win.ps1, pack-release.ps1
 tests/
 docs/
 ```
 
-Кухонные заказы: [docs/FRONTPAD_KITCHEN.md](docs/FRONTPAD_KITCHEN.md) · расширение [extensions/frontpad-bridge](extensions/frontpad-bridge).
+Кухонные заказы: [docs/FRONTPAD_KITCHEN.md](docs/FRONTPAD_KITCHEN.md) · расширение [extensions/frontpad-bridge](extensions/frontpad-bridge).  
+Релиз 1.1.0: [docs/RELEASE_NOTES_1.1.0.md](docs/RELEASE_NOTES_1.1.0.md).
 
 ## Установка без SDK
 
@@ -54,12 +55,12 @@ docs/
 |------|------------|
 | `LabelPrintPro-win-Setup.exe` | Установщик Velopack (рекомендуется) |
 | `LabelPrintPro-win-Portable.zip` | Portable |
-| `LabelPrintPro-1.0.0-full.nupkg` + `releases.win.json` | Канал автообновления |
-| `frontpad-bridge-1.3.15.zip` | Только Bridge (версия из `manifest.json`) |
+| `LabelPrintPro-1.1.0-full.nupkg` + `releases.win.json` | Канал автообновления |
+| `frontpad-bridge-1.4.4.zip` | Только Bridge (версия из `manifest.json`) |
 
 ```powershell
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.1.0
+git push origin v1.1.0
 ```
 
 ## Быстрый старт (разработка)
@@ -94,6 +95,7 @@ dotnet run --project src/LabelPrint.UI
 - [Persistence](docs/PERSISTENCE.md)
 - [Принтеры — как добавить](docs/PRINTERS.md)
 - [FrontPad / кухня](docs/FRONTPAD_KITCHEN.md)
+- [Заметки к релизу 1.1.0](docs/RELEASE_NOTES_1.1.0.md)
 - [Changelog](CHANGELOG.md) — Keep a Changelog / SemVer
 - [Открытые вопросы](docs/OPEN_QUESTIONS.md)
 - [Этапы разработки](docs/ROADMAP.md)
@@ -105,6 +107,7 @@ dotnet run --project src/LabelPrint.UI
 
 1. **Настройки → Принтеры** → **Добавить виртуальный** → Сохранить (протокол `File`, PNG в `%LocalAppData%\LabelPrintPro\prints\`).
 2. Либо протокол `Windows` и в **Подключение** — точное имя очереди из «Принтеры и сканеры».
+3. Для кухни: на странице **Заказы** выберите принтер (и шаблон) перед автопечатью.
 
 Подробности: [docs/PRINTERS.md](docs/PRINTERS.md).
 

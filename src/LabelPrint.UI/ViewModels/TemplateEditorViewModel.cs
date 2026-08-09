@@ -133,6 +133,27 @@ public partial class TemplateEditorViewModel : PageViewModelBase
     [ObservableProperty] private bool _canUndo;
     [ObservableProperty] private bool _canRedo;
     [ObservableProperty] private Bitmap? _printPreviewBitmap;
+    [ObservableProperty] private CanvasElementViewModel? _editingAddonsKitchen;
+    [ObservableProperty] private AddonsKitchenPartViewModel? _selectedInnerPart;
+    [ObservableProperty] private bool _isolationPreviewEmpty;
+
+    public ObservableCollection<AddonsKitchenPartViewModel> InnerParts { get; } = new();
+
+    public bool IsEditingAddonsKitchen => EditingAddonsKitchen is not null;
+
+    public bool ShowOuterToolbar => !IsEditingAddonsKitchen;
+
+    public bool IsolationPreviewList => !IsolationPreviewEmpty;
+
+    public string IsolationBreadcrumb =>
+        EditingAddonsKitchen is null
+            ? string.Empty
+            : $"Шаблон › {EditingAddonsKitchen.Name}";
+
+    public string IsolationModeHint =>
+        IsolationPreviewEmpty
+            ? "Режим «нет добавок» — текст и картинки пустого состояния"
+            : "Режим «есть добавки» — заголовок и шаблон строки";
 
     public double CanvasWidthPx => WidthMm * PxPerMm * Zoom;
     public double CanvasHeightPx => HeightMm * PxPerMm * Zoom;
@@ -141,6 +162,17 @@ public partial class TemplateEditorViewModel : PageViewModelBase
     public bool IsDesignMode => !IsPreviewMode;
 
     public bool HasMultiSelection => SelectedElements.Count > 1;
+
+    public bool HasSelectedInnerPart => SelectedInnerPart is not null;
+
+    public bool CanDeleteSelectedInnerPart => SelectedInnerPart?.CanDelete == true;
+
+    public double OuterCanvasOpacity => IsEditingAddonsKitchen ? 0.12 : 1.0;
+
+    public double IsolationFrameLeftPx => EditingAddonsKitchen?.LeftPx ?? 0;
+    public double IsolationFrameTopPx => EditingAddonsKitchen?.TopPx ?? 0;
+    public double IsolationFrameWidthPx => EditingAddonsKitchen?.WidthPx ?? 0;
+    public double IsolationFrameHeightPx => EditingAddonsKitchen?.HeightPx ?? 0;
 
     partial void OnWidthMmChanged(double value)
     {
@@ -168,6 +200,70 @@ public partial class TemplateEditorViewModel : PageViewModelBase
         {
             el.NotifyScaleChanged();
         }
+
+        foreach (var part in InnerParts)
+        {
+            part.NotifyScaleChanged();
+        }
+
+        NotifyIsolationFrame();
+    }
+
+    partial void OnEditingAddonsKitchenChanged(CanvasElementViewModel? value)
+    {
+        OnPropertyChanged(nameof(IsEditingAddonsKitchen));
+        OnPropertyChanged(nameof(ShowOuterToolbar));
+        OnPropertyChanged(nameof(IsolationBreadcrumb));
+        OnPropertyChanged(nameof(OuterCanvasOpacity));
+        NotifyIsolationFrame();
+    }
+
+    partial void OnSelectedInnerPartChanged(AddonsKitchenPartViewModel? value)
+    {
+        if (value is not null && !value.IsActiveInPreview)
+        {
+            IsolationPreviewEmpty = value.IsEmptyContent;
+        }
+
+        foreach (var item in InnerParts)
+        {
+            item.IsSelected = ReferenceEquals(item, value);
+        }
+
+        OnPropertyChanged(nameof(HasSelectedInnerPart));
+        OnPropertyChanged(nameof(CanDeleteSelectedInnerPart));
+        DeleteSelectedInnerPartCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnIsolationPreviewEmptyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsolationPreviewList));
+        OnPropertyChanged(nameof(IsolationModeHint));
+        foreach (var part in InnerParts)
+        {
+            part.NotifyPreviewModeChanged();
+        }
+
+        if (SelectedInnerPart is { } selected && !selected.IsActiveInPreview)
+        {
+            var next = InnerParts.FirstOrDefault(p => p.IsActiveInPreview);
+            if (next is not null)
+            {
+                SelectInnerPart(next);
+            }
+            else
+            {
+                SelectedInnerPart = null;
+            }
+        }
+    }
+
+    private void NotifyIsolationFrame()
+    {
+        OnPropertyChanged(nameof(IsolationFrameLeftPx));
+        OnPropertyChanged(nameof(IsolationFrameTopPx));
+        OnPropertyChanged(nameof(IsolationFrameWidthPx));
+        OnPropertyChanged(nameof(IsolationFrameHeightPx));
     }
 
     partial void OnIsPreviewModeChanged(bool value)
@@ -247,11 +343,7 @@ public partial class TemplateEditorViewModel : PageViewModelBase
         }), markClean: true);
 
         await LoadIconKeysAsync();
-
-        if (IsPreviewMode)
-        {
-            await LoadPreviewVariablesAsync();
-        }
+        await LoadPreviewVariablesAsync();
 
         StatusMessage = $"Элементов: {Elements.Count}";
     }
@@ -506,6 +598,27 @@ public partial class TemplateEditorViewModel : PageViewModelBase
 
     private bool TrySetTextHorizontalAlign(TextHorizontalAlign align)
     {
+        if (IsEditingAddonsKitchen)
+        {
+            if (SelectedInnerPart is not { IsTextPart: true })
+            {
+                StatusMessage = "Выберите текстовую часть для выравнивания";
+                return true;
+            }
+
+            if (SelectedInnerPart.HorizontalAlign == align)
+            {
+                return true;
+            }
+
+            RecordUndo();
+            SelectedInnerPart.HorizontalAlign = align;
+            PersistInnerPartsToElement();
+            RefreshDirtyState();
+            SchedulePrintPreviewRefresh();
+            return true;
+        }
+
         if (SelectedElements.Count != 1 || Selected is not { IsText: true, IsLocked: false })
         {
             return false;
@@ -519,6 +632,27 @@ public partial class TemplateEditorViewModel : PageViewModelBase
 
     private bool TrySetTextVerticalAlign(TextVerticalAlign align)
     {
+        if (IsEditingAddonsKitchen)
+        {
+            if (SelectedInnerPart is not { IsTextPart: true })
+            {
+                StatusMessage = "Выберите текстовую часть для выравнивания";
+                return true;
+            }
+
+            if (SelectedInnerPart.VerticalAlign == align)
+            {
+                return true;
+            }
+
+            RecordUndo();
+            SelectedInnerPart.VerticalAlign = align;
+            PersistInnerPartsToElement();
+            RefreshDirtyState();
+            SchedulePrintPreviewRefresh();
+            return true;
+        }
+
         if (SelectedElements.Count != 1 || Selected is not { IsText: true, IsLocked: false })
         {
             return false;
@@ -532,6 +666,11 @@ public partial class TemplateEditorViewModel : PageViewModelBase
 
     public void SelectElement(CanvasElementViewModel element, bool addToSelection)
     {
+        if (IsEditingAddonsKitchen)
+        {
+            return;
+        }
+
         if (addToSelection)
         {
             if (SelectedElements.Contains(element))
@@ -553,6 +692,312 @@ public partial class TemplateEditorViewModel : PageViewModelBase
         }
 
         OnPropertyChanged(nameof(HasMultiSelection));
+    }
+
+    public void TryEnterAddonsKitchen(CanvasElementViewModel element)
+    {
+        if (!element.IsAddonsKitchen || IsPreviewMode)
+        {
+            return;
+        }
+
+        EnterAddonsKitchenEdit(element);
+    }
+
+    [RelayCommand]
+    private void ExitAddonsKitchenEdit()
+    {
+        if (EditingAddonsKitchen is null)
+        {
+            return;
+        }
+
+        PersistInnerPartsToElement();
+        ClearInnerParts();
+        EditingAddonsKitchen = null;
+        SelectedInnerPart = null;
+        IsolationPreviewEmpty = false;
+        RefreshDirtyState();
+        SchedulePrintPreviewRefresh();
+        StatusMessage = "Вышли из блока добавок";
+    }
+
+    private void EnterAddonsKitchenEdit(CanvasElementViewModel element)
+    {
+        if (EditingAddonsKitchen is not null)
+        {
+            PersistInnerPartsToElement();
+            ClearInnerParts();
+        }
+
+        RecordUndo();
+        ClearSelection();
+        SetSelection([element]);
+        IsolationPreviewEmpty = false;
+        EditingAddonsKitchen = element;
+        var layout = element.EnsureAddonsKitchenLayout();
+        BuildInnerParts(layout);
+        var first = InnerParts.FirstOrDefault(p => p.IsActiveInPreview);
+        if (first is not null)
+        {
+            SelectInnerPart(first);
+        }
+
+        StatusMessage = "Редактирование блока добавок — Esc или «← К шаблону» для выхода";
+    }
+
+    private void BuildInnerParts(AddonsKitchenLayout layout)
+    {
+        ClearInnerParts();
+        void Add(AddonsKitchenPartKind kind, AddonsKitchenPart? part, bool rowRelative, string? name = null)
+        {
+            if (part is null)
+            {
+                return;
+            }
+
+            var vm = new AddonsKitchenPartViewModel(
+                kind,
+                part,
+                rowRelative,
+                () => Zoom,
+                () => EditingAddonsKitchen,
+                () => IsolationPreviewEmpty,
+                name);
+            vm.Changed += OnInnerPartChanged;
+            InnerParts.Add(vm);
+        }
+
+        Add(AddonsKitchenPartKind.Title, layout.Title, false);
+        Add(AddonsKitchenPartKind.Underline, layout.Underline, false);
+        Add(AddonsKitchenPartKind.Icon, layout.Icon, true);
+        Add(AddonsKitchenPartKind.Text, layout.Text, true);
+        Add(AddonsKitchenPartKind.Separator, layout.Separator, true);
+
+        var emptyIndex = 1;
+        foreach (var empty in layout.EmptyElements)
+        {
+            var isImage = AddonsKitchenLayoutDefaults.IsImagePart(empty);
+            var kind = isImage ? AddonsKitchenPartKind.EmptyImage : AddonsKitchenPartKind.EmptyText;
+            var label = isImage
+                ? $"Картинка {emptyIndex}"
+                : $"Текст {emptyIndex}";
+            Add(kind, empty, false, $"{label} (нет добавок)");
+            emptyIndex++;
+        }
+    }
+
+    private void ClearInnerParts()
+    {
+        foreach (var part in InnerParts)
+        {
+            part.Changed -= OnInnerPartChanged;
+            part.IsSelected = false;
+        }
+
+        InnerParts.Clear();
+    }
+
+    private void OnInnerPartChanged()
+    {
+        if (EditingAddonsKitchen is null)
+        {
+            return;
+        }
+
+        PersistInnerPartsToElement();
+        foreach (var part in InnerParts)
+        {
+            part.NotifyScaleChanged();
+        }
+
+        NotifyIsolationFrame();
+        RefreshDirtyState();
+        SchedulePrintPreviewRefresh();
+    }
+
+    private void PersistInnerPartsToElement()
+    {
+        var parent = EditingAddonsKitchen;
+        if (parent is null)
+        {
+            return;
+        }
+
+        var layout = parent.EnsureAddonsKitchenLayout();
+        var emptyElements = new List<AddonsKitchenPart>();
+        foreach (var part in InnerParts)
+        {
+            switch (part.Kind)
+            {
+                case AddonsKitchenPartKind.Title:
+                    layout.Title = part.ToPart();
+                    break;
+                case AddonsKitchenPartKind.Underline:
+                    layout.Underline = part.ToPart();
+                    break;
+                case AddonsKitchenPartKind.Icon:
+                    layout.Icon = part.ToPart();
+                    layout.RowHeightMm = Math.Max(layout.RowHeightMm, part.YMm + part.HeightMm);
+                    break;
+                case AddonsKitchenPartKind.Text:
+                    layout.Text = part.ToPart();
+                    layout.RowHeightMm = Math.Max(layout.RowHeightMm, part.YMm + part.HeightMm);
+                    break;
+                case AddonsKitchenPartKind.Separator:
+                    layout.Separator = part.ToPart();
+                    break;
+                case AddonsKitchenPartKind.EmptyText:
+                case AddonsKitchenPartKind.EmptyImage:
+                    emptyElements.Add(part.ToPart());
+                    break;
+            }
+        }
+
+        layout.Empty = null;
+        layout.EmptyElements = emptyElements;
+        parent.AddonsKitchenLayout = layout;
+    }
+
+    public void SelectInnerPart(AddonsKitchenPartViewModel part)
+    {
+        foreach (var item in InnerParts)
+        {
+            item.IsSelected = false;
+        }
+
+        part.IsSelected = true;
+        SelectedInnerPart = part;
+    }
+
+    [RelayCommand]
+    private void SetIsolationPreviewList() => IsolationPreviewEmpty = false;
+
+    [RelayCommand]
+    private void SetIsolationPreviewEmpty() => IsolationPreviewEmpty = true;
+
+    [RelayCommand]
+    private void AddEmptyTextPart()
+    {
+        if (EditingAddonsKitchen is null)
+        {
+            return;
+        }
+
+        RecordUndo();
+        IsolationPreviewEmpty = true;
+        var parent = EditingAddonsKitchen;
+        var n = InnerParts.Count(p => p.IsEmptyContent) + 1;
+        var part = new AddonsKitchenPart
+        {
+            Visible = true,
+            PartType = AddonsKitchenLayoutDefaults.PartTypeText,
+            Content = AddonsKitchenLayoutDefaults.DefaultEmptyText,
+            Bounds = new TemplateBounds { X = 1, Y = 1 + (n - 1) * 4, Width = Math.Max(10, parent.WidthMm - 2), Height = 3.5 },
+            Font = new TemplateFont { Family = parent.FontFamily, SizePt = Math.Max(7, parent.FontSizePt - 0.5), Bold = parent.IsBold }
+        };
+        var vm = new AddonsKitchenPartViewModel(
+            AddonsKitchenPartKind.EmptyText,
+            part,
+            false,
+            () => Zoom,
+            () => EditingAddonsKitchen,
+            () => IsolationPreviewEmpty,
+            $"Текст {n} (нет добавок)");
+        vm.Changed += OnInnerPartChanged;
+        InnerParts.Add(vm);
+        SelectInnerPart(vm);
+        PersistInnerPartsToElement();
+        RefreshDirtyState();
+    }
+
+    [RelayCommand]
+    private void AddEmptyImagePart()
+    {
+        if (EditingAddonsKitchen is null)
+        {
+            return;
+        }
+
+        RecordUndo();
+        IsolationPreviewEmpty = true;
+        var parent = EditingAddonsKitchen;
+        var n = InnerParts.Count(p => p.IsEmptyContent) + 1;
+        var size = Math.Min(8, Math.Max(3.2, parent.WidthMm / 4));
+        var part = new AddonsKitchenPart
+        {
+            Visible = true,
+            PartType = AddonsKitchenLayoutDefaults.PartTypeImage,
+            ImagePath = IconKeys.FirstOrDefault(),
+            Bounds = new TemplateBounds { X = 1, Y = 1 + (n - 1) * (size + 1), Width = size, Height = size }
+        };
+        var vm = new AddonsKitchenPartViewModel(
+            AddonsKitchenPartKind.EmptyImage,
+            part,
+            false,
+            () => Zoom,
+            () => EditingAddonsKitchen,
+            () => IsolationPreviewEmpty,
+            $"Картинка {n} (нет добавок)");
+        vm.Changed += OnInnerPartChanged;
+        InnerParts.Add(vm);
+        SelectInnerPart(vm);
+        PersistInnerPartsToElement();
+        RefreshDirtyState();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanDeleteSelectedInnerPart))]
+    private void DeleteSelectedInnerPart()
+    {
+        if (SelectedInnerPart is not { CanDelete: true } part)
+        {
+            return;
+        }
+
+        RecordUndo();
+        part.Changed -= OnInnerPartChanged;
+        InnerParts.Remove(part);
+        SelectedInnerPart = InnerParts.FirstOrDefault(p => p.IsActiveInPreview);
+        if (SelectedInnerPart is not null)
+        {
+            SelectedInnerPart.IsSelected = true;
+        }
+
+        PersistInnerPartsToElement();
+        RefreshDirtyState();
+        OnPropertyChanged(nameof(CanDeleteSelectedInnerPart));
+    }
+
+    public void BeginInnerDrag(AddonsKitchenPartViewModel part)
+    {
+        _dragSnapshot = CaptureSnapshot();
+        SelectInnerPart(part);
+    }
+
+    public void DragMoveInner(AddonsKitchenPartViewModel part, double dx, double dy)
+    {
+        var parent = EditingAddonsKitchen;
+        if (parent is null)
+        {
+            return;
+        }
+
+        part.MoveByPixels(dx, dy, SnapEnabled, parent.WidthMm, parent.HeightMm, parent.AddonsKitchenRowHeightMm);
+        NotifyIsolationFrame();
+    }
+
+    public void EndInnerDrag()
+    {
+        if (!_dragSnapshot.Equals(CaptureSnapshot(), StringComparison.Ordinal))
+        {
+            PersistInnerPartsToElement();
+            _undoStack.Push(_dragSnapshot);
+            UpdateUndoRedoState();
+            RefreshDirtyState();
+            SchedulePrintPreviewRefresh();
+        }
+
+        _dragSnapshot = string.Empty;
     }
 
     public void ClearSelection()
@@ -675,7 +1120,10 @@ public partial class TemplateEditorViewModel : PageViewModelBase
             ValueBinding = "AddonsKitchen",
             Content = "{{AddonsKitchen}}",
             Bounds = new TemplateBounds { X = 1.5, Y = 27, Width = 37, Height = 22 },
-            Font = new TemplateFont { Family = "Inter", SizePt = 8, Bold = true }
+            Font = new TemplateFont { Family = "Inter", SizePt = 8, Bold = true },
+            AddonsKitchen = AddonsKitchenLayoutDefaults.Create(
+                new TemplateFont { Family = "Inter", SizePt = 8, Bold = true },
+                37)
         };
         var vm = CreateElementViewModel(doc);
         Elements.Add(vm);
@@ -901,7 +1349,12 @@ public partial class TemplateEditorViewModel : PageViewModelBase
             IconKeys.Add(stem);
         }
 
-        if (Selected is { IsImage: true } image)
+        if (SelectedInnerPart is { ShowsImagePicker: true } innerImage)
+        {
+            RecordUndo();
+            innerImage.ImagePath = stem;
+        }
+        else if (Selected is { IsImage: true } image)
         {
             RecordUndo();
             image.BindingMode = TextBindingMode.Literal;
@@ -940,11 +1393,46 @@ public partial class TemplateEditorViewModel : PageViewModelBase
         }
 
         _previewVariables = await resolver.ResolveAllAsync(context);
+        EnsureAddonPreviewIcons();
         RefreshAllPreviewText();
         if (IsPreviewMode)
         {
             await RenderPrintPreviewAsync();
         }
+    }
+
+    private void EnsureAddonPreviewIcons()
+    {
+        var map = new Dictionary<string, string>(_previewVariables, StringComparer.OrdinalIgnoreCase);
+        if (!map.ContainsKey("AddonsKitchen") && map.TryGetValue("Addons", out var addons))
+        {
+            map["AddonsKitchen"] = addons;
+        }
+
+        if (!map.ContainsKey("AddonsKitchen"))
+        {
+            var sample = TemplateVariablePalette.KnownVariables
+                .FirstOrDefault(v => v.Key == "AddonsKitchen")?.SampleValue
+                ?? "Добавить халапеньо\nДвойной сыр\nБез лука";
+            map["AddonsKitchen"] = sample;
+            map["Addons"] = sample;
+        }
+
+        if (!map.ContainsKey("AddonIconKeys") || string.IsNullOrWhiteSpace(map["AddonIconKeys"]))
+        {
+            var lines = map["AddonsKitchen"]
+                .Replace("\r\n", "\n")
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var keys = IconKeys.Take(Math.Max(1, lines.Length)).ToList();
+            while (keys.Count < lines.Length)
+            {
+                keys.Add(keys.Count > 0 ? keys[^1] : "sample");
+            }
+
+            map["AddonIconKeys"] = string.Join("\n", keys);
+        }
+
+        _previewVariables = map;
     }
 
     private void CancelPrintPreview()
@@ -1105,6 +1593,10 @@ public partial class TemplateEditorViewModel : PageViewModelBase
         _suppressUndo = true;
         try
         {
+            ClearInnerParts();
+            EditingAddonsKitchen = null;
+            SelectedInnerPart = null;
+
             var document = TemplateDocumentSerializer.Deserialize(snapshot);
             Name = document.Name ?? string.Empty;
             WidthMm = document.Canvas.WidthMm;
@@ -1232,6 +1724,10 @@ public partial class CanvasElementViewModel : ObservableObject
         CornerRadiusMm = document.CornerRadiusMm;
         ImagePath = document.ImagePath;
         IsLocked = document.IsLocked;
+        if (document.AddonsKitchen is not null)
+        {
+            AddonsKitchenLayout = AddonsKitchenLayoutDefaults.Clone(document.AddonsKitchen);
+        }
     }
 
     public event Action? Changed;
@@ -1266,6 +1762,30 @@ public partial class CanvasElementViewModel : ObservableObject
     [ObservableProperty] private bool _isSelected;
     [ObservableProperty] private bool _isOverflow;
     [ObservableProperty] private string _previewText = string.Empty;
+
+    /// <summary>Persisted inner layout for AddonsKitchen blocks (null until edited / ensured).</summary>
+    public AddonsKitchenLayout? AddonsKitchenLayout { get; set; }
+
+    public double AddonsKitchenRowsOriginYMm =>
+        AddonsKitchenLayout?.RowsOriginYMm
+        ?? AddonsKitchenLayoutDefaults.Create(
+            new TemplateFont { Family = FontFamily, SizePt = FontSizePt, Bold = IsBold },
+            WidthMm).RowsOriginYMm;
+
+    public double AddonsKitchenRowHeightMm =>
+        AddonsKitchenLayout?.RowHeightMm
+        ?? AddonsKitchenLayoutDefaults.Create(
+            new TemplateFont { Family = FontFamily, SizePt = FontSizePt, Bold = IsBold },
+            WidthMm).RowHeightMm;
+
+    public AddonsKitchenLayout EnsureAddonsKitchenLayout()
+    {
+        AddonsKitchenLayout = AddonsKitchenLayoutDefaults.Resolve(
+            AddonsKitchenLayout,
+            new TemplateFont { Family = FontFamily, SizePt = FontSizePt, Bold = IsBold },
+            WidthMm);
+        return AddonsKitchenLayout;
+    }
 
     private bool _previewModeActive;
 
@@ -1695,7 +2215,10 @@ public partial class CanvasElementViewModel : ObservableObject
         Invert = Invert,
         Dashed = Dashed,
         CornerRadiusMm = CornerRadiusMm,
-        ImagePath = ImagePath
+        ImagePath = ImagePath,
+        AddonsKitchen = IsAddonsKitchen && AddonsKitchenLayout is not null
+            ? AddonsKitchenLayoutDefaults.Clone(AddonsKitchenLayout)
+            : null
     };
 
     public CanvasElementViewModel Clone(double offsetX, double offsetY)

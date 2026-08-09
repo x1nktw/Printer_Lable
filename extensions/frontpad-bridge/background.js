@@ -7,6 +7,7 @@ const DEFAULTS = {
   webhookUrl: "http://127.0.0.1:8765/",
   enabled: true,
   darkTheme: false,
+  autoConnect: true,
   lastStatus: "Ожидание заказов FrontPad…",
   lastOrderNumber: null,
   lastError: null,
@@ -78,11 +79,14 @@ function isFrontPadHookActive(settings) {
   return Number.isFinite(age) && age >= 0 && age <= FRONT_PAD_HOOK_MS;
 }
 
-async function sendHeartbeat() {
+async function sendHeartbeat(force) {
   if (heartbeatInFlight) return heartbeatInFlight;
 
   heartbeatInFlight = (async () => {
     const settings = await getSettings();
+    if (!force && settings.autoConnect === false) {
+      return;
+    }
     const hookActive = isFrontPadHookActive(settings);
     const base = normalizeWebhookUrl(settings.webhookUrl || "http://127.0.0.1:8765/");
 
@@ -297,7 +301,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   if (message.type === "ping-heartbeat") {
-    sendHeartbeat()
+    sendHeartbeat(true)
       .then(() => sendResponse({ ok: true }))
       .catch(() => sendResponse({ ok: false }));
     return true;
@@ -347,7 +351,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 // Only react to user/config changes — not to heartbeat timestamps (avoids loops).
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
-  if (changes.enabled || changes.webhookUrl) {
+  if (changes.enabled || changes.webhookUrl || changes.autoConnect) {
     scheduleHeartbeat(100);
   }
 });

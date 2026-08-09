@@ -448,7 +448,11 @@ public sealed class OrderWebhookListener : IDisposable
                 {
                     foreach (var id in sync.Value.NewOrderIds)
                     {
-                        var print = await orders.PrintAllItemsAsync(id, cancellationToken: cancellationToken);
+                        var print = await orders.PrintAllItemsAsync(
+                            id,
+                            printerId: settings.OrdersPrintPrinterId,
+                            templateId: settings.OrdersPrintTemplateId,
+                            cancellationToken: cancellationToken);
                         if (print.IsFailure)
                         {
                             _logger.LogWarning("Auto-print failed for {OrderId}: {Error}", id, print.Error);

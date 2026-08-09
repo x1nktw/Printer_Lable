@@ -32,6 +32,17 @@
                   ToolTip.Tip="JSON с составом в inbox">
             <TextBlock Text="Пример" VerticalAlignment="Center" />
           </Button>
+          <ComboBox ItemsSource="{Binding Printers}"
+                    SelectedItem="{Binding SelectedPrinter}"
+                    PlaceholderText="Принтер"
+                    MinWidth="180"
+                    Margin="0,0,8,8">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="svc:PrinterListItemDto">
+                <TextBlock Text="{Binding Name}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
           <ComboBox ItemsSource="{Binding Templates}"
                     SelectedItem="{Binding SelectedTemplate}"
                     PlaceholderText="Шаблон"
@@ -43,12 +54,13 @@
               </DataTemplate>
             </ComboBox.ItemTemplate>
           </ComboBox>
-          <Button Classes="accent"
-                  Command="{Binding PrintSelectedItemsCommand}"
+          <Button Command="{Binding PrintSelectedItemsCommand}"
                   Margin="0,0,8,8">
-            <TextBlock Text="Печать выбранных" VerticalAlignment="Center"  />
+            <TextBlock Text="Печать выбранных" VerticalAlignment="Center" />
           </Button>
-          <Button Command="{Binding PrintAllItemsCommand}" Margin="0,0,8,8">
+          <Button Classes="accent"
+                  Command="{Binding PrintAllItemsCommand}"
+                  Margin="0,0,8,8">
             <TextBlock Text="Печать всех" VerticalAlignment="Center" />
           </Button>
         </WrapPanel>

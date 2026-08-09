@@ -1,0 +1,298 @@
+/* LabelPrint Bridge — FrontPad toolbar button + connection modal
+ *
+ * Mirror native ФР item:
+ *   li.menu_user > div.im + text
+ *   float:right via FrontPad .menu ul li.menu_user
+ */
+
+#lp-fp-btn.menu_user {
+  /* inherit font/size/color from .menu ul li — same as ФР */
+  cursor: pointer;
+}
+
+#lp-fp-btn .im.lp-fp-im,
+#lp-fp-btn .lp-fp-im {
+  width: 18px !important;
+  height: 16px !important;
+  margin: auto !important;
+  margin-bottom: 2px !important;
+  background: none !important;
+  background-image: none !important;
+  color: #e74c3c !important;
+  display: block !important;
+  line-height: 0 !important;
+  overflow: hidden !important;
+}
+
+#lp-fp-btn.lp-fp-btn--ok .lp-fp-im {
+  color: #6ac579 !important;
+}
+
+#lp-fp-btn .lp-fp-im svg {
+  display: block !important;
+  width: 18px !important;
+  height: 16px !important;
+  fill: currentColor !important;
+  shape-rendering: crispEdges;
+}
+
+#lp-fp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+}
+
+#lp-fp-overlay[hidden] {
+  display: none !important;
+}
+
+#lp-fp-modal {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  background: #fff;
+  color: #222;
+  border-radius: 2px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  padding: 18px 22px 16px;
+  box-sizing: border-box;
+}
+
+#lp-fp-modal h2 {
+  margin: 0 0 14px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
+}
+
+#lp-fp-modal .lp-sec {
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e6e6e6;
+}
+
+#lp-fp-modal .lp-sec:last-of-type {
+  border-bottom: 0;
+  margin-bottom: 8px;
+  padding-bottom: 0;
+}
+
+#lp-fp-modal .lp-sec__title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+}
+
+#lp-fp-modal .lp-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+#lp-fp-modal .lp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 140px;
+  min-width: 120px;
+}
+
+#lp-fp-modal .lp-field--port {
+  flex: 0 0 110px;
+  min-width: 90px;
+}
+
+#lp-fp-modal .lp-field label {
+  font-size: 12px;
+  color: #444;
+}
+
+#lp-fp-modal input[type="text"],
+#lp-fp-modal input[type="password"],
+#lp-fp-modal input[type="number"] {
+  box-sizing: border-box;
+  width: 100%;
+  height: 30px;
+  padding: 4px 8px;
+  border: 1px solid #c8c8c8;
+  border-radius: 2px;
+  font-size: 13px;
+  background: #fff;
+  color: #222;
+}
+
+#lp-fp-modal .lp-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #333;
+  user-select: none;
+}
+
+#lp-fp-modal .lp-check input {
+  width: 15px;
+  height: 15px;
+}
+
+#lp-fp-modal .lp-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+#lp-fp-modal .lp-actions--end {
+  justify-content: flex-end;
+}
+
+#lp-fp-modal .lp-status-block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+#lp-fp-modal .lp-status-text strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+#lp-fp-modal .lp-status-text span {
+  font-size: 13px;
+  color: #e74c3c;
+}
+
+#lp-fp-modal .lp-status-text span.ok {
+  color: #6ac579;
+}
+
+#lp-fp-modal button {
+  cursor: pointer;
+  border: 1px solid #bbb;
+  border-radius: 2px;
+  padding: 7px 16px;
+  font-size: 13px;
+  background: #ececec;
+  color: #222;
+  min-width: 110px;
+}
+
+#lp-fp-modal button.lp-btn-green {
+  background: #6ac579;
+  border-color: #5bb56a;
+  color: #fff;
+  font-weight: 600;
+}
+
+#lp-fp-modal button.lp-btn-green:hover {
+  background: #5bb56a;
+}
+
+#lp-fp-modal button:hover {
+  filter: brightness(0.97);
+}
+
+#lp-fp-modal .lp-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 8px;
+}
+
+#lp-fp-modal .lp-msg {
+  min-height: 16px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #666;
+}
+
+#lp-fp-modal .lp-msg.err {
+  color: #e74c3c;
+}
+
+/* Keep modal + toolbar button readable under FrontPad dark theme */
+html.lp-fp-dark #lp-fp-btn.menu_user {
+  color: #f1f1f1 !important;
+  -webkit-text-fill-color: #f1f1f1 !important;
+  background-image: none !important;
+  text-shadow: none !important;
+}
+
+html.lp-fp-dark #lp-fp-btn .lp-fp-im {
+  color: #e74c3c !important;
+  -webkit-text-fill-color: #e74c3c !important;
+  background: none !important;
+}
+
+html.lp-fp-dark #lp-fp-btn.lp-fp-btn--ok .lp-fp-im {
+  color: #6ac579 !important;
+  -webkit-text-fill-color: #6ac579 !important;
+}
+
+html.lp-fp-dark #lp-fp-overlay {
+  background: rgba(0, 0, 0, 0.55) !important;
+}
+
+html.lp-fp-dark #lp-fp-modal,
+html.lp-fp-dark #lp-fp-modal * {
+  color: #222 !important;
+  -webkit-text-fill-color: #222 !important;
+  text-shadow: none !important;
+  box-shadow: none;
+}
+
+html.lp-fp-dark #lp-fp-modal {
+  background: #fff !important;
+  background-image: none !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
+}
+
+html.lp-fp-dark #lp-fp-modal input[type="text"],
+html.lp-fp-dark #lp-fp-modal input[type="password"],
+html.lp-fp-dark #lp-fp-modal input[type="number"] {
+  background: #fff !important;
+  color: #222 !important;
+  -webkit-text-fill-color: #222 !important;
+  border: 1px solid #c8c8c8 !important;
+}
+
+html.lp-fp-dark #lp-fp-modal button {
+  background: #ececec !important;
+  color: #222 !important;
+  -webkit-text-fill-color: #222 !important;
+  border: 1px solid #bbb !important;
+}
+
+html.lp-fp-dark #lp-fp-modal button.lp-btn-green,
+html.lp-fp-dark #lp-fp-modal button.lp-btn-green * {
+  background: #6ac579 !important;
+  border-color: #5bb56a !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+html.lp-fp-dark #lp-fp-modal #lp-modal-status {
+  color: #e74c3c !important;
+  -webkit-text-fill-color: #e74c3c !important;
+}
+
+html.lp-fp-dark #lp-fp-modal #lp-modal-status.ok {
+  color: #6ac579 !important;
+  -webkit-text-fill-color: #6ac579 !important;
+}
+
+html.lp-fp-dark #lp-fp-modal .lp-msg.err {
+  color: #e74c3c !important;
+  -webkit-text-fill-color: #e74c3c !important;
+}

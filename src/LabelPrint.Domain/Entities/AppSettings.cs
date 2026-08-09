@@ -62,6 +62,9 @@ public class AppSettings : EntityBase
     /// <summary>Template selected on Orders page for kitchen label print.</summary>
     public Guid? OrdersPrintTemplateId { get; set; }
 
+    /// <summary>Printer selected on Orders page for kitchen label print.</summary>
+    public Guid? OrdersPrintPrinterId { get; set; }
+
     /// <summary>Template selected on Marking (сырьё) page for label print.</summary>
     public Guid? MarkingPrintTemplateId { get; set; }
 }

@@ -75,6 +75,72 @@ public sealed class TemplateElementDocument
 
     /// <summary>Corner radius in mm for rectangles (0 = sharp).</summary>
     public double CornerRadiusMm { get; set; }
+
+    /// <summary>
+    /// Inner layout for <c>AddonsKitchen</c> variable blocks. Null = renderer defaults.
+    /// </summary>
+    public AddonsKitchenLayout? AddonsKitchen { get; set; }
+}
+
+/// <summary>Editable layout for the AddonsKitchen composite block.</summary>
+public sealed class AddonsKitchenLayout
+{
+    public AddonsKitchenPart Title { get; set; } = new();
+
+    public AddonsKitchenPart? Underline { get; set; }
+
+    /// <summary>Y origin of the first addon row, relative to the block top (mm).</summary>
+    public double RowsOriginYMm { get; set; }
+
+    /// <summary>Height of one addon row (mm).</summary>
+    public double RowHeightMm { get; set; } = 3.5;
+
+    /// <summary>Gap after each row / separator before the next row (mm).</summary>
+    public double RowGapMm { get; set; }
+
+    /// <summary>Icon slot within a row (bounds relative to row origin).</summary>
+    public AddonsKitchenPart Icon { get; set; } = new();
+
+    /// <summary>Text slot within a row (bounds relative to row origin).</summary>
+    public AddonsKitchenPart Text { get; set; } = new();
+
+    /// <summary>Dashed separator under a row (bounds relative to row origin).</summary>
+    public AddonsKitchenPart? Separator { get; set; }
+
+    /// <summary>
+    /// Legacy single empty-state text. Prefer <see cref="EmptyElements"/>.
+    /// </summary>
+    public AddonsKitchenPart? Empty { get; set; }
+
+    /// <summary>
+    /// Freeform text/image elements drawn when the addon list is empty.
+    /// </summary>
+    public List<AddonsKitchenPart> EmptyElements { get; set; } = new();
+}
+
+/// <summary>One editable part of an AddonsKitchen layout.</summary>
+public sealed class AddonsKitchenPart
+{
+    public bool Visible { get; set; } = true;
+
+    /// <summary><c>text</c> (default) or <c>image</c> — used for empty-state freeform items.</summary>
+    public string PartType { get; set; } = "text";
+
+    /// <summary>Optional label / text content.</summary>
+    public string? Content { get; set; }
+
+    /// <summary>Icon key or path for image parts.</summary>
+    public string? ImagePath { get; set; }
+
+    public TemplateBounds Bounds { get; set; } = new();
+
+    public TemplateFont? Font { get; set; }
+
+    public bool Invert { get; set; }
+
+    public double StrokeThickness { get; set; } = 0.3;
+
+    public bool Dashed { get; set; }
 }
 
 /// <summary>Element bounds in millimeters.</summary>

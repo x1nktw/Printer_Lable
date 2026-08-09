@@ -5,11 +5,18 @@ using LabelPrint.Domain.Enums;
 
 namespace LabelPrint.UI.Services;
 
-/// <summary>Applies light/dark/system theme and Fluent accent color.</summary>
+/// <summary>Applies built-in and custom UI themes plus Fluent accent color.</summary>
 public static class ThemeApplier
 {
     public const string DefaultAccentHex = "#10A37F";
     private const string AccentBrushKey = "AppAccentBrush";
+
+    public static readonly ThemeVariant Medium = new("Medium", ThemeVariant.Dark);
+    public static readonly ThemeVariant Blue = new("Blue", ThemeVariant.Dark);
+    public static readonly ThemeVariant Forest = new("Forest", ThemeVariant.Dark);
+    public static readonly ThemeVariant Violet = new("Violet", ThemeVariant.Dark);
+    public static readonly ThemeVariant Ocean = new("Ocean", ThemeVariant.Dark);
+    public static readonly ThemeVariant Warm = new("Warm", ThemeVariant.Dark);
 
     public static void Apply(AppTheme theme, string? accentHex)
     {
@@ -18,16 +25,27 @@ public static class ThemeApplier
             return;
         }
 
-        app.RequestedThemeVariant = theme switch
+        app.RequestedThemeVariant = ToVariant(theme);
+        ApplyAccent(accentHex);
+    }
+
+    public static ThemeVariant ToVariant(AppTheme theme) =>
+        theme switch
         {
             AppTheme.Light => ThemeVariant.Light,
             AppTheme.Dark => ThemeVariant.Dark,
             AppTheme.System => ThemeVariant.Default,
+            AppTheme.Medium => Medium,
+            AppTheme.Blue => Blue,
+            AppTheme.Forest => Forest,
+            AppTheme.Violet => Violet,
+            AppTheme.Ocean => Ocean,
+            AppTheme.Warm => Warm,
             _ => ThemeVariant.Dark
         };
 
-        ApplyAccent(accentHex);
-    }
+    public static bool IsLightChrome(AppTheme theme) =>
+        theme is AppTheme.Light;
 
     public static void ApplyAccent(string? accentHex)
     {

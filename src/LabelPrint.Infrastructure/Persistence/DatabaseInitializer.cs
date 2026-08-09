@@ -171,30 +171,90 @@ public sealed class DatabaseInitializer
 
     private async Task EnsureAddonsSeedAsync(CancellationToken cancellationToken)
     {
-        if (await _dbContext.Addons.AnyAsync(cancellationToken))
+        // Do not seed built-in pepper/cheese/onion icons — users import PNGs themselves.
+        // Clear leftover keys that pointed at removed embedded icons when no custom file exists.
+        var staleKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            return;
+            "pepper", "cheese", "onion", "bullet",
+            "meat", "fish", "chicken", "beef", "pork", "vegetables",
+            "frozen", "snowflake", "thermometer", "leaf", "bottle",
+            "sauce", "fries", "icecream", "prepared"
+        };
+
+        var customDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "LabelPrintPro",
+            "addon-icons");
+
+        var addons = await _dbContext.Addons.ToListAsync(cancellationToken);
+        var changed = false;
+        foreach (var addon in addons)
+        {
+            if (string.IsNullOrWhiteSpace(addon.IconKey) || !staleKeys.Contains(addon.IconKey))
+            {
+                continue;
+            }
+
+            var customPath = Path.Combine(customDir, $"{addon.IconKey}.png");
+            if (File.Exists(customPath))
+            {
+                continue;
+            }
+
+            addon.IconKey = string.Empty;
+            addon.UpdatedAt = DateTimeOffset.UtcNow;
+            changed = true;
         }
 
-        _dbContext.Addons.AddRange(
-            new Addon
+        var products = await _dbContext.Products
+            .Where(p => p.IconKey != null)
+            .ToListAsync(cancellationToken);
+        foreach (var product in products)
+        {
+            if (string.IsNullOrWhiteSpace(product.IconKey) || !staleKeys.Contains(product.IconKey))
             {
-                Name = "Халапеньо",
-                MatchAliases = "халапень,перец,chili,jalap,острый",
-                IconKey = "pepper"
-            },
-            new Addon
+                continue;
+            }
+
+            var customPath = Path.Combine(customDir, $"{product.IconKey}.png");
+            if (File.Exists(customPath))
             {
-                Name = "Сыр",
-                MatchAliases = "cheese",
-                IconKey = "cheese"
-            },
-            new Addon
-            {
-                Name = "Лук",
-                MatchAliases = "onion",
-                IconKey = "onion"
-            });
+                continue;
+            }
+
+            product.IconKey = null;
+            product.UpdatedAt = DateTimeOffset.UtcNow;
+            changed = true;
+        }
+
+        if (changed)
+        {
+            // Save happens in SeedAsync after this method.
+        }
+
+        // Fresh DB: seed name mappings without icons so FrontPad text still matches once user assigns PNGs.
+        if (addons.Count == 0)
+        {
+            _dbContext.Addons.AddRange(
+                new Addon
+                {
+                    Name = "Халапеньо",
+                    MatchAliases = "халапень,перец,chili,jalap,острый",
+                    IconKey = string.Empty
+                },
+                new Addon
+                {
+                    Name = "Сыр",
+                    MatchAliases = "cheese",
+                    IconKey = string.Empty
+                },
+                new Addon
+                {
+                    Name = "Лук",
+                    MatchAliases = "onion",
+                    IconKey = string.Empty
+                });
+        }
     }
 
     private async Task EnsureSystemTemplatesAsync(CancellationToken cancellationToken)

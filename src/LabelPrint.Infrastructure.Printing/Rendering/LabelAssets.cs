@@ -3,7 +3,7 @@ using SkiaSharp;
 namespace LabelPrint.Infrastructure.Printing.Rendering;
 
 /// <summary>
-/// Embedded label fonts and monochrome icons shipped with the printing layer.
+/// Embedded label fonts and kitchen chrome icons; user icons live under LocalAppData.
 /// </summary>
 internal static class LabelAssets
 {
@@ -12,6 +12,15 @@ internal static class LabelAssets
     private static readonly Lazy<SKTypeface> InterBold = new(() => LoadTypeface("Inter-Bold.ttf"));
     private static readonly Dictionary<string, SKBitmap> IconCache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly object IconGate = new();
+
+    /// <summary>Kitchen template chrome only (date/time glyphs). Product/addon icons are user files.</summary>
+    private static readonly HashSet<string> EmbeddedChromeKeys = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "calendar",
+        "calendar-white",
+        "clock",
+        "clock-white"
+    };
 
     public static SKTypeface ResolveTypeface(string? family, bool bold)
     {
@@ -26,34 +35,20 @@ internal static class LabelAssets
                ?? (bold ? InterBold.Value : InterRegular.Value);
     }
 
-    public static string ResolveAddonIconKey(string addonText)
-    {
-        var t = addonText.ToLowerInvariant();
-        if (t.Contains("халапень") || t.Contains("перец") || t.Contains("chili") || t.Contains("jalap") || t.Contains("острый"))
-        {
-            return "pepper";
-        }
-
-        if (t.Contains("сыр") || t.Contains("cheese"))
-        {
-            return "cheese";
-        }
-
-        if (t.Contains("лук") || t.Contains("onion"))
-        {
-            return "onion";
-        }
-
-        return "bullet";
-    }
-
     /// <summary>
-    /// Loads an icon from embedded resources or
-    /// <c>%LocalAppData%\LabelPrintPro\addon-icons\{key}.png</c>.
+    /// Loads an icon from
+    /// <c>%LocalAppData%\LabelPrintPro\addon-icons\{key}.png</c>,
+    /// then (for kitchen chrome keys only) from embedded resources.
+    /// Custom files always win over embedded.
     /// </summary>
     public static SKBitmap? TryLoadIcon(string name)
     {
         var key = NormalizeIconKey(name);
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return null;
+        }
+
         lock (IconGate)
         {
             if (IconCache.TryGetValue(key, out var cached))
@@ -61,7 +56,9 @@ internal static class LabelAssets
                 return cached.Copy();
             }
 
-            var bitmap = TryDecodeEmbedded(key) ?? TryDecodeCustomFile(key);
+            // Prefer user uploads so a matching name never resurrects a removed built-in.
+            var bitmap = TryDecodeCustomFile(key)
+                         ?? (EmbeddedChromeKeys.Contains(key) ? TryDecodeEmbedded(key) : null);
             if (bitmap is null)
             {
                 return null;

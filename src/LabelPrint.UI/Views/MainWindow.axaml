@@ -11,9 +11,91 @@
         Height="900"
         MinWidth="1200"
         MinHeight="720"
-        Background="{DynamicResource AppContentBackground}">
+        Background="{DynamicResource AppContentBackground}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaTitleBarHeightHint="40"
+        SystemDecorations="Full">
 
-  <Panel>
+  <DockPanel>
+    <!-- Custom titlebar matching app chrome -->
+    <Border DockPanel.Dock="Top"
+            Height="40"
+            Background="{DynamicResource AppSidebarBackground}"
+            BorderBrush="{DynamicResource AppSidebarBorder}"
+            BorderThickness="0,0,0,1"
+            PointerPressed="OnTitleBarPointerPressed"
+            DoubleTapped="OnTitleBarDoubleTapped">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Grid.Column="0"
+                    Orientation="Horizontal"
+                    Spacing="10"
+                    VerticalAlignment="Center"
+                    Margin="14,0,0,0"
+                    IsHitTestVisible="False">
+          <Path Classes="brand-mark"
+                Data="{x:Static ui:AppIcons.Brand}"
+                Width="16" Height="16"
+                VerticalAlignment="Center" />
+          <TextBlock Text="LabelPrint Pro"
+                     FontSize="13"
+                     FontWeight="SemiBold"
+                     VerticalAlignment="Center"
+                     Foreground="{DynamicResource AppPrimaryForeground}" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Orientation="Horizontal">
+          <Button Classes="titlebar-btn"
+                  Click="OnMinimizeClick"
+                  ToolTip.Tip="Свернуть">
+            <Path Width="10" Height="10"
+                  Stretch="None"
+                  Stroke="{DynamicResource AppPrimaryForeground}"
+                  StrokeThickness="1.25"
+                  StrokeLineCap="Square"
+                  Data="M 0.5,5 H 9.5" />
+          </Button>
+          <Button Classes="titlebar-btn"
+                  x:Name="MaximizeButton"
+                  Click="OnMaximizeClick"
+                  ToolTip.Tip="Развернуть">
+            <Panel Width="10" Height="10">
+              <Path x:Name="MaximizeGlyph"
+                    Width="10" Height="10"
+                    Stretch="None"
+                    Stroke="{DynamicResource AppPrimaryForeground}"
+                    StrokeThickness="1.25"
+                    StrokeLineCap="Square"
+                    StrokeJoin="Miter"
+                    Fill="Transparent"
+                    Data="M 0.5,0.5 H 9.5 V 9.5 H 0.5 Z"
+                    IsVisible="True" />
+              <Path x:Name="RestoreGlyph"
+                    Width="10" Height="10"
+                    Stretch="None"
+                    Stroke="{DynamicResource AppPrimaryForeground}"
+                    StrokeThickness="1.25"
+                    StrokeLineCap="Square"
+                    StrokeJoin="Miter"
+                    Fill="Transparent"
+                    Data="M 2.5,0.5 H 9.5 V 7.5 H 7.5 M 0.5,2.5 H 7.5 V 9.5 H 0.5 Z"
+                    IsVisible="False" />
+            </Panel>
+          </Button>
+          <Button Classes="titlebar-btn titlebar-btn-close"
+                  Click="OnCloseClick"
+                  ToolTip.Tip="Закрыть">
+            <Path Width="10" Height="10"
+                  Stretch="None"
+                  Stroke="{DynamicResource AppPrimaryForeground}"
+                  StrokeThickness="1.25"
+                  StrokeLineCap="Square"
+                  Data="M 1,1 L 9,9 M 9,1 L 1,9" />
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+
     <Grid ColumnDefinitions="Auto,*">
       <!-- Fixed icon rail: content stays left-aligned; width clips text on collapse -->
       <Border x:Name="SidebarHost"
@@ -31,14 +113,10 @@
                     Padding="10,0"
                     Classes="sidebar-row">
               <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                <Border Width="22" Height="22"
-                        CornerRadius="6"
-                        ClipToBounds="True"
-                        VerticalAlignment="Center">
-                  <Image Source="/Assets/app-icon.png"
-                         Width="22" Height="22"
-                         Stretch="UniformToFill" />
-                </Border>
+                <Path Classes="brand-mark"
+                      Data="{x:Static ui:AppIcons.Brand}"
+                      Width="20" Height="20"
+                      VerticalAlignment="Center" />
                 <StackPanel VerticalAlignment="Center"
                             Opacity="{Binding SidebarExpandedOpacity}"
                             IsHitTestVisible="{Binding !IsSidebarCollapsed}">
@@ -154,5 +232,5 @@
         </Border>
       </Border>
     </Grid>
-  </Panel>
+  </DockPanel>
 </Window>

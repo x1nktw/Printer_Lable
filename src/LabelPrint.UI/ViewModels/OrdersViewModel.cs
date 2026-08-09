@@ -15,6 +15,7 @@ public partial class OrdersViewModel : PageViewModelBase
     private readonly IOrderFeedNotifier _feedNotifier;
     private int _silentReload;
     private bool _suppressTemplatePersist;
+    private bool _suppressPrinterPersist;
 
     public OrdersViewModel(IServiceScopeFactory scopeFactory, IOrderFeedNotifier feedNotifier)
     {
@@ -78,11 +79,13 @@ public partial class OrdersViewModel : PageViewModelBase
     public ObservableCollection<OrderListItemDto> Orders { get; } = new();
     public ObservableCollection<OrderItemRowVm> ItemRows { get; } = new();
     public ObservableCollection<TemplateListItemDto> Templates { get; } = new();
+    public ObservableCollection<PrinterListItemDto> Printers { get; } = new();
 
     [ObservableProperty] private string? _searchText;
     [ObservableProperty] private OrderListItemDto? _selectedOrder;
     [ObservableProperty] private OrderItemRowVm? _selectedItem;
     [ObservableProperty] private TemplateListItemDto? _selectedTemplate;
+    [ObservableProperty] private PrinterListItemDto? _selectedPrinter;
     [ObservableProperty] private string? _statusMessage;
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private OrderStatus? _statusFilter;
@@ -103,6 +106,7 @@ public partial class OrdersViewModel : PageViewModelBase
             IsBusy = true;
             using var scope = _scopeFactory.CreateScope();
             var service = scope.ServiceProvider.GetRequiredService<IOrderService>();
+            await LoadPrintersAsync(scope);
             await LoadTemplatesAsync(scope);
 
             var result = await service.SearchAsync(SearchText, StatusFilter, skip: 0, take: PageSize);
@@ -252,6 +256,7 @@ public partial class OrdersViewModel : PageViewModelBase
             var service = scope.ServiceProvider.GetRequiredService<IOrderService>();
             var result = await service.PrintAllItemsAsync(
                 SelectedOrder.Id,
+                printerId: SelectedPrinter?.Id,
                 templateId: SelectedTemplate?.Id);
             StatusMessage = result.IsFailure
                 ? result.Error
@@ -278,6 +283,7 @@ public partial class OrdersViewModel : PageViewModelBase
             var result = await service.PrintItemsAsync(
                 SelectedOrder.Id,
                 itemIds,
+                printerId: SelectedPrinter?.Id,
                 templateId: SelectedTemplate?.Id);
             StatusMessage = result.IsFailure
                 ? result.Error
@@ -287,6 +293,49 @@ public partial class OrdersViewModel : PageViewModelBase
         catch (Exception ex)
         {
             StatusMessage = ex.Message;
+        }
+    }
+
+    private async Task LoadPrintersAsync(IServiceScope scope)
+    {
+        var printers = scope.ServiceProvider.GetRequiredService<IPrinterService>();
+        var settingsSvc = scope.ServiceProvider.GetRequiredService<ISettingsService>();
+        Printers.Clear();
+        var list = await printers.ListAsync();
+        if (list.IsFailure)
+        {
+            return;
+        }
+
+        foreach (var p in list.Value)
+        {
+            Printers.Add(p);
+        }
+
+        Guid? preferredId = null;
+        var settings = await settingsSvc.GetAsync();
+        if (settings.IsSuccess)
+        {
+            preferredId = settings.Value.OrdersPrintPrinterId;
+        }
+
+        _suppressPrinterPersist = true;
+        try
+        {
+            SelectedPrinter = (preferredId is Guid id
+                                   ? Printers.FirstOrDefault(p => p.Id == id)
+                                   : null)
+                               ?? Printers.FirstOrDefault(p => p.IsDefault)
+                               ?? Printers.FirstOrDefault();
+        }
+        finally
+        {
+            _suppressPrinterPersist = false;
+        }
+
+        if (SelectedPrinter is not null && preferredId != SelectedPrinter.Id)
+        {
+            await PersistSelectedPrinterAsync(SelectedPrinter.Id);
         }
     }
 
@@ -345,6 +394,16 @@ public partial class OrdersViewModel : PageViewModelBase
         _ = PersistSelectedTemplateAsync(value.Id);
     }
 
+    partial void OnSelectedPrinterChanged(PrinterListItemDto? value)
+    {
+        if (_suppressPrinterPersist || value is null)
+        {
+            return;
+        }
+
+        _ = PersistSelectedPrinterAsync(value.Id);
+    }
+
     private async Task PersistSelectedTemplateAsync(Guid templateId)
     {
         using var scope = _scopeFactory.CreateScope();
@@ -362,6 +421,26 @@ public partial class OrdersViewModel : PageViewModelBase
         }
 
         dto.OrdersPrintTemplateId = templateId;
+        await settingsSvc.SaveAsync(dto);
+    }
+
+    private async Task PersistSelectedPrinterAsync(Guid printerId)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var settingsSvc = scope.ServiceProvider.GetRequiredService<ISettingsService>();
+        var current = await settingsSvc.GetAsync();
+        if (current.IsFailure)
+        {
+            return;
+        }
+
+        var dto = current.Value;
+        if (dto.OrdersPrintPrinterId == printerId)
+        {
+            return;
+        }
+
+        dto.OrdersPrintPrinterId = printerId;
         await settingsSvc.SaveAsync(dto);
     }
 

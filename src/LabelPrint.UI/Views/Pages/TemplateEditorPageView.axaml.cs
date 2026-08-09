@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using LabelPrint.UI.ViewModels;
@@ -12,6 +13,7 @@ namespace LabelPrint.UI.Views.Pages;
 public partial class TemplateEditorPageView : UserControl
 {
     private CanvasElementViewModel? _dragElement;
+    private AddonsKitchenPartViewModel? _dragInnerPart;
     private Point _lastPoint;
     private bool _rubberBandActive;
     private Point _rubberBandStart;
@@ -141,7 +143,7 @@ public partial class TemplateEditorPageView : UserControl
 
     private void OnElementPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (Vm is null || Vm.IsPreviewMode)
+        if (Vm is null || Vm.IsPreviewMode || Vm.IsEditingAddonsKitchen)
         {
             return;
         }
@@ -160,9 +162,69 @@ public partial class TemplateEditorPageView : UserControl
         e.Handled = true;
     }
 
+    private void OnElementDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (Vm is null || Vm.IsPreviewMode)
+        {
+            return;
+        }
+
+        if (sender is not Control { Tag: CanvasElementViewModel element })
+        {
+            return;
+        }
+
+        if (element.IsAddonsKitchen)
+        {
+            Vm.TryEnterAddonsKitchen(element);
+            e.Handled = true;
+        }
+    }
+
+    private void OnInnerPartPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (Vm is null || !Vm.IsEditingAddonsKitchen)
+        {
+            return;
+        }
+
+        if (sender is not Control control || control.Tag is not AddonsKitchenPartViewModel part)
+        {
+            return;
+        }
+
+        Vm.BeginInnerDrag(part);
+        _dragInnerPart = part;
+        _lastPoint = e.GetPosition(this.FindControl<Grid>("DesignSurfaceHost")!);
+        e.Pointer.Capture(control);
+        e.Handled = true;
+    }
+
     private void OnCanvasPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (Vm is null || Vm.IsPreviewMode || e.Source is Control { Tag: CanvasElementViewModel })
+        if (Vm is null || Vm.IsPreviewMode)
+        {
+            return;
+        }
+
+        if (Vm.IsEditingAddonsKitchen)
+        {
+            if (e.Source is Control { Tag: AddonsKitchenPartViewModel })
+            {
+                return;
+            }
+
+            // Click empty area while isolating — leave isolation.
+            if (Vm.ExitAddonsKitchenEditCommand.CanExecute(null))
+            {
+                Vm.ExitAddonsKitchenEditCommand.Execute(null);
+            }
+
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Source is Control { Tag: CanvasElementViewModel })
         {
             return;
         }
@@ -217,7 +279,7 @@ public partial class TemplateEditorPageView : UserControl
             return;
         }
 
-        if (_dragElement is null || Vm is null || !e.GetCurrentPoint(host).Properties.IsLeftButtonPressed)
+        if (!e.GetCurrentPoint(host).Properties.IsLeftButtonPressed || Vm is null)
         {
             return;
         }
@@ -225,6 +287,18 @@ public partial class TemplateEditorPageView : UserControl
         var dx = point.X - _lastPoint.X;
         var dy = point.Y - _lastPoint.Y;
         _lastPoint = point;
+
+        if (_dragInnerPart is not null)
+        {
+            Vm.DragMoveInner(_dragInnerPart, dx, dy);
+            return;
+        }
+
+        if (_dragElement is null)
+        {
+            return;
+        }
+
         Vm.DragMove(_dragElement, dx, dy);
         RedrawGuides();
     }
@@ -242,6 +316,12 @@ public partial class TemplateEditorPageView : UserControl
             _rubberBandActive = false;
         }
 
+        if (_dragInnerPart is not null && Vm is not null)
+        {
+            Vm.EndInnerDrag();
+            _dragInnerPart = null;
+        }
+
         if (_dragElement is not null && Vm is not null)
         {
             Vm.EndDrag();
@@ -256,6 +336,17 @@ public partial class TemplateEditorPageView : UserControl
     {
         if (Vm is null)
         {
+            return;
+        }
+
+        if (e.Key == Key.Escape && Vm.IsEditingAddonsKitchen)
+        {
+            if (Vm.ExitAddonsKitchenEditCommand.CanExecute(null))
+            {
+                Vm.ExitAddonsKitchenEditCommand.Execute(null);
+            }
+
+            e.Handled = true;
             return;
         }
 

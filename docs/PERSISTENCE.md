@@ -1,6 +1,6 @@
 # Документация Persistence
 
-Актуально для **LabelPrint Pro 1.0.1**.
+Актуально для **LabelPrint Pro 1.1.0**.
 
 ## Старт
 
@@ -29,7 +29,7 @@
 
 SQLite: все `DateTimeOffset` хранятся как `long` UTC ticks (value converter в `LabelPrintDbContext`), чтобы `ORDER BY` работал без client evaluation.
 
-## Миграции (накопительно к 1.0.0)
+## Миграции (накопительно к 1.1.0)
 
 Помимо `InitialCreate`:
 
@@ -44,6 +44,7 @@ SQLite: все `DateTimeOffset` хранятся как `long` UTC ticks (value 
 | `AddAccentColor` | `AppSettings.AccentColor` |
 | `AddProductTemperatureRegime` | `Products.TemperatureRegime` |
 | `AddProductIconKey` | `Products.ProductIconKey` (иконка маркировки) |
+| `AddOrdersPrintPrinterId` | `AppSettings.OrdersPrintPrinterId` (принтер авто/ручной печати заказов) |
 
 Путь БД по умолчанию: `%LocalAppData%\LabelPrintPro\labelprint.db`  
 (override: `LabelPrint:DatabasePath` / `DatabaseFileName` в `appsettings.json`).

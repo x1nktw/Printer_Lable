@@ -2,6 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="LabelPrint.UI.App"
              xmlns:local="using:LabelPrint.UI"
+             xmlns:controls="using:LabelPrint.UI.Controls"
+             xmlns:services="using:LabelPrint.UI.Services"
              RequestedThemeVariant="Dark">
 
     <Application.DataTemplates>
@@ -126,6 +128,246 @@
             <StaticResource x:Key="AccentButtonForegroundPointerOver" ResourceKey="AppAccentBrush" />
             <StaticResource x:Key="AccentButtonForegroundPressed" ResourceKey="AppAccentBrush" />
           </ResourceDictionary>
+
+          <!-- Medium: midway gray between Light and Dark -->
+          <ResourceDictionary x:Key="{x:Static services:ThemeApplier.Medium}">
+            <SolidColorBrush x:Key="AppSidebarBackground" Color="#45454A" />
+            <SolidColorBrush x:Key="AppSidebarBorder" Color="#5A5A60" />
+            <SolidColorBrush x:Key="AppSidebarHover" Color="#55555B" />
+            <SolidColorBrush x:Key="AppSidebarSelected" Color="#5E5E64" />
+            <SolidColorBrush x:Key="AppContentBackground" Color="#525258" />
+            <SolidColorBrush x:Key="AppSurfaceBackground" Color="#5A5A60" />
+            <SolidColorBrush x:Key="AppSurfaceElevated" Color="#64646A" />
+            <SolidColorBrush x:Key="AppMutedForeground" Color="#C4C4C8" />
+            <SolidColorBrush x:Key="AppPrimaryForeground" Color="#F4F4F5" />
+            <SolidColorBrush x:Key="AppGhostButtonBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="AppGhostButtonHover" Color="#55555B" />
+            <SolidColorBrush x:Key="AppUserChipBackground" Color="#4A4A50" />
+            <SolidColorBrush x:Key="AppControlBackground" Color="#5A5A60" />
+            <SolidColorBrush x:Key="AppControlBorder" Color="#6E6E74" />
+            <SolidColorBrush x:Key="AppControlHover" Color="#66666C" />
+            <SolidColorBrush x:Key="AppOverlayScrim" Color="#80000000" />
+
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="TextControlElevationBorderFocusedBrush" Color="#10A37F" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="TextControlBackground" Color="#5A5A60" />
+            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#606066" />
+            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#5A5A60" />
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#6E6E74" />
+            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#909096" />
+            <SolidColorBrush x:Key="TextControlForeground" Color="#F4F4F5" />
+            <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#A8A8AE" />
+            <SolidColorBrush x:Key="ComboBoxBackground" Color="#5A5A60" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#606066" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#5A5A60" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#6E6E74" />
+            <SolidColorBrush x:Key="ComboBoxForeground" Color="#F4F4F5" />
+            <SolidColorBrush x:Key="ComboBoxPlaceHolderForeground" Color="#A8A8AE" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#4E4E54" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#6E6E74" />
+          </ResourceDictionary>
+
+          <!-- Blue -->
+          <ResourceDictionary x:Key="{x:Static services:ThemeApplier.Blue}">
+            <SolidColorBrush x:Key="AppSidebarBackground" Color="#0F1B2D" />
+            <SolidColorBrush x:Key="AppSidebarBorder" Color="#1E3350" />
+            <SolidColorBrush x:Key="AppSidebarHover" Color="#1A2C45" />
+            <SolidColorBrush x:Key="AppSidebarSelected" Color="#243B5C" />
+            <SolidColorBrush x:Key="AppContentBackground" Color="#152238" />
+            <SolidColorBrush x:Key="AppSurfaceBackground" Color="#1A2C45" />
+            <SolidColorBrush x:Key="AppSurfaceElevated" Color="#203552" />
+            <SolidColorBrush x:Key="AppMutedForeground" Color="#8FA3BF" />
+            <SolidColorBrush x:Key="AppPrimaryForeground" Color="#E8F0FA" />
+            <SolidColorBrush x:Key="AppGhostButtonBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="AppGhostButtonHover" Color="#1A2C45" />
+            <SolidColorBrush x:Key="AppUserChipBackground" Color="#152238" />
+            <SolidColorBrush x:Key="AppControlBackground" Color="#1E3350" />
+            <SolidColorBrush x:Key="AppControlBorder" Color="#2A4568" />
+            <SolidColorBrush x:Key="AppControlHover" Color="#274061" />
+            <SolidColorBrush x:Key="AppOverlayScrim" Color="#99000000" />
+
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="TextControlElevationBorderFocusedBrush" Color="#10A37F" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="TextControlBackground" Color="#1E3350" />
+            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#243B5C" />
+            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#1E3350" />
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#2A4568" />
+            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#4A6A90" />
+            <SolidColorBrush x:Key="TextControlForeground" Color="#E8F0FA" />
+            <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#7A90AD" />
+            <SolidColorBrush x:Key="ComboBoxBackground" Color="#1E3350" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#243B5C" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#1E3350" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#2A4568" />
+            <SolidColorBrush x:Key="ComboBoxForeground" Color="#E8F0FA" />
+            <SolidColorBrush x:Key="ComboBoxPlaceHolderForeground" Color="#7A90AD" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#1A2C45" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#2A4568" />
+          </ResourceDictionary>
+
+          <!-- Forest -->
+          <ResourceDictionary x:Key="{x:Static services:ThemeApplier.Forest}">
+            <SolidColorBrush x:Key="AppSidebarBackground" Color="#121C16" />
+            <SolidColorBrush x:Key="AppSidebarBorder" Color="#243528" />
+            <SolidColorBrush x:Key="AppSidebarHover" Color="#1C2B20" />
+            <SolidColorBrush x:Key="AppSidebarSelected" Color="#2A3F30" />
+            <SolidColorBrush x:Key="AppContentBackground" Color="#172119" />
+            <SolidColorBrush x:Key="AppSurfaceBackground" Color="#1C2B20" />
+            <SolidColorBrush x:Key="AppSurfaceElevated" Color="#243528" />
+            <SolidColorBrush x:Key="AppMutedForeground" Color="#92A896" />
+            <SolidColorBrush x:Key="AppPrimaryForeground" Color="#E6F0E8" />
+            <SolidColorBrush x:Key="AppGhostButtonBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="AppGhostButtonHover" Color="#1C2B20" />
+            <SolidColorBrush x:Key="AppUserChipBackground" Color="#172119" />
+            <SolidColorBrush x:Key="AppControlBackground" Color="#243528" />
+            <SolidColorBrush x:Key="AppControlBorder" Color="#334A38" />
+            <SolidColorBrush x:Key="AppControlHover" Color="#2E4333" />
+            <SolidColorBrush x:Key="AppOverlayScrim" Color="#99000000" />
+
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="TextControlElevationBorderFocusedBrush" Color="#10A37F" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="TextControlBackground" Color="#243528" />
+            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#2A3F30" />
+            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#243528" />
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#334A38" />
+            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#557560" />
+            <SolidColorBrush x:Key="TextControlForeground" Color="#E6F0E8" />
+            <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#7A907E" />
+            <SolidColorBrush x:Key="ComboBoxBackground" Color="#243528" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#2A3F30" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#243528" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#334A38" />
+            <SolidColorBrush x:Key="ComboBoxForeground" Color="#E6F0E8" />
+            <SolidColorBrush x:Key="ComboBoxPlaceHolderForeground" Color="#7A907E" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#1C2B20" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#334A38" />
+          </ResourceDictionary>
+
+          <!-- Violet -->
+          <ResourceDictionary x:Key="{x:Static services:ThemeApplier.Violet}">
+            <SolidColorBrush x:Key="AppSidebarBackground" Color="#1A1428" />
+            <SolidColorBrush x:Key="AppSidebarBorder" Color="#32264A" />
+            <SolidColorBrush x:Key="AppSidebarHover" Color="#261E3A" />
+            <SolidColorBrush x:Key="AppSidebarSelected" Color="#352A50" />
+            <SolidColorBrush x:Key="AppContentBackground" Color="#201830" />
+            <SolidColorBrush x:Key="AppSurfaceBackground" Color="#261E3A" />
+            <SolidColorBrush x:Key="AppSurfaceElevated" Color="#302648" />
+            <SolidColorBrush x:Key="AppMutedForeground" Color="#A89BC0" />
+            <SolidColorBrush x:Key="AppPrimaryForeground" Color="#F0EAF8" />
+            <SolidColorBrush x:Key="AppGhostButtonBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="AppGhostButtonHover" Color="#261E3A" />
+            <SolidColorBrush x:Key="AppUserChipBackground" Color="#201830" />
+            <SolidColorBrush x:Key="AppControlBackground" Color="#32264A" />
+            <SolidColorBrush x:Key="AppControlBorder" Color="#43355E" />
+            <SolidColorBrush x:Key="AppControlHover" Color="#3B2E55" />
+            <SolidColorBrush x:Key="AppOverlayScrim" Color="#99000000" />
+
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="TextControlElevationBorderFocusedBrush" Color="#10A37F" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="TextControlBackground" Color="#32264A" />
+            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#352A50" />
+            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#32264A" />
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#43355E" />
+            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#6A5890" />
+            <SolidColorBrush x:Key="TextControlForeground" Color="#F0EAF8" />
+            <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#8A7BA8" />
+            <SolidColorBrush x:Key="ComboBoxBackground" Color="#32264A" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#352A50" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#32264A" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#43355E" />
+            <SolidColorBrush x:Key="ComboBoxForeground" Color="#F0EAF8" />
+            <SolidColorBrush x:Key="ComboBoxPlaceHolderForeground" Color="#8A7BA8" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#261E3A" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#43355E" />
+          </ResourceDictionary>
+
+          <!-- Ocean -->
+          <ResourceDictionary x:Key="{x:Static services:ThemeApplier.Ocean}">
+            <SolidColorBrush x:Key="AppSidebarBackground" Color="#0C1F24" />
+            <SolidColorBrush x:Key="AppSidebarBorder" Color="#1A3840" />
+            <SolidColorBrush x:Key="AppSidebarHover" Color="#153038" />
+            <SolidColorBrush x:Key="AppSidebarSelected" Color="#1F424C" />
+            <SolidColorBrush x:Key="AppContentBackground" Color="#12282E" />
+            <SolidColorBrush x:Key="AppSurfaceBackground" Color="#153038" />
+            <SolidColorBrush x:Key="AppSurfaceElevated" Color="#1C3A42" />
+            <SolidColorBrush x:Key="AppMutedForeground" Color="#8BB0B8" />
+            <SolidColorBrush x:Key="AppPrimaryForeground" Color="#E6F6F8" />
+            <SolidColorBrush x:Key="AppGhostButtonBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="AppGhostButtonHover" Color="#153038" />
+            <SolidColorBrush x:Key="AppUserChipBackground" Color="#12282E" />
+            <SolidColorBrush x:Key="AppControlBackground" Color="#1A3840" />
+            <SolidColorBrush x:Key="AppControlBorder" Color="#2A505A" />
+            <SolidColorBrush x:Key="AppControlHover" Color="#234850" />
+            <SolidColorBrush x:Key="AppOverlayScrim" Color="#99000000" />
+
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="TextControlElevationBorderFocusedBrush" Color="#10A37F" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="TextControlBackground" Color="#1A3840" />
+            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#1F424C" />
+            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#1A3840" />
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#2A505A" />
+            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#4A7884" />
+            <SolidColorBrush x:Key="TextControlForeground" Color="#E6F6F8" />
+            <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#6E949C" />
+            <SolidColorBrush x:Key="ComboBoxBackground" Color="#1A3840" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#1F424C" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#1A3840" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#2A505A" />
+            <SolidColorBrush x:Key="ComboBoxForeground" Color="#E6F6F8" />
+            <SolidColorBrush x:Key="ComboBoxPlaceHolderForeground" Color="#6E949C" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#153038" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#2A505A" />
+          </ResourceDictionary>
+
+          <!-- Warm -->
+          <ResourceDictionary x:Key="{x:Static services:ThemeApplier.Warm}">
+            <SolidColorBrush x:Key="AppSidebarBackground" Color="#221A14" />
+            <SolidColorBrush x:Key="AppSidebarBorder" Color="#3A2E24" />
+            <SolidColorBrush x:Key="AppSidebarHover" Color="#2E241C" />
+            <SolidColorBrush x:Key="AppSidebarSelected" Color="#403228" />
+            <SolidColorBrush x:Key="AppContentBackground" Color="#2A211A" />
+            <SolidColorBrush x:Key="AppSurfaceBackground" Color="#322820" />
+            <SolidColorBrush x:Key="AppSurfaceElevated" Color="#3A3026" />
+            <SolidColorBrush x:Key="AppMutedForeground" Color="#B8A898" />
+            <SolidColorBrush x:Key="AppPrimaryForeground" Color="#F5EDE4" />
+            <SolidColorBrush x:Key="AppGhostButtonBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="AppGhostButtonHover" Color="#2E241C" />
+            <SolidColorBrush x:Key="AppUserChipBackground" Color="#2A211A" />
+            <SolidColorBrush x:Key="AppControlBackground" Color="#3A2E24" />
+            <SolidColorBrush x:Key="AppControlBorder" Color="#4E4034" />
+            <SolidColorBrush x:Key="AppControlHover" Color="#46382C" />
+            <SolidColorBrush x:Key="AppOverlayScrim" Color="#99000000" />
+
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="TextControlElevationBorderFocusedBrush" Color="#10A37F" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundBorderBrushFocused" Color="#10A37F" />
+            <SolidColorBrush x:Key="TextControlBackground" Color="#3A2E24" />
+            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#403228" />
+            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#3A2E24" />
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#4E4034" />
+            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#7A6858" />
+            <SolidColorBrush x:Key="TextControlForeground" Color="#F5EDE4" />
+            <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#9A8A78" />
+            <SolidColorBrush x:Key="ComboBoxBackground" Color="#3A2E24" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#403228" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#3A2E24" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#4E4034" />
+            <SolidColorBrush x:Key="ComboBoxForeground" Color="#F5EDE4" />
+            <SolidColorBrush x:Key="ComboBoxPlaceHolderForeground" Color="#9A8A78" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#322820" />
+            <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#4E4034" />
+          </ResourceDictionary>
         </ResourceDictionary.ThemeDictionaries>
       </ResourceDictionary>
     </Application.Resources>
@@ -230,24 +472,184 @@
           <Setter Property="BorderBrush" Value="{DynamicResource AppControlBorder}" />
           <Setter Property="BorderThickness" Value="1" />
           <Setter Property="Foreground" Value="{DynamicResource AppPrimaryForeground}" />
+          <Setter Property="HorizontalContentAlignment" Value="Center" />
+          <Setter Property="VerticalContentAlignment" Value="Center" />
+          <Setter Property="TextAlignment" Value="Center" />
+          <Setter Property="HorizontalAlignment" Value="Left" />
+          <Setter Property="controls:AdaptiveNumericWidth.IsEnabled" Value="True" />
+          <Setter Property="controls:NumericUpDownSpinnerGlyphs.UsePlusMinus" Value="True" />
         </Style>
         <Style Selector="NumericUpDown:focus">
           <Setter Property="BorderBrush" Value="{DynamicResource AppAccentBrush}" />
         </Style>
+        <Style Selector="NumericUpDown /template/ TextBox#PART_TextBox">
+          <Setter Property="HorizontalContentAlignment" Value="Center" />
+          <Setter Property="VerticalContentAlignment" Value="Center" />
+          <Setter Property="TextAlignment" Value="Center" />
+          <Setter Property="Padding" Value="8,0" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ TextBox#PART_TextBox /template/ ScrollViewer#PART_ScrollViewer">
+          <Setter Property="HorizontalAlignment" Value="Stretch" />
+          <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ TextBox#PART_TextBox /template/ TextPresenter#PART_TextPresenter">
+          <Setter Property="TextAlignment" Value="Center" />
+          <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+        <!-- Clip spinner chrome so decrease button fill doesn't square off the right corners -->
+        <Style Selector="NumericUpDown /template/ ButtonSpinner#PART_Spinner">
+          <Setter Property="CornerRadius" Value="10" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ ButtonSpinner#PART_Spinner /template/ Border">
+          <Setter Property="CornerRadius" Value="10" />
+          <Setter Property="ClipToBounds" Value="True" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ RepeatButton#PART_IncreaseButton,
+                         NumericUpDown /template/ RepeatButton#PART_DecreaseButton">
+          <Setter Property="MinHeight" Value="0" />
+          <Setter Property="MinWidth" Value="34" />
+          <Setter Property="Padding" Value="0" />
+          <Setter Property="CornerRadius" Value="0" />
+          <Setter Property="Background" Value="Transparent" />
+          <Setter Property="RenderTransform" Value="none" />
+          <Setter Property="Transitions" Value="{x:Null}" />
+          <Setter Property="FontSize" Value="14" />
+          <Setter Property="FontWeight" Value="SemiBold" />
+          <Setter Property="HorizontalContentAlignment" Value="Center" />
+          <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ RepeatButton#PART_IncreaseButton:pointerover,
+                         NumericUpDown /template/ RepeatButton#PART_DecreaseButton:pointerover,
+                         NumericUpDown /template/ RepeatButton#PART_IncreaseButton:pressed,
+                         NumericUpDown /template/ RepeatButton#PART_DecreaseButton:pressed">
+          <Setter Property="RenderTransform" Value="none" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ RepeatButton#PART_IncreaseButton /template/ ContentPresenter,
+                         NumericUpDown /template/ RepeatButton#PART_DecreaseButton /template/ ContentPresenter">
+          <Setter Property="Background" Value="Transparent" />
+          <Setter Property="CornerRadius" Value="0" />
+          <Setter Property="ClipToBounds" Value="True" />
+          <Setter Property="HorizontalContentAlignment" Value="Center" />
+          <Setter Property="VerticalContentAlignment" Value="Center" />
+          <Setter Property="Padding" Value="0" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ RepeatButton#PART_DecreaseButton /template/ ContentPresenter">
+          <Setter Property="CornerRadius" Value="0,10,10,0" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ RepeatButton#PART_IncreaseButton:pointerover /template/ ContentPresenter,
+                         NumericUpDown /template/ RepeatButton#PART_DecreaseButton:pointerover /template/ ContentPresenter">
+          <Setter Property="Background" Value="{DynamicResource AppControlHover}" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ RepeatButton#PART_IncreaseButton:pressed /template/ ContentPresenter,
+                         NumericUpDown /template/ RepeatButton#PART_DecreaseButton:pressed /template/ ContentPresenter">
+          <Setter Property="Background" Value="{DynamicResource AppSidebarSelected}" />
+        </Style>
+        <Style Selector="NumericUpDown /template/ RepeatButton#PART_DecreaseButton:pointerover /template/ ContentPresenter,
+                         NumericUpDown /template/ RepeatButton#PART_DecreaseButton:pressed /template/ ContentPresenter">
+          <Setter Property="CornerRadius" Value="0,10,10,0" />
+        </Style>
 
+        <!-- Date field: same chrome as TextBox (rounded Border#Background) -->
         <Style Selector="CalendarDatePicker">
           <Setter Property="CornerRadius" Value="10" />
           <Setter Property="MinHeight" Value="38" />
+          <Setter Property="Padding" Value="12,8" />
+          <Setter Property="FontSize" Value="13" />
           <Setter Property="Background" Value="{DynamicResource AppControlBackground}" />
           <Setter Property="BorderBrush" Value="{DynamicResource AppControlBorder}" />
+          <Setter Property="BorderThickness" Value="1" />
           <Setter Property="Foreground" Value="{DynamicResource AppPrimaryForeground}" />
+          <Setter Property="HorizontalAlignment" Value="Left" />
+          <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
-        <Style Selector="TimePicker">
+        <Style Selector="CalendarDatePicker /template/ Border#Background">
           <Setter Property="CornerRadius" Value="10" />
-          <Setter Property="MinHeight" Value="38" />
+          <Setter Property="ClipToBounds" Value="True" />
+        </Style>
+        <Style Selector="CalendarDatePicker:pointerover /template/ Border#Background">
+          <Setter Property="BorderBrush" Value="{DynamicResource AppMutedForeground}" />
           <Setter Property="Background" Value="{DynamicResource AppControlBackground}" />
-          <Setter Property="BorderBrush" Value="{DynamicResource AppControlBorder}" />
+        </Style>
+        <Style Selector="CalendarDatePicker:focus-within /template/ Border#Background">
+          <Setter Property="BorderBrush" Value="{DynamicResource AppAccentBrush}" />
+          <Setter Property="Background" Value="{DynamicResource AppControlBackground}" />
+        </Style>
+        <Style Selector="CalendarDatePicker /template/ TextBox#PART_TextBox">
+          <Setter Property="MinHeight" Value="0" />
+          <Setter Property="Padding" Value="4,0,0,0" />
+          <Setter Property="Background" Value="Transparent" />
+          <Setter Property="BorderBrush" Value="Transparent" />
+          <Setter Property="BorderThickness" Value="0" />
+          <Setter Property="CornerRadius" Value="0" />
+          <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style Selector="CalendarDatePicker /template/ TextBox#PART_TextBox /template/ Border#PART_BorderElement">
+          <Setter Property="Background" Value="Transparent" />
+          <Setter Property="BorderBrush" Value="Transparent" />
+          <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="CalendarDatePicker /template/ TextBox#PART_TextBox:pointerover /template/ Border#PART_BorderElement">
+          <Setter Property="Background" Value="Transparent" />
+          <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+        <Style Selector="CalendarDatePicker /template/ TextBox#PART_TextBox:focus /template/ Border#PART_BorderElement">
+          <Setter Property="Background" Value="Transparent" />
+          <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+        <Style Selector="CalendarDatePicker /template/ Button#PART_Button">
+          <Setter Property="MinHeight" Value="0" />
+          <Setter Property="MinWidth" Value="0" />
+          <Setter Property="Width" Value="28" />
+          <Setter Property="Height" Value="28" />
+          <Setter Property="Margin" Value="0,0,6,0" />
+          <Setter Property="Padding" Value="0" />
+          <Setter Property="Background" Value="Transparent" />
+          <Setter Property="BorderThickness" Value="0" />
+          <Setter Property="CornerRadius" Value="8" />
+          <Setter Property="Foreground" Value="{DynamicResource AppMutedForeground}" />
+          <Setter Property="RenderTransform" Value="none" />
+          <Setter Property="Transitions" Value="{x:Null}" />
+        </Style>
+        <Style Selector="CalendarDatePicker /template/ Button#PART_Button:pointerover,
+                         CalendarDatePicker /template/ Button#PART_Button:pressed">
+          <Setter Property="RenderTransform" Value="none" />
+        </Style>
+        <Style Selector="CalendarDatePicker /template/ Button#PART_Button:pointerover /template/ ContentPresenter">
+          <Setter Property="Background" Value="{DynamicResource AppSidebarHover}" />
+          <Setter Property="CornerRadius" Value="8" />
+        </Style>
+
+        <Style Selector="Border.app-field-chrome:pointerover">
+          <Setter Property="BorderBrush" Value="{DynamicResource AppMutedForeground}" />
+        </Style>
+
+        <!-- Calendar popup -->
+        <Style Selector="Calendar">
+          <Setter Property="Background" Value="{DynamicResource AppSurfaceElevated}" />
           <Setter Property="Foreground" Value="{DynamicResource AppPrimaryForeground}" />
+          <Setter Property="BorderBrush" Value="{DynamicResource AppControlBorder}" />
+          <Setter Property="CornerRadius" Value="12" />
+        </Style>
+        <Style Selector="Calendar Button">
+          <Setter Property="MinHeight" Value="0" />
+          <Setter Property="MinWidth" Value="0" />
+          <Setter Property="Padding" Value="4" />
+          <Setter Property="CornerRadius" Value="8" />
+          <Setter Property="Background" Value="Transparent" />
+          <Setter Property="BorderThickness" Value="0" />
+          <Setter Property="RenderTransform" Value="none" />
+          <Setter Property="Transitions" Value="{x:Null}" />
+        </Style>
+        <Style Selector="Calendar Button:pointerover, Calendar Button:pressed">
+          <Setter Property="RenderTransform" Value="none" />
+        </Style>
+        <Style Selector="Calendar Button:pointerover /template/ ContentPresenter">
+          <Setter Property="Background" Value="{DynamicResource AppSidebarHover}" />
+          <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <Style Selector="Calendar Button:pressed /template/ ContentPresenter">
+          <Setter Property="Background" Value="{DynamicResource AppSidebarSelected}" />
+          <Setter Property="CornerRadius" Value="8" />
         </Style>
         <Style Selector="CheckBox">
           <Setter Property="Foreground" Value="{DynamicResource AppPrimaryForeground}" />
@@ -333,11 +735,11 @@
         </Style>
 
         <Style Selector="Path.app-icon">
-          <Setter Property="Width" Value="16" />
-          <Setter Property="Height" Value="16" />
+          <Setter Property="Width" Value="18" />
+          <Setter Property="Height" Value="18" />
           <Setter Property="Stretch" Value="Uniform" />
           <Setter Property="Stroke" Value="{DynamicResource AppMutedForeground}" />
-          <Setter Property="StrokeThickness" Value="1.6" />
+          <Setter Property="StrokeThickness" Value="1.75" />
           <Setter Property="StrokeLineCap" Value="Round" />
           <Setter Property="StrokeJoin" Value="Round" />
           <Setter Property="Fill" Value="Transparent" />
@@ -356,6 +758,42 @@
           <Setter Property="StrokeLineCap" Value="Round" />
           <Setter Property="StrokeJoin" Value="Round" />
           <Setter Property="Fill" Value="Transparent" />
+        </Style>
+        <Style Selector="Path.brand-mark">
+          <Setter Property="Width" Value="18" />
+          <Setter Property="Height" Value="18" />
+          <Setter Property="Stretch" Value="Uniform" />
+          <Setter Property="Stroke" Value="{DynamicResource AppPrimaryForeground}" />
+          <Setter Property="StrokeThickness" Value="1.6" />
+          <Setter Property="StrokeLineCap" Value="Round" />
+          <Setter Property="StrokeJoin" Value="Round" />
+          <Setter Property="Fill" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.titlebar-btn">
+          <Setter Property="Width" Value="46" />
+          <Setter Property="Height" Value="40" />
+          <Setter Property="Padding" Value="0" />
+          <Setter Property="Background" Value="Transparent" />
+          <Setter Property="BorderThickness" Value="0" />
+          <Setter Property="CornerRadius" Value="0" />
+          <Setter Property="HorizontalContentAlignment" Value="Center" />
+          <Setter Property="VerticalContentAlignment" Value="Center" />
+          <Setter Property="Foreground" Value="{DynamicResource AppPrimaryForeground}" />
+        </Style>
+        <Style Selector="Button.titlebar-btn:pointerover /template/ ContentPresenter">
+          <Setter Property="Background" Value="{DynamicResource AppSidebarHover}" />
+        </Style>
+        <Style Selector="Button.titlebar-btn:pressed /template/ ContentPresenter">
+          <Setter Property="Background" Value="{DynamicResource AppSidebarSelected}" />
+        </Style>
+        <Style Selector="Button.titlebar-btn-close:pointerover /template/ ContentPresenter">
+          <Setter Property="Background" Value="#E81123" />
+        </Style>
+        <Style Selector="Button.titlebar-btn-close:pointerover Path">
+          <Setter Property="Stroke" Value="White" />
+        </Style>
+        <Style Selector="Button.titlebar-btn-close:pressed /template/ ContentPresenter">
+          <Setter Property="Background" Value="#C50F1F" />
         </Style>
 
         <Style Selector="Button.sidebar-ghost">

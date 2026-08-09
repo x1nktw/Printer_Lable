@@ -59,6 +59,7 @@ public sealed class SettingsService : ISettingsService
             ? dto.ManualLabelDateTime ?? DateTimeOffset.Now
             : null;
         settings.OrdersPrintTemplateId = dto.OrdersPrintTemplateId;
+        settings.OrdersPrintPrinterId = dto.OrdersPrintPrinterId;
         settings.MarkingPrintTemplateId = dto.MarkingPrintTemplateId;
         settings.DatabasePath = string.IsNullOrWhiteSpace(dto.DatabasePath) ? null : dto.DatabasePath.Trim();
         settings.BackupPath = string.IsNullOrWhiteSpace(dto.BackupPath) ? null : dto.BackupPath.Trim();
@@ -88,6 +89,7 @@ public sealed class SettingsService : ISettingsService
         LabelDateTimeMode = s.LabelDateTimeMode,
         ManualLabelDateTime = s.ManualLabelDateTime ?? DateTimeOffset.Now,
         OrdersPrintTemplateId = s.OrdersPrintTemplateId,
+        OrdersPrintPrinterId = s.OrdersPrintPrinterId,
         MarkingPrintTemplateId = s.MarkingPrintTemplateId,
         DatabasePath = s.DatabasePath,
         BackupPath = s.BackupPath,

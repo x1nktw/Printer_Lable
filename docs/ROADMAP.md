@@ -2,7 +2,7 @@
 
 Порядок из MASTER_SPEC v2.0 + аудит FrontPad.
 
-**Текущий релиз: LabelPrint Pro 1.0.0 · FrontPad Bridge 1.3.15**
+**Текущий релиз: LabelPrint Pro 1.1.0 · FrontPad Bridge 1.4.4**
 
 | Этап | Статус | Содержание |
 |------|--------|------------|
@@ -18,11 +18,12 @@
 | 9 | Done (0.8.0) | Маркировка, статус системы, тема/акцент, CI/CD, kitchen/сырьё |
 | 10 | Done (0.9.x) | Velopack auto-update, single-file layout, non-blocking Settings |
 | 11 | Done (**1.0.0**) | Стабильный релиз: маркировка 58×40 + иконки, импорт шаблонов, Bridge 1.3.15 (парсер + тёмная тема), UI laptop-fix |
+| 12 | Done (**1.1.0**) | Bridge LP UI 1.4.4, принтер заказов, qty→N/M этикетки, AddonsKitchen layout, темы UI, user-only icons |
 
 **Load-test target:** `LabelPrint.LoadTests` seeds ~1k products and asserts search &lt; 2s. Full **100k** catalog benchmark is a future hardening goal (indexes + keyset already in place).
 
 Правила этапа: build + tests + ArchitectureTests перед переходом дальше; неготовые UI-фичи скрыты/disabled, без имитации успеха.
 
-**Дальше (после 1.0.0):** MSI/winget, code signing, маппинг артикулов FrontPad ↔ каталог, hardening 100k, ESC/POS.
+**Дальше (после 1.1.0):** MSI/winget, code signing, маппинг артикулов FrontPad ↔ каталог, hardening 100k, ESC/POS.
 
-Автообновление через Velopack + GitHub Releases — с 0.9.0 / 1.0.0.
+Автообновление через Velopack + GitHub Releases — с 0.9.0 / 1.0.0. Заметки: [RELEASE_NOTES_1.1.0.md](RELEASE_NOTES_1.1.0.md).

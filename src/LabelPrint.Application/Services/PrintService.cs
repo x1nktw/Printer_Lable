@@ -287,6 +287,8 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
         Guid? printerId = null,
         int copies = 1,
         Guid? templateId = null,
+        int? positionIndex = null,
+        int? positionTotal = null,
         CancellationToken cancellationToken = default)
     {
         if (copies < 1)
@@ -310,6 +312,17 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
             product = await _unitOfWork.Products.GetByIdAsync(productId, cancellationToken);
             resolvedTemplateId ??= product?.ResolveOrderItemTemplateId();
         }
+
+        // Prefer Orders-tab selection (also used by FrontPad auto-print).
+        if (resolvedTemplateId is null)
+        {
+            var settings = await _unitOfWork.Settings.GetAsync(cancellationToken);
+            if (settings.OrdersPrintTemplateId is Guid ordersTid)
+            {
+                resolvedTemplateId = ordersTid;
+            }
+        }
+
         LabelTemplate? template = null;
         if (resolvedTemplateId is Guid tid)
         {
@@ -346,12 +359,24 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
             iconKeys.Add(await _addonIcons.ResolveIconKeyAsync(addon, cancellationToken));
         }
 
+        var labelIndex = positionIndex ?? orderItem.PositionIndex;
+        var labelTotal = positionTotal ?? orderItem.PositionTotal;
+        if (labelIndex < 1)
+        {
+            labelIndex = 1;
+        }
+
+        if (labelTotal < 1)
+        {
+            labelTotal = 1;
+        }
+
         var values = new Dictionary<string, string>(stamp, StringComparer.OrdinalIgnoreCase)
         {
             ["OrderNumber"] = order.Number,
             ["PositionName"] = positionName,
-            ["PositionIndex"] = orderItem.PositionIndex.ToString(),
-            ["PositionTotal"] = orderItem.PositionTotal.ToString(),
+            ["PositionIndex"] = labelIndex.ToString(),
+            ["PositionTotal"] = labelTotal.ToString(),
             ["ProductName"] = product?.Name ?? positionName,
             ["PriceAmount"] = orderItem.Price?.ToString("0.##") ?? string.Empty,
             ["Currency"] = product?.PriceCurrency ?? "RUB",
@@ -378,7 +403,7 @@ public sealed class PrintService : IPrintService, IPrintJobProcessor
             OrderItemId = orderItem.Id,
             ExternalOrderId = order.ExternalOrderId,
             Copies = copies,
-            Title = $"{order.Number}: {orderItem.Name} ({orderItem.PositionIndex}/{orderItem.PositionTotal})",
+            Title = $"{order.Number}: {orderItem.Name} ({labelIndex}/{labelTotal})",
             VariablesJson = variablesJson
         };
         await _unitOfWork.PrintJobs.AddAsync(job, cancellationToken);

@@ -1,0 +1,155 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="LabelPrint.UI.Controls.AppTimeBox"
+             x:Name="Root"
+             MinWidth="88"
+             Width="88"
+             MinHeight="38"
+             HorizontalAlignment="Left"
+             Focusable="True">
+  <UserControl.Styles>
+    <Style Selector="RepeatButton.time-step">
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="18" />
+      <Setter Property="MinWidth" Value="28" />
+      <Setter Property="MinHeight" Value="18" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Background" Value="{DynamicResource AppControlBackground}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppControlBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Foreground" Value="{DynamicResource AppPrimaryForeground}" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Delay" Value="400" />
+      <Setter Property="Interval" Value="80" />
+      <Setter Property="RenderTransform" Value="none" />
+      <Setter Property="Transitions" Value="{x:Null}" />
+    </Style>
+    <Style Selector="RepeatButton.time-step:pointerover">
+      <Setter Property="RenderTransform" Value="none" />
+    </Style>
+    <Style Selector="RepeatButton.time-step:pressed">
+      <Setter Property="RenderTransform" Value="none" />
+    </Style>
+    <Style Selector="RepeatButton.time-step:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AppControlHover}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppControlBorder}" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="RepeatButton.time-step:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AppSidebarSelected}" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="Border.time-value">
+      <Setter Property="Width" Value="52" />
+      <Setter Property="Height" Value="38" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppControlBorder}" />
+      <Setter Property="Background" Value="{DynamicResource AppControlBackground}" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+  </UserControl.Styles>
+
+  <Panel>
+    <Border x:Name="Chrome"
+            Classes="app-field-chrome"
+            CornerRadius="10"
+            MinHeight="38"
+            Padding="10,8"
+            BorderThickness="1"
+            BorderBrush="{DynamicResource AppControlBorder}"
+            Background="{DynamicResource AppControlBackground}"
+            ClipToBounds="True"
+            Cursor="Hand"
+            PointerPressed="OnChromePointerPressed">
+      <TextBlock x:Name="DisplayText"
+                 Text="--:--"
+                 FontSize="13"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center"
+                 TextAlignment="Center"
+                 Foreground="{DynamicResource AppPrimaryForeground}" />
+    </Border>
+
+    <Popup x:Name="EditorPopup"
+           Placement="Bottom"
+           PlacementTarget="{Binding #Chrome}"
+           IsLightDismissEnabled="True"
+           HorizontalOffset="0"
+           VerticalOffset="4">
+      <Border Background="{DynamicResource AppSurfaceElevated}"
+              BorderBrush="{DynamicResource AppControlBorder}"
+              BorderThickness="1"
+              CornerRadius="14"
+              Padding="14"
+              BoxShadow="0 8 24 0 #40000000">
+        <StackPanel Spacing="12" MinWidth="240">
+          <StackPanel Orientation="Horizontal"
+                      Spacing="10"
+                      HorizontalAlignment="Center">
+            <!-- Hours: value + spinner on the right -->
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <Border Classes="time-value">
+                <TextBlock x:Name="HourText"
+                           Text="00"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           TextAlignment="Center"
+                           Foreground="{DynamicResource AppPrimaryForeground}" />
+              </Border>
+              <StackPanel Spacing="2" VerticalAlignment="Center">
+                <RepeatButton Classes="time-step" Tag="hour:+1" Click="OnStepClick">
+                  <TextBlock Text="+" FontSize="12" FontWeight="SemiBold"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </RepeatButton>
+                <RepeatButton Classes="time-step" Tag="hour:-1" Click="OnStepClick">
+                  <TextBlock Text="−" FontSize="12" FontWeight="SemiBold"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </RepeatButton>
+              </StackPanel>
+            </StackPanel>
+
+            <TextBlock Text=":"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource AppPrimaryForeground}" />
+
+            <!-- Minutes: value + spinner on the right -->
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <Border Classes="time-value">
+                <TextBlock x:Name="MinuteText"
+                           Text="00"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           TextAlignment="Center"
+                           Foreground="{DynamicResource AppPrimaryForeground}" />
+              </Border>
+              <StackPanel Spacing="2" VerticalAlignment="Center">
+                <RepeatButton Classes="time-step" Tag="minute:+1" Click="OnStepClick">
+                  <TextBlock Text="+" FontSize="12" FontWeight="SemiBold"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </RepeatButton>
+                <RepeatButton Classes="time-step" Tag="minute:-1" Click="OnStepClick">
+                  <TextBlock Text="−" FontSize="12" FontWeight="SemiBold"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </RepeatButton>
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+
+          <Button Classes="accent"
+                  Content="Готово"
+                  HorizontalAlignment="Stretch"
+                  Click="OnDoneClick" />
+        </StackPanel>
+      </Border>
+    </Popup>
+  </Panel>
+</UserControl>

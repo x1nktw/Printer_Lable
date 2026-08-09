@@ -54,7 +54,9 @@ jobs:
           body: |
             ## LabelPrint Pro ${{ steps.ver.outputs.version }}
 
-            Первый стабильный контур: каталог, маркировка, заказы FrontPad, шаблоны, очередь печати, Velopack.
+            Кухня и Bridge: выбор принтера заказов, qty→этикетки N/M, кнопка **LP** на FrontPad, layout AddonsKitchen, темы UI.
+
+            Полные заметки: [RELEASE_NOTES_1.1.0.md](https://github.com/x1nktw/Printer_Lable/blob/main/docs/RELEASE_NOTES_1.1.0.md) · [CHANGELOG](https://github.com/x1nktw/Printer_Lable/blob/main/CHANGELOG.md)
 
             ## Скачать
 
@@ -69,11 +71,12 @@ jobs:
 
             После Velopack Setup: **Настройки → Система → Обновить** (один клик).
 
-            - С **0.9.x** — Обновить в приложении или новый Setup.
+            - С **1.0.x / 0.9.x** — Обновить в приложении или новый Setup.
             - С **0.8.x (Inno)** — однократно поставить новый Setup.
-            - Bridge: обновить расширение и перезагрузить вкладку FrontPad.
+            - Bridge: обновить расширение, на FrontPad **LP → Подключить**, reload вкладки (`Ctrl+Shift+R`).
+            - На **Заказах** выбрать принтер (влияет на автопечать).
 
-            Changelog: [CHANGELOG.md](https://github.com/x1nktw/Printer_Lable/blob/main/CHANGELOG.md) · Install: [INSTALLER.md](https://github.com/x1nktw/Printer_Lable/blob/main/docs/INSTALLER.md) · Кухня: [FRONTPAD_KITCHEN.md](https://github.com/x1nktw/Printer_Lable/blob/main/docs/FRONTPAD_KITCHEN.md)
+            Install: [INSTALLER.md](https://github.com/x1nktw/Printer_Lable/blob/main/docs/INSTALLER.md) · Кухня: [FRONTPAD_KITCHEN.md](https://github.com/x1nktw/Printer_Lable/blob/main/docs/FRONTPAD_KITCHEN.md)
           files: |
             artifacts/release/*.exe
             artifacts/release/*.nupkg

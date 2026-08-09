@@ -19,7 +19,8 @@
                   VerticalAlignment="Top">
             <Image Source="/Assets/app-icon.png"
                    Width="88" Height="88"
-                   Stretch="UniformToFill" />
+                   Stretch="Uniform"
+                   RenderOptions.BitmapInterpolationMode="HighQuality" />
           </Border>
 
           <StackPanel Grid.Column="1"

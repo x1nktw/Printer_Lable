@@ -20,7 +20,7 @@ public static class TemplateVariablePalette
         new("ExpireDate", "Срок годности (дата)", DateTime.Now.AddDays(1).ToString("dd.MM.yyyy")),
         new("ExpireTime", "Срок годности (время)", DateTime.Now.AddDays(1).ToString("HH:mm")),
         new("TemperatureRegime", "Температурный режим", "+2…+6 °C"),
-        new("ProductIconKey", "Иконка товара", "meat"),
+        new("ProductIconKey", "Иконка товара", ""),
         new("OrderNumber", "№ заказа", "65502"),
         new("PositionName", "Позиция заказа", "Шаверма Сырная"),
         new("AddonsKitchen", "Добавки (кухня)", "Добавить халапеньо\nДвойной сыр\nБез лука"),

@@ -14,10 +14,9 @@ public class Addon : EntityBase
     public string? MatchAliases { get; set; }
 
     /// <summary>
-    /// Built-in key (<c>pepper</c>, <c>cheese</c>, <c>onion</c>, <c>bullet</c>)
-    /// or a custom file stem under the addon-icons folder.
+    /// Custom file stem under the addon-icons folder (no built-in product icons).
     /// </summary>
-    public string IconKey { get; set; } = "bullet";
+    public string IconKey { get; set; } = string.Empty;
 
     public bool IsArchived { get; set; }
 }

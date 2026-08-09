@@ -208,23 +208,37 @@ public sealed class OrderService : IOrderService
             return Result.Failure<IReadOnlyList<Guid>>("Order not found.");
         }
 
+        // qty 2 → two distinct kitchen positions (1/N and 2/N), not one label printed twice.
+        var unitLabels = ExpandQuantityIntoUnitLabels(order.Items);
+        var selected = orderItemIds.ToHashSet();
         var jobIds = new List<Guid>();
-        foreach (var itemId in orderItemIds)
+
+        foreach (var unit in unitLabels)
         {
-            var item = order.Items.FirstOrDefault(i => i.Id == itemId);
-            if (item is null)
+            if (!selected.Contains(unit.ItemId))
             {
                 continue;
             }
 
             var result = await _printService.PrintOrderItemAsync(
-                itemId, printerId, templateId: templateId, cancellationToken: cancellationToken);
+                unit.ItemId,
+                printerId,
+                copies: 1,
+                templateId,
+                positionIndex: unit.PositionIndex,
+                positionTotal: unit.PositionTotal,
+                cancellationToken);
             if (result.IsFailure)
             {
                 return Result.Failure<IReadOnlyList<Guid>>(result.Error!);
             }
 
             jobIds.Add(result.Value);
+        }
+
+        if (jobIds.Count == 0)
+        {
+            return Result.Failure<IReadOnlyList<Guid>>("Select at least one item to print.");
         }
 
         return Result.Success((IReadOnlyList<Guid>)jobIds);
@@ -246,6 +260,51 @@ public sealed class OrderService : IOrderService
         var ids = order.Items.Select(i => i.Id).ToList();
         return await PrintItemsAsync(orderId, ids, printerId, templateId, cancellationToken);
     }
+
+    /// <summary>
+    /// Expands each order line by Quantity into unit kitchen labels with sequential N/M indices.
+    /// Example: Burger×2 + Fries×1 → 1/3, 2/3, 3/3.
+    /// </summary>
+    internal static IReadOnlyList<UnitLabelSlot> ExpandQuantityIntoUnitLabels(
+        IEnumerable<Domain.Entities.OrderItem> items)
+    {
+        var ordered = items
+            .OrderBy(i => i.PositionIndex)
+            .ThenBy(i => i.CreatedAt)
+            .ThenBy(i => i.Id)
+            .ToList();
+
+        var slots = new List<UnitLabelSlot>();
+        foreach (var item in ordered)
+        {
+            var units = ResolveUnitCount(item.Quantity);
+            for (var i = 0; i < units; i++)
+            {
+                slots.Add(new UnitLabelSlot(item.Id, 0, 0));
+            }
+        }
+
+        var total = Math.Max(1, slots.Count);
+        for (var i = 0; i < slots.Count; i++)
+        {
+            slots[i] = slots[i] with { PositionIndex = i + 1, PositionTotal = total };
+        }
+
+        return slots;
+    }
+
+    private static int ResolveUnitCount(decimal quantity)
+    {
+        if (quantity <= 0)
+        {
+            return 1;
+        }
+
+        var units = (int)Math.Round(quantity, MidpointRounding.AwayFromZero);
+        return units < 1 ? 1 : units;
+    }
+
+    internal readonly record struct UnitLabelSlot(Guid ItemId, int PositionIndex, int PositionTotal);
 
     private static OrderListItemDto MapListItem(Domain.Entities.Order order)
     {

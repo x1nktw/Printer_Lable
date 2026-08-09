@@ -4,6 +4,7 @@
              xmlns:models="using:LabelPrint.UI.Models"
              xmlns:pages="using:LabelPrint.UI.Views.Pages"
              xmlns:ui="using:LabelPrint.UI"
+             xmlns:controls="using:LabelPrint.UI.Controls"
              x:Class="LabelPrint.UI.Views.Pages.SettingsPageView"
              x:DataType="vm:SettingsViewModel">
   <DockPanel>
@@ -22,7 +23,9 @@
               <StackPanel Spacing="10">
                 <TextBlock Text="Интерфейс" Classes="section-title" />
                 <TextBlock Text="Тема" Classes="page-subtitle" />
-                <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" Width="240" />
+                <ComboBox ItemsSource="{Binding ThemeOptions}"
+                          SelectedItem="{Binding SelectedTheme}"
+                          Width="240" />
                 <TextBlock Text="Акцентный цвет" Classes="page-subtitle" Margin="0,4,0,0" />
                 <ListBox ItemsSource="{Binding AccentOptions}"
                          SelectedItem="{Binding SelectedAccent}"
@@ -53,12 +56,10 @@
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <NumericUpDown Value="{Binding DefaultLabelWidthMm}"
                                  Minimum="10" Maximum="200"
-                                 Width="150" MinWidth="150"
                                  FormatString="0.#" Increment="1" />
                   <TextBlock Text="×" VerticalAlignment="Center" Classes="page-subtitle" />
                   <NumericUpDown Value="{Binding DefaultLabelHeightMm}"
                                  Minimum="10" Maximum="200"
-                                 Width="150" MinWidth="150"
                                  FormatString="0.#" Increment="1" />
                   <TextBlock Text="мм" VerticalAlignment="Center" Classes="page-subtitle" />
                 </StackPanel>
@@ -75,12 +76,14 @@
                 <CheckBox Content="Автообновление заказов" IsChecked="{Binding AutoRefreshOrders}" />
                 <CheckBox Content="Автопечать заказов" IsChecked="{Binding AutoPrintOrders}" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <TextBlock Text="Интервал (сек)" VerticalAlignment="Center" Classes="page-subtitle" />
+                  <TextBlock Text="Интервал опроса inbox (сек)" VerticalAlignment="Center" Classes="page-subtitle" />
                   <NumericUpDown Value="{Binding OrdersRefreshIntervalSeconds}"
                                  Minimum="30" Maximum="3600"
-                                 Width="150" MinWidth="150"
                                  FormatString="0" Increment="10" />
                 </StackPanel>
+                <TextBlock Text="Как часто приложение проверяет локальный inbox, если включено автообновление. Новые заказы с Bridge приходят сразу по webhook; интервал — запасной опрос."
+                           TextWrapping="Wrap"
+                           Classes="page-subtitle" />
               </StackPanel>
             </Border>
 
@@ -94,8 +97,11 @@
                           SelectedItem="{Binding LabelDateTimeMode}"
                           Width="240" />
                 <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsManualLabelDateTime}">
-                  <CalendarDatePicker SelectedDate="{Binding ManualLabelDate}" Width="160" />
-                  <TimePicker SelectedTime="{Binding ManualLabelTime}" Width="140" ClockIdentifier="24HourClock" />
+                  <CalendarDatePicker SelectedDate="{Binding ManualLabelDate}"
+                                      Width="168"
+                                      MinWidth="168"
+                                      Watermark="дд.мм.гггг" />
+                  <controls:AppTimeBox SelectedTime="{Binding ManualLabelTime}" />
                 </StackPanel>
               </StackPanel>
             </Border>
@@ -133,7 +139,6 @@
                   <TextBlock Text="Макс. retry печати" VerticalAlignment="Center" Classes="page-subtitle" />
                   <NumericUpDown Value="{Binding MaxPrintRetries}"
                                  Minimum="0" Maximum="10"
-                                 Width="150" MinWidth="150"
                                  FormatString="0" />
                 </StackPanel>
               </StackPanel>

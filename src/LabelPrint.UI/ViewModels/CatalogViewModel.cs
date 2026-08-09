@@ -283,9 +283,16 @@ public partial class CatalogViewModel : PageViewModelBase
         EditTemperatureRegime = dto.TemperatureRegime;
         EditProductIconKey = dto.IconKey;
         if (!string.IsNullOrWhiteSpace(EditProductIconKey)
-            && !IconKeys.Contains(EditProductIconKey, StringComparer.OrdinalIgnoreCase))
+            && !IconKeys.Contains(EditProductIconKey, StringComparer.OrdinalIgnoreCase)
+            && CustomIconFileExists(EditProductIconKey))
         {
             IconKeys.Add(EditProductIconKey);
+        }
+        else if (!string.IsNullOrWhiteSpace(EditProductIconKey)
+                 && !IconKeys.Contains(EditProductIconKey, StringComparer.OrdinalIgnoreCase))
+        {
+            // Drop stale built-in key that no longer has a file.
+            EditProductIconKey = null;
         }
         _editExpireDate = dto.ExpireDate;
         _editManufactureDate = dto.ManufactureDate;
@@ -469,9 +476,16 @@ public partial class CatalogViewModel : PageViewModelBase
         EditAddonName = SelectedAddon.Name;
         EditAddonAliases = SelectedAddon.MatchAliases;
         EditAddonIconKey = SelectedAddon.IconKey;
-        if (!IconKeys.Contains(EditAddonIconKey, StringComparer.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(EditAddonIconKey)
+            && !IconKeys.Contains(EditAddonIconKey, StringComparer.OrdinalIgnoreCase)
+            && CustomIconFileExists(EditAddonIconKey))
         {
             IconKeys.Add(EditAddonIconKey);
+        }
+        else if (string.IsNullOrWhiteSpace(EditAddonIconKey)
+                 || !IconKeys.Contains(EditAddonIconKey, StringComparer.OrdinalIgnoreCase))
+        {
+            EditAddonIconKey = IconKeys.FirstOrDefault() ?? string.Empty;
         }
 
         IsAddonEditorOpen = true;
@@ -697,6 +711,21 @@ public partial class CatalogViewModel : PageViewModelBase
         }
 
         StatusMessage = $"Иконка «{key}» удалена из списка";
+    }
+
+    private static bool CustomIconFileExists(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return false;
+        }
+
+        var path = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "LabelPrintPro",
+            "addon-icons",
+            $"{key.Trim()}.png");
+        return File.Exists(path);
     }
 
     private async Task ReloadAllAsync()

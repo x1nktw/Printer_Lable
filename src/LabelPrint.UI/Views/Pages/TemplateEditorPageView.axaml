@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:LabelPrint.UI.ViewModels"
-             xmlns:controls="using:LabelPrint.UI.Controls"
+             xmlns:ui="using:LabelPrint.UI"
              x:Class="LabelPrint.UI.Views.Pages.TemplateEditorPageView"
              x:DataType="vm:TemplateEditorViewModel"
              KeyDown="OnKeyDown">
@@ -24,8 +24,14 @@
     <StackPanel DockPanel.Dock="Top" Spacing="6">
       <DockPanel LastChildFill="True">
         <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="12">
-          <Button Content="← Назад" Command="{Binding BackCommand}" MinWidth="100" Padding="12,6" />
-          <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <Button Content="← Назад" Command="{Binding BackCommand}" MinWidth="100" Padding="12,6"
+                  IsVisible="{Binding ShowOuterToolbar}" />
+          <Button Content="← К шаблону" Command="{Binding ExitAddonsKitchenEditCommand}" MinWidth="120" Padding="12,6"
+                  IsVisible="{Binding IsEditingAddonsKitchen}" />
+          <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center"
+                     IsVisible="{Binding ShowOuterToolbar}" />
+          <TextBlock Text="{Binding IsolationBreadcrumb}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"
+                     IsVisible="{Binding IsEditingAddonsKitchen}" />
           <TextBlock Text="• есть изменения" Foreground="#E0A800" VerticalAlignment="Center"
                      IsVisible="{Binding HasUnsavedChanges}" />
         </StackPanel>
@@ -44,11 +50,11 @@
                    Width="180" Height="28" MinHeight="28" Padding="8,2"
                    VerticalContentAlignment="Center" />
           <TextBlock Text="Размер" VerticalAlignment="Center" Opacity="0.7" Margin="4,0,0,0" />
-          <controls:PlusMinusNumeric Value="{Binding WidthMm}" Minimum="10" Maximum="200" Increment="1"
-                                     FormatString="0.#" FieldWidth="56" ToolTip.Tip="Ширина, мм" />
+          <NumericUpDown Value="{Binding WidthMm}" Minimum="10" Maximum="200" Increment="1"
+                         FormatString="0.#" ToolTip.Tip="Ширина, мм" />
           <TextBlock Text="×" VerticalAlignment="Center" />
-          <controls:PlusMinusNumeric Value="{Binding HeightMm}" Minimum="10" Maximum="200" Increment="1"
-                                     FormatString="0.#" FieldWidth="56" ToolTip.Tip="Высота, мм" />
+          <NumericUpDown Value="{Binding HeightMm}" Minimum="10" Maximum="200" Increment="1"
+                         FormatString="0.#" ToolTip.Tip="Высота, мм" />
           <TextBlock Text="мм" VerticalAlignment="Center" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,4">
@@ -63,7 +69,7 @@
         </StackPanel>
       </WrapPanel>
 
-      <WrapPanel Orientation="Horizontal">
+      <WrapPanel Orientation="Horizontal" IsVisible="{Binding ShowOuterToolbar}">
         <TextBlock Text="Добавить:" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,6,4" />
         <Button Content="Текст" Command="{Binding AddTextCommand}" Margin="0,0,6,4" Padding="10,4"
                 ToolTip.Tip="Добавить текстовый блок" />
@@ -77,7 +83,7 @@
         <Button Content="Иконка" Command="{Binding AddImageCommand}" Margin="0,0,6,4" Padding="10,4"
                 ToolTip.Tip="Иконка из набора или ProductIconKey" />
         <Button Content="Добавки" Command="{Binding AddAddonsKitchenCommand}" Margin="0,0,6,4" Padding="10,4"
-                ToolTip.Tip="Блок добавок с иконками (AddonsKitchen)" />
+                ToolTip.Tip="Блок добавок с иконками (AddonsKitchen). Двойной клик — редактировать внутри." />
         <TextBlock Text="|" VerticalAlignment="Center" Opacity="0.35" Margin="4,0,10,4" />
         <Button Content="Дублировать" Command="{Binding DuplicateSelectedCommand}" Margin="0,0,6,4" Padding="10,4" />
         <Button Content="Удалить" Command="{Binding DeleteSelectedCommand}" Margin="0,0,6,4" Padding="10,4" />
@@ -85,37 +91,202 @@
         <Button Content="Разгруппировать" Command="{Binding UngroupSelectedCommand}" Margin="0,0,6,4" Padding="10,4" />
       </WrapPanel>
 
-      <StackPanel Orientation="Horizontal" Spacing="4">
+      <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowOuterToolbar}">
         <TextBlock Text="Выравнивание:" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,4,0"
                    ToolTip.Tip="Текст: внутри блока. Несколько элементов / не текст: на холсте." />
-        <Button Content="←" Command="{Binding AlignLeftCommand}" MinWidth="32" Height="28" ToolTip.Tip="Влево" />
-        <Button Content="↔" Command="{Binding AlignCenterHorizontalCommand}" MinWidth="32" Height="28" ToolTip.Tip="По центру горизонтально" />
-        <Button Content="→" Command="{Binding AlignRightCommand}" MinWidth="32" Height="28" ToolTip.Tip="Вправо" />
-        <Button Content="↑" Command="{Binding AlignTopCommand}" MinWidth="32" Height="28" ToolTip.Tip="Сверху / к верху" />
-        <Button Content="↕" Command="{Binding AlignCenterVerticalCommand}" MinWidth="32" Height="28" ToolTip.Tip="По центру вертикально" />
-        <Button Content="↓" Command="{Binding AlignBottomCommand}" MinWidth="32" Height="28" ToolTip.Tip="Снизу / к низу" />
+        <Button Command="{Binding AlignLeftCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="Влево">
+          <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignLeft}" />
+        </Button>
+        <Button Command="{Binding AlignCenterHorizontalCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="По центру горизонтально">
+          <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignCenter}" />
+        </Button>
+        <Button Command="{Binding AlignRightCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="Вправо">
+          <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignRight}" />
+        </Button>
+        <Button Command="{Binding AlignTopCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="Сверху / к верху">
+          <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignTop}" />
+        </Button>
+        <Button Command="{Binding AlignCenterVerticalCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="По центру вертикально">
+          <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignMiddle}" />
+        </Button>
+        <Button Command="{Binding AlignBottomCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="Снизу / к низу">
+          <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignBottom}" />
+        </Button>
       </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding IsEditingAddonsKitchen}">
+        <TextBlock Text="Выравнивание текста:" VerticalAlignment="Center" Opacity="0.7" Margin="0,0,4,0" />
+        <Button Command="{Binding AlignLeftCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="По левому краю">
+          <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignLeft}" />
+        </Button>
+        <Button Command="{Binding AlignCenterHorizontalCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="По центру">
+          <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignCenter}" />
+        </Button>
+        <Button Command="{Binding AlignRightCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="По правому краю">
+          <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignRight}" />
+        </Button>
+        <Button Command="{Binding AlignTopCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="Сверху">
+          <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignTop}" />
+        </Button>
+        <Button Command="{Binding AlignCenterVerticalCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="Посередине">
+          <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignMiddle}" />
+        </Button>
+        <Button Command="{Binding AlignBottomCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="Снизу">
+          <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignBottom}" />
+        </Button>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsEditingAddonsKitchen}" Margin="0,0,0,4">
+        <TextBlock Text="Показать:" VerticalAlignment="Center" Opacity="0.7" />
+        <Button Content="Есть добавки" Command="{Binding SetIsolationPreviewListCommand}" Padding="10,4"
+                Classes.accent="{Binding IsolationPreviewList}" />
+        <Button Content="Нет добавок" Command="{Binding SetIsolationPreviewEmptyCommand}" Padding="10,4"
+                Classes.accent="{Binding IsolationPreviewEmpty}" />
+        <TextBlock Text="|" VerticalAlignment="Center" Opacity="0.35" Margin="4,0" />
+        <Button Content="+ Текст" Command="{Binding AddEmptyTextPartCommand}" Padding="10,4"
+                ToolTip.Tip="Добавить текст для пустого состояния" />
+        <Button Content="+ Картинка" Command="{Binding AddEmptyImagePartCommand}" Padding="10,4"
+                ToolTip.Tip="Добавить иконку для пустого состояния" />
+        <Button Content="Удалить" Command="{Binding DeleteSelectedInnerPartCommand}" Padding="10,4"
+                IsEnabled="{Binding CanDeleteSelectedInnerPart}" />
+      </StackPanel>
+      <TextBlock Text="{Binding IsolationModeHint}" Opacity="0.7" FontSize="12"
+                 IsVisible="{Binding IsEditingAddonsKitchen}" />
       <TextBlock Text="{Binding StatusMessage}" Opacity="0.7" />
     </StackPanel>
 
-    <Border DockPanel.Dock="Left" Width="200" Margin="0,12,8,0" Classes="app-card" Padding="12">
-      <StackPanel Spacing="6">
-        <TextBlock Text="Переменные" Classes="section-title" />
-        <ListBox ItemsSource="{Binding VariableDefinitions}" MinHeight="120" MaxHeight="320">
-          <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="vm:TemplateVariableItemViewModel">
-              <Button Content="{Binding DisplayName}" Command="{Binding InsertCommand}"
-                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="8,4"
-                      ToolTip.Tip="{Binding Key}" />
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
-      </StackPanel>
+    <Border DockPanel.Dock="Left" Width="220" Margin="0,12,8,0" Classes="app-card" Padding="12">
+      <Panel>
+        <StackPanel Spacing="6" IsVisible="{Binding ShowOuterToolbar}">
+          <TextBlock Text="Переменные" Classes="section-title" />
+          <ListBox ItemsSource="{Binding VariableDefinitions}" MinHeight="120" MaxHeight="320">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:TemplateVariableItemViewModel">
+                <Button Content="{Binding DisplayName}" Command="{Binding InsertCommand}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="8,4"
+                        ToolTip.Tip="{Binding Key}" />
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </StackPanel>
+        <StackPanel Spacing="6" IsVisible="{Binding IsEditingAddonsKitchen}">
+          <TextBlock Text="Слои блока" Classes="section-title" />
+          <TextBlock Text="{Binding IsolationModeHint}" Opacity="0.55" FontSize="11" TextWrapping="Wrap" />
+          <ListBox ItemsSource="{Binding InnerParts}"
+                   SelectedItem="{Binding SelectedInnerPart}"
+                   MinHeight="200" MaxHeight="420">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:AddonsKitchenPartViewModel">
+                <Border Padding="6,4" CornerRadius="4"
+                        Background="{Binding RoleFillBrush}"
+                        Opacity="{Binding LayerOpacity}">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Border Width="10" Height="10" CornerRadius="2" Background="{Binding RoleBrush}"
+                            VerticalAlignment="Center" />
+                    <StackPanel>
+                      <TextBlock Text="{Binding DisplayName}" FontSize="12" />
+                      <TextBlock Text="{Binding LayerHint}" FontSize="10" Opacity="0.65" />
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </StackPanel>
+      </Panel>
     </Border>
 
     <Border DockPanel.Dock="Right" Width="320" Margin="12,12,0,0" Classes="app-card" Padding="14">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="6" IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <Panel>
+          <StackPanel Spacing="6"
+                      IsVisible="{Binding IsEditingAddonsKitchen}">
+            <TextBlock Text="Свойства части" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding SelectedInnerPart.DisplayName}" Opacity="0.7"
+                       IsVisible="{Binding SelectedInnerPart, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            <StackPanel Spacing="6"
+                        IsVisible="{Binding SelectedInnerPart, Converter={x:Static ObjectConverters.IsNotNull}}">
+              <CheckBox Content="Видимо" IsChecked="{Binding SelectedInnerPart.Visible}" />
+              <TextBlock Text="Текст" Opacity="0.7" FontSize="12"
+                         IsVisible="{Binding SelectedInnerPart.ShowsEditableContent}" />
+              <TextBox Text="{Binding SelectedInnerPart.Content}" Height="28" MinHeight="28" Padding="8,2"
+                       IsVisible="{Binding SelectedInnerPart.ShowsEditableContent}"
+                       Watermark="Текст" />
+              <TextBlock Text="Показывается только когда в заказе нет добавок."
+                         Opacity="0.55" FontSize="11" TextWrapping="Wrap"
+                         IsVisible="{Binding SelectedInnerPart.IsEmptyPart}" />
+              <StackPanel Spacing="6" IsVisible="{Binding SelectedInnerPart.ShowsImagePicker}" Margin="0,4,0,0">
+                <TextBlock Text="Иконка" Opacity="0.7" FontSize="12" />
+                <ComboBox ItemsSource="{Binding IconKeys}"
+                          SelectedItem="{Binding SelectedInnerPart.ImagePath}"
+                          MinHeight="32" HorizontalAlignment="Stretch"
+                          PlaceholderText="выберите…" />
+                <Button Content="Импорт…" Command="{Binding ImportTemplateIconCommand}" Padding="10,4"
+                        HorizontalAlignment="Left" />
+              </StackPanel>
+              <TextBlock Text="Перемещение (X / Y), мм" Opacity="0.7" FontSize="12" Margin="0,6,0,0" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <NumericUpDown Value="{Binding SelectedInnerPart.XMm}" Minimum="0" Maximum="500" Increment="0.5"
+                               FormatString="0.##" ToolTip.Tip="X относительно блока / строки" />
+                <NumericUpDown Value="{Binding SelectedInnerPart.YMm}" Minimum="0" Maximum="500" Increment="0.5"
+                               FormatString="0.##" ToolTip.Tip="Y относительно блока / строки" />
+              </StackPanel>
+              <TextBlock Text="Размер (Ш × В), мм" Opacity="0.7" FontSize="12" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <NumericUpDown Value="{Binding SelectedInnerPart.WidthMm}" Minimum="0.5" Maximum="500" Increment="0.5"
+                               FormatString="0.##" />
+                <NumericUpDown Value="{Binding SelectedInnerPart.HeightMm}" Minimum="0.1" Maximum="500" Increment="0.5"
+                               FormatString="0.##" />
+              </StackPanel>
+              <StackPanel Spacing="6" IsVisible="{Binding SelectedInnerPart.IsTextPart}">
+                <TextBlock Text="Шрифт" Opacity="0.7" FontSize="12" Margin="0,6,0,0" />
+                <ComboBox ItemsSource="{Binding AvailableFontFamilies}"
+                          SelectedItem="{Binding SelectedInnerPart.FontFamily}"
+                          MinHeight="32" HorizontalAlignment="Stretch" />
+                <TextBlock Text="Размер шрифта, pt" Opacity="0.7" FontSize="12" />
+                <NumericUpDown Value="{Binding SelectedInnerPart.FontSizePt}" Minimum="4" Maximum="120"
+                               Increment="1" FormatString="0.##" HorizontalAlignment="Left" />
+                <CheckBox Content="Жирный" IsChecked="{Binding SelectedInnerPart.IsBold}" />
+                <CheckBox Content="Белый цвет" IsChecked="{Binding SelectedInnerPart.Invert}" />
+                <TextBlock Text="Выравнивание текста" Opacity="0.7" FontSize="12" />
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <Button Command="{Binding AlignLeftCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="По левому краю">
+                    <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignLeft}" />
+                  </Button>
+                  <Button Command="{Binding AlignCenterHorizontalCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="По центру">
+                    <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignCenter}" />
+                  </Button>
+                  <Button Command="{Binding AlignRightCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="По правому краю">
+                    <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignRight}" />
+                  </Button>
+                  <Button Command="{Binding AlignTopCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="Сверху">
+                    <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignTop}" />
+                  </Button>
+                  <Button Command="{Binding AlignCenterVerticalCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="Посередине">
+                    <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignMiddle}" />
+                  </Button>
+                  <Button Command="{Binding AlignBottomCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="Снизу">
+                    <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignBottom}" />
+                  </Button>
+                </StackPanel>
+              </StackPanel>
+              <StackPanel Spacing="6" IsVisible="{Binding SelectedInnerPart.IsLinePart}" Margin="0,6,0,0">
+                <TextBlock Text="Толщина линии, мм" Opacity="0.7" FontSize="12" />
+                <NumericUpDown Value="{Binding SelectedInnerPart.StrokeThickness}" Minimum="0.1" Maximum="5"
+                               Increment="0.05" FormatString="0.##" HorizontalAlignment="Left" />
+                <CheckBox Content="Пунктир" IsChecked="{Binding SelectedInnerPart.Dashed}" />
+                <CheckBox Content="Белый цвет" IsChecked="{Binding SelectedInnerPart.Invert}" />
+              </StackPanel>
+              <TextBlock Text="Иконка и текст — шаблон одной строки; при печати повторяется для каждой добавки."
+                         Opacity="0.55" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0"
+                         IsVisible="{Binding SelectedInnerPart.IsRowRelative}" />
+            </StackPanel>
+            <TextBlock Text="Выберите часть на холсте (заголовок, иконка, текст, линии)."
+                       Opacity="0.55" FontSize="12" TextWrapping="Wrap"
+                       IsVisible="{Binding HasSelectedInnerPart, Converter={x:Static BoolConverters.Not}}" />
+          </StackPanel>
+
+          <StackPanel Spacing="6"
+                      IsVisible="{Binding ShowOuterToolbar}">
+            <StackPanel Spacing="6" IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
           <TextBlock Text="Свойства" FontWeight="SemiBold" />
           <TextBlock Text="(несколько выбрано)" Opacity="0.6" IsVisible="{Binding HasMultiSelection}" />
 
@@ -147,33 +318,33 @@
                    IsVisible="{Binding Selected.ShowsVariablePicker}"
                    Height="28" MinHeight="28" Padding="8,2" Margin="0,4,0,0"
                    Watermark="или введите ключ вручную" />
-          <TextBlock Text="Добавки (кухня) рисуются списком с иконками — смотрите «Превью печати»."
+          <TextBlock Text="Добавки (кухня): двойной клик по блоку — редактировать раскладку внутри. Превью печати показывает итог."
                      Opacity="0.55" FontSize="11" TextWrapping="Wrap"
                      IsVisible="{Binding Selected.IsAddonsKitchen}" />
 
           <TextBlock Text="Перемещение (X / Y), мм" Opacity="0.7" FontSize="12" Margin="0,6,0,0" />
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <controls:PlusMinusNumeric Value="{Binding Selected.XMm}" Increment="0.5" FormatString="0.##"
-                                       FieldWidth="56" ToolTip.Tip="Позиция X" />
-            <controls:PlusMinusNumeric Value="{Binding Selected.YMm}" Increment="0.5" FormatString="0.##"
-                                       FieldWidth="56" ToolTip.Tip="Позиция Y" />
+            <NumericUpDown Value="{Binding Selected.XMm}" Minimum="0" Maximum="500" Increment="0.5"
+                           FormatString="0.##" ToolTip.Tip="Позиция X" />
+            <NumericUpDown Value="{Binding Selected.YMm}" Minimum="0" Maximum="500" Increment="0.5"
+                           FormatString="0.##" ToolTip.Tip="Позиция Y" />
           </StackPanel>
 
           <TextBlock Text="Размер (Ш × В), мм" Opacity="0.7" FontSize="12" />
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <controls:PlusMinusNumeric Value="{Binding Selected.WidthMm}"
-                                       Minimum="{Binding Selected.SizeMinimumMm}" Increment="0.5"
-                                       FormatString="0.##" FieldWidth="56" ToolTip.Tip="Ширина" />
-            <controls:PlusMinusNumeric Value="{Binding Selected.HeightMm}"
-                                       Minimum="{Binding Selected.SizeMinimumMm}" Increment="0.5"
-                                       FormatString="0.##" FieldWidth="56"
-                                       ToolTip.Tip="Высота (для линии 0 = горизонтальная)" />
+            <NumericUpDown Value="{Binding Selected.WidthMm}"
+                           Minimum="{Binding Selected.SizeMinimumMm}" Maximum="500" Increment="0.5"
+                           FormatString="0.##" ToolTip.Tip="Ширина" />
+            <NumericUpDown Value="{Binding Selected.HeightMm}"
+                           Minimum="{Binding Selected.SizeMinimumMm}" Maximum="500" Increment="0.5"
+                           FormatString="0.##"
+                           ToolTip.Tip="Высота (для линии 0 = горизонтальная)" />
           </StackPanel>
 
           <TextBlock Text="Поворот, °" Opacity="0.7" FontSize="12" />
-          <controls:PlusMinusNumeric Value="{Binding Selected.Rotation}" Minimum="-360" Maximum="360"
-                                     Increment="1" FormatString="0.#" FieldWidth="72"
-                                     HorizontalAlignment="Left" />
+          <NumericUpDown Value="{Binding Selected.Rotation}" Minimum="-360" Maximum="360"
+                         Increment="1" FormatString="0.#"
+                         HorizontalAlignment="Left" />
 
           <StackPanel Spacing="6" IsVisible="{Binding Selected.IsText}">
             <TextBlock Text="Шрифт" Opacity="0.7" FontSize="12" Margin="0,6,0,0" />
@@ -184,30 +355,44 @@
                       ToolTip.Tip="Семейство шрифта" />
 
             <TextBlock Text="Размер шрифта, pt" Opacity="0.7" FontSize="12" />
-            <controls:PlusMinusNumeric Value="{Binding Selected.FontSizePt}" Minimum="4" Maximum="120"
-                                       Increment="1" FormatString="0.##" FieldWidth="72"
-                                       HorizontalAlignment="Left" />
+            <NumericUpDown Value="{Binding Selected.FontSizePt}" Minimum="4" Maximum="120"
+                           Increment="1" FormatString="0.##"
+                           HorizontalAlignment="Left" />
 
             <CheckBox Content="Жирный" IsChecked="{Binding Selected.IsBold}" />
             <CheckBox Content="Белый текст (на тёмном фоне)" IsChecked="{Binding Selected.Invert}"
                       ToolTip.Tip="Как номер заказа на чёрной шапке кухонного чека" />
 
-            <TextBlock Text="Выравнивание текста в блоке" Opacity="0.7" FontSize="12" />
-            <StackPanel Orientation="Horizontal" Spacing="4">
-              <Button Content="←" Command="{Binding AlignLeftCommand}" MinWidth="32" ToolTip.Tip="По левому краю" />
-              <Button Content="↔" Command="{Binding AlignCenterHorizontalCommand}" MinWidth="32" ToolTip.Tip="По центру" />
-              <Button Content="→" Command="{Binding AlignRightCommand}" MinWidth="32" ToolTip.Tip="По правому краю" />
-              <Button Content="↑" Command="{Binding AlignTopCommand}" MinWidth="32" ToolTip.Tip="Сверху" />
-              <Button Content="↕" Command="{Binding AlignCenterVerticalCommand}" MinWidth="32" ToolTip.Tip="Посередине" />
-              <Button Content="↓" Command="{Binding AlignBottomCommand}" MinWidth="32" ToolTip.Tip="Снизу" />
+            <TextBlock Text="Выравнивание текста в блоке" Opacity="0.7" FontSize="12"
+                       IsVisible="{Binding Selected.IsAddonsKitchen, Converter={x:Static BoolConverters.Not}}" />
+            <StackPanel Orientation="Horizontal" Spacing="4"
+                        IsVisible="{Binding Selected.IsAddonsKitchen, Converter={x:Static BoolConverters.Not}}">
+              <Button Command="{Binding AlignLeftCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="По левому краю">
+                <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignLeft}" />
+              </Button>
+              <Button Command="{Binding AlignCenterHorizontalCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="По центру">
+                <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignCenter}" />
+              </Button>
+              <Button Command="{Binding AlignRightCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="По правому краю">
+                <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignRight}" />
+              </Button>
+              <Button Command="{Binding AlignTopCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="Сверху">
+                <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignTop}" />
+              </Button>
+              <Button Command="{Binding AlignCenterVerticalCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="Посередине">
+                <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignMiddle}" />
+              </Button>
+              <Button Command="{Binding AlignBottomCommand}" MinWidth="32" Height="28" Padding="6,4" ToolTip.Tip="Снизу">
+                <Path Classes="app-icon-sm" Data="{x:Static ui:AppIcons.AlignBottom}" />
+              </Button>
             </StackPanel>
           </StackPanel>
 
           <StackPanel Spacing="6" IsVisible="{Binding Selected.IsShape}" Margin="0,6,0,0">
             <TextBlock Text="Обводка, мм" Opacity="0.7" FontSize="12" />
-            <controls:PlusMinusNumeric Value="{Binding Selected.StrokeThickness}" Minimum="0.1" Maximum="5"
-                                       Increment="0.05" FormatString="0.##" FieldWidth="72"
-                                       HorizontalAlignment="Left" />
+            <NumericUpDown Value="{Binding Selected.StrokeThickness}" Minimum="0.1" Maximum="5"
+                           Increment="0.05" FormatString="0.##"
+                           HorizontalAlignment="Left" />
             <CheckBox Content="Пунктир" IsChecked="{Binding Selected.Dashed}"
                       IsVisible="{Binding Selected.IsLine}"
                       ToolTip.Tip="Пунктирная линия (как на маркировке)" />
@@ -217,10 +402,10 @@
                       ToolTip.Tip="Белая заливка/обводка или белая линия" />
             <TextBlock Text="Скругление углов, мм" Opacity="0.7" FontSize="12"
                        IsVisible="{Binding Selected.IsRectangleShape}" />
-            <controls:PlusMinusNumeric Value="{Binding Selected.CornerRadiusMm}" Minimum="0" Maximum="20"
-                                       Increment="0.5" FormatString="0.##" FieldWidth="72"
-                                       HorizontalAlignment="Left"
-                                       IsVisible="{Binding Selected.IsRectangleShape}" />
+            <NumericUpDown Value="{Binding Selected.CornerRadiusMm}" Minimum="0" Maximum="20"
+                           Increment="0.5" FormatString="0.##"
+                           HorizontalAlignment="Left"
+                           IsVisible="{Binding Selected.IsRectangleShape}" />
             <TextBlock Text="Для горизонтальной линии высота = 0 (не крутите поворот)."
                        Opacity="0.55" FontSize="11" TextWrapping="Wrap"
                        IsVisible="{Binding Selected.IsLine}" />
@@ -247,7 +432,9 @@
           </StackPanel>
 
           <CheckBox Content="Замок (не двигать)" IsChecked="{Binding Selected.IsLocked}" Margin="0,8,0,0" />
-        </StackPanel>
+            </StackPanel>
+          </StackPanel>
+        </Panel>
       </ScrollViewer>
     </Border>
 
@@ -269,7 +456,9 @@
                  IsVisible="{Binding IsPreviewMode}"
                  IsHitTestVisible="False" />
           <ItemsControl ItemsSource="{Binding Elements}" x:Name="DesignSurface"
-                        IsVisible="{Binding IsDesignMode}">
+                        IsVisible="{Binding IsDesignMode}"
+                        Opacity="{Binding OuterCanvasOpacity}"
+                        IsHitTestVisible="{Binding ShowOuterToolbar}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <Canvas />
@@ -286,7 +475,8 @@
                 <!-- Hit box can be larger than geom; only the inner border rotates (line midpoint = center). -->
                 <Panel Width="{Binding HitWidthPx}" Height="{Binding HitHeightPx}"
                        Background="Transparent"
-                       Tag="{Binding}" PointerPressed="OnElementPointerPressed">
+                       Tag="{Binding}" PointerPressed="OnElementPointerPressed"
+                       DoubleTapped="OnElementDoubleTapped">
                   <Border Width="{Binding WidthPx}" Height="{Binding HeightPx}"
                           HorizontalAlignment="Left" VerticalAlignment="Top"
                           Classes.selected="{Binding IsSelected}" Classes.overflow="{Binding IsOverflow}"
@@ -356,6 +546,85 @@
                     </Panel>
                   </Border>
                 </Panel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <!-- Isolation frame around the edited AddonsKitchen block -->
+          <Canvas IsVisible="{Binding IsEditingAddonsKitchen}" IsHitTestVisible="False">
+            <Border Canvas.Left="{Binding IsolationFrameLeftPx}"
+                    Canvas.Top="{Binding IsolationFrameTopPx}"
+                    Width="{Binding IsolationFrameWidthPx}"
+                    Height="{Binding IsolationFrameHeightPx}"
+                    BorderBrush="#FFD69E2E"
+                    BorderThickness="2"
+                    Background="#22F6E05E"
+                    CornerRadius="2" />
+          </Canvas>
+          <ItemsControl ItemsSource="{Binding InnerParts}"
+                        IsVisible="{Binding IsEditingAddonsKitchen}"
+                        IsHitTestVisible="{Binding IsEditingAddonsKitchen}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <Canvas />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.Styles>
+              <Style Selector="ItemsControl > ContentPresenter">
+                <Setter Property="Canvas.Left" Value="{Binding LeftPx}" />
+                <Setter Property="Canvas.Top" Value="{Binding TopPx}" />
+                <Setter Property="IsVisible" Value="{Binding IsActiveInPreview}" />
+              </Style>
+            </ItemsControl.Styles>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:AddonsKitchenPartViewModel">
+                <Border Width="{Binding WidthPx}" Height="{Binding HeightPx}"
+                        Background="{Binding RoleFillBrush}"
+                        BorderBrush="{Binding RoleBrush}" BorderThickness="1.5"
+                        Classes.selected="{Binding IsSelected}"
+                        Classes.line="{Binding IsLinePart}"
+                        Tag="{Binding}"
+                        PointerPressed="OnInnerPartPointerPressed"
+                        ToolTip.Tip="{Binding DisplayName}">
+                  <Border.Styles>
+                    <Style Selector="Border.selected">
+                      <Setter Property="BorderThickness" Value="2.5" />
+                    </Style>
+                    <Style Selector="Border.line">
+                      <Setter Property="MinHeight" Value="6" />
+                    </Style>
+                  </Border.Styles>
+                  <Grid>
+                    <TextBlock Text="{Binding PreviewLabel}"
+                               FontSize="{Binding FontSizePx}"
+                               FontFamily="{Binding FontFamily}"
+                               Classes.bold="{Binding IsBold}"
+                               IsVisible="{Binding IsTextPart}"
+                               TextWrapping="Wrap"
+                               TextAlignment="{Binding PreviewTextAlignment}"
+                               HorizontalAlignment="{Binding PreviewHorizontalAlignment}"
+                               VerticalAlignment="{Binding PreviewVerticalAlignment}"
+                               Margin="3"
+                               IsHitTestVisible="False">
+                      <TextBlock.Styles>
+                        <Style Selector="TextBlock.bold">
+                          <Setter Property="FontWeight" Value="Bold" />
+                        </Style>
+                      </TextBlock.Styles>
+                    </TextBlock>
+                    <TextBlock Text="{Binding PreviewLabel}"
+                               FontSize="11" Opacity="0.8"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               IsVisible="{Binding IsIconPart}"
+                               IsHitTestVisible="False" />
+                    <Border Background="#CCFFFFFF" Padding="3,1" CornerRadius="2"
+                            HorizontalAlignment="Left" VerticalAlignment="Top"
+                            Margin="2" IsHitTestVisible="False"
+                            IsVisible="{Binding IsSelected}">
+                      <TextBlock Text="{Binding DisplayName}" FontSize="9"
+                                 Foreground="{Binding RoleBrush}" />
+                    </Border>
+                  </Grid>
+                </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>

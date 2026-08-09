@@ -5,55 +5,86 @@
   <title>LabelPrint Bridge</title>
   <style>
     body {
-      font-family: "Segoe UI", system-ui, sans-serif;
       margin: 0;
-      padding: 12px;
-      width: 340px;
-      color: #1a1a1a;
-      background: #f7f5f2;
-    }
-    h1 { font-size: 14px; margin: 0 0 8px; }
-    .status {
+      width: 320px;
+      min-height: 280px;
+      padding: 28px 20px 24px;
+      box-sizing: border-box;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      color: #111;
       background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      padding: 10px;
+      text-align: center;
+    }
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .ver {
+      margin: 6px 0 22px;
       font-size: 13px;
+      color: #9a9a9a;
+    }
+    .hint {
+      margin: 0 auto 22px;
+      max-width: 260px;
+      font-size: 14px;
+      line-height: 1.35;
+      color: #222;
+    }
+    .preview {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      background: #2a2a2a;
+      color: #fff;
+      user-select: none;
+    }
+    .preview__icon {
+      width: 24px;
+      height: 24px;
+      color: #e74c3c;
+    }
+    .preview.ok .preview__icon {
+      color: #6ac579;
+    }
+    .preview__icon svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      fill: currentColor;
+    }
+    .preview__label {
+      margin-top: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    .foot {
+      margin-top: 22px;
+      font-size: 11px;
+      color: #999;
       line-height: 1.35;
     }
-    .err { color: #a32020; margin-top: 6px; font-size: 12px; word-break: break-word; }
-    .dbg { margin-top: 6px; font-size: 11px; opacity: 0.75; word-break: break-all; }
-    .row { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
-    label { font-size: 13px; }
-    button {
-      cursor: pointer;
-      border: 1px solid #bbb;
-      background: #fff;
-      border-radius: 4px;
-      padding: 6px 10px;
-      font-size: 12px;
-    }
-    button.primary { background: #1f4b3a; color: #fff; border-color: #1f4b3a; }
-    .meta { margin-top: 8px; font-size: 11px; opacity: 0.7; }
   </style>
 </head>
 <body>
-  <h1>LabelPrint ← FrontPad <span style="opacity:.5">v1.3.15</span></h1>
-  <div class="status" id="status">Загрузка…</div>
-  <div class="err" id="error"></div>
-  <div class="dbg" id="debug"></div>
-  <div class="row">
-    <label><input type="checkbox" id="enabled" /> Мост включён</label>
+  <h1>LabelPrint.Bridge</h1>
+  <div class="ver" id="version">Версия …</div>
+  <p class="hint">
+    Для подключения к LabelPrint<br />
+    нажмите в программе Frontpad кнопку «LP»
+  </p>
+  <div class="preview" id="preview" title="Кнопка LP на странице FrontPad">
+    <div class="preview__icon" id="previewIcon" aria-hidden="true"></div>
+    <div class="preview__label">LP</div>
   </div>
-  <div class="row">
-    <label><input type="checkbox" id="darkTheme" /> Тёмная тема FrontPad</label>
-  </div>
-  <div class="row">
-    <button class="primary" id="options">Настройки</button>
-    <button id="test">Тест webhook</button>
-    <button id="refresh">Обновить</button>
-  </div>
-  <div class="meta" id="meta"></div>
+  <div class="foot" id="foot"></div>
   <script src="popup.js"></script>
 </body>
 </html>

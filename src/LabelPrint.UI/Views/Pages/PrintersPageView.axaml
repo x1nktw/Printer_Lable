@@ -52,12 +52,12 @@
             <WrapPanel>
               <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,16,8">
                 <NumericUpDown Value="{Binding EditPaperWidthMm}" Minimum="10" Maximum="300"
-                               Width="120" MinWidth="100" FormatString="0.#" Increment="1" />
+                               FormatString="0.#" Increment="1" />
                 <TextBlock Text="мм ширина ленты" VerticalAlignment="Center" Classes="page-subtitle" />
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
                 <NumericUpDown Value="{Binding EditDpi}" Minimum="72" Maximum="600"
-                               Width="100" MinWidth="80" Increment="1" />
+                               Increment="1" />
                 <TextBlock Text="DPI" VerticalAlignment="Center" Classes="page-subtitle" />
               </StackPanel>
             </WrapPanel>
@@ -68,12 +68,12 @@
             <WrapPanel>
               <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,16,8">
                 <NumericUpDown Value="{Binding EditPrintOffsetXMm}" Minimum="-20" Maximum="20"
-                               Width="100" MinWidth="80" FormatString="0.#" Increment="0.5" />
+                               FormatString="0.#" Increment="0.5" />
                 <TextBlock Text="смещ. X мм" VerticalAlignment="Center" Classes="page-subtitle" />
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
                 <NumericUpDown Value="{Binding EditPrintOffsetYMm}" Minimum="-20" Maximum="20"
-                               Width="100" MinWidth="80" FormatString="0.#" Increment="0.5" />
+                               FormatString="0.#" Increment="0.5" />
                 <TextBlock Text="смещ. Y мм" VerticalAlignment="Center" Classes="page-subtitle" />
               </StackPanel>
             </WrapPanel>

@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using LabelPrint.Application.Abstractions.Services;
+using LabelPrint.Application.Templates;
 using LabelPrint.Domain.Enums;
 using LabelPrint.Domain.Templates;
 using LabelPrint.Plugins.Abstractions.Printing;
@@ -125,8 +126,31 @@ public sealed class SkiaLabelRenderService : ILabelRenderService
             .Where(a => !string.IsNullOrWhiteSpace(a)
                         && !a.StartsWith("ДОБАВКИ", StringComparison.OrdinalIgnoreCase))
             .ToList();
+
+        var elementFont = element.Font ?? new TemplateFont { Family = "Inter", SizePt = 8, Bold = true };
+        var layout = AddonsKitchenLayoutDefaults.Resolve(
+            element.AddonsKitchen,
+            elementFont,
+            width / (dpi / 25.4f));
+
+        canvas.Save();
+        canvas.ClipRect(new SKRect(x, y, x + width, y + height));
+
         if (addons.Count == 0)
         {
+            foreach (var part in layout.EmptyElements.Where(p => p.Visible))
+            {
+                if (AddonsKitchenLayoutDefaults.IsImagePart(part))
+                {
+                    DrawAddonsKitchenImage(canvas, part, x, y, dpi);
+                }
+                else
+                {
+                    DrawAddonsKitchenText(canvas, part, element, x, y, dpi);
+                }
+            }
+
+            canvas.Restore();
             return;
         }
 
@@ -138,41 +162,30 @@ public sealed class SkiaLabelRenderService : ILabelRenderService
                 .Select(s => s.Trim())
                 .ToArray();
 
-        var font = element.Font ?? new TemplateFont { Family = "Inter", SizePt = 8, Bold = true };
-        var typeface = LabelAssets.ResolveTypeface(font.Family, font.Bold);
-        var titleSize = (float)(Math.Max(8, font.SizePt) * dpi / 72d);
-        var rowSize = (float)(Math.Max(7, font.SizePt - 0.5) * dpi / 72d);
-        using var titleFont = new SKFont(typeface, titleSize);
-        using var rowFont = new SKFont(typeface, rowSize);
-        using var paint = new SKPaint
-        {
-            Color = element.Invert ? SKColors.White : SKColors.Black,
-            IsAntialias = true
-        };
-
-        var cursorY = y + titleSize;
-        canvas.DrawText("ДОБАВКИ:", x, cursorY, SKTextAlign.Left, titleFont, paint);
-        cursorY += titleSize * 0.35f;
-
-        using (var linePaint = new SKPaint
-        {
-            Color = paint.Color,
-            IsAntialias = true,
-            StrokeWidth = Math.Max(1f, (float)(0.35 * dpi / 25.4)),
-            Style = SKPaintStyle.Stroke
-        })
-        {
-            canvas.DrawLine(x, cursorY, x + width, cursorY, linePaint);
-        }
-
-        cursorY += rowSize * 0.55f;
-        var iconSize = MmToPx(3.2, dpi);
-        var rowHeight = Math.Max(iconSize + 2, rowSize * 1.55f);
         var bottom = y + height;
 
+        if (layout.Title is { Visible: true } title)
+        {
+            DrawAddonsKitchenText(canvas, title, element, x, y, dpi);
+        }
+
+        if (layout.Underline is { Visible: true } underline)
+        {
+            DrawAddonsKitchenLine(canvas, underline, element, x, y, dpi);
+        }
+
+        var stepMm = layout.RowHeightMm + layout.RowGapMm;
         for (var i = 0; i < addons.Count; i++)
         {
-            if (cursorY + rowHeight > bottom)
+            var rowOriginYMm = layout.RowsOriginYMm + i * stepMm;
+            var rowOriginY = y + MmToPx(rowOriginYMm, dpi);
+            if (rowOriginY >= bottom)
+            {
+                break;
+            }
+
+            var rowBottom = rowOriginY + MmToPx(layout.RowHeightMm, dpi);
+            if (rowBottom > bottom + 0.5f && i > 0)
             {
                 break;
             }
@@ -180,37 +193,203 @@ public sealed class SkiaLabelRenderService : ILabelRenderService
             var addon = addons[i];
             var iconKey = i < iconKeys.Length && !string.IsNullOrWhiteSpace(iconKeys[i])
                 ? iconKeys[i]
-                : LabelAssets.ResolveAddonIconKey(addon);
-            using var icon = LabelAssets.TryLoadIcon(iconKey);
-            if (icon is not null)
-            {
-                canvas.DrawBitmap(icon, new SKRect(x, cursorY, x + iconSize, cursorY + iconSize));
-            }
+                : string.Empty;
 
-            var textX = x + iconSize + MmToPx(1.2, dpi);
-            var textWidth = Math.Max(1f, width - (textX - x));
-            var lines = WrapText(addon, rowFont, textWidth);
-            var textY = cursorY + rowSize;
-            foreach (var line in lines.Take(2))
+            if (layout.Icon is { Visible: true } iconPart)
             {
-                canvas.DrawText(line, textX, textY, SKTextAlign.Left, rowFont, paint);
-                textY += rowSize * 1.1f;
-            }
-
-            cursorY += rowHeight;
-            if (i < addons.Count - 1 && cursorY + 2 < bottom)
-            {
-                using var dash = new SKPaint
+                var ix = x + MmToPx(iconPart.Bounds.X, dpi);
+                var iy = rowOriginY + MmToPx(iconPart.Bounds.Y, dpi);
+                var iw = MmToPx(Math.Max(0.5, iconPart.Bounds.Width), dpi);
+                var ih = MmToPx(Math.Max(0.5, iconPart.Bounds.Height), dpi);
+                using var icon = string.IsNullOrWhiteSpace(iconKey) ? null : LabelAssets.TryLoadIcon(iconKey);
+                if (icon is not null)
                 {
-                    Color = paint.Color,
-                    IsAntialias = true,
-                    StrokeWidth = Math.Max(1f, (float)(0.2 * dpi / 25.4)),
-                    PathEffect = SKPathEffect.CreateDash([5f, 4f], 0f)
-                };
-                canvas.DrawLine(x, cursorY, x + width, cursorY, dash);
-                cursorY += rowSize * 0.35f;
+                    canvas.DrawBitmap(icon, new SKRect(ix, iy, ix + iw, iy + ih));
+                }
+            }
+
+            if (layout.Text is { Visible: true } textPart)
+            {
+                DrawAddonsKitchenRowText(
+                    canvas,
+                    textPart,
+                    element,
+                    addon,
+                    x,
+                    rowOriginY,
+                    dpi);
+            }
+
+            if (i < addons.Count - 1 && layout.Separator is { Visible: true } separator)
+            {
+                var sepY = rowOriginY + MmToPx(separator.Bounds.Y, dpi);
+                if (sepY + 2 < bottom)
+                {
+                    DrawAddonsKitchenLine(canvas, separator, element, x, rowOriginY, dpi);
+                }
             }
         }
+
+        canvas.Restore();
+    }
+
+    private static void DrawAddonsKitchenImage(
+        SKCanvas canvas,
+        AddonsKitchenPart part,
+        float blockX,
+        float blockY,
+        int dpi)
+    {
+        if (string.IsNullOrWhiteSpace(part.ImagePath))
+        {
+            return;
+        }
+
+        using var icon = LabelAssets.TryLoadIcon(part.ImagePath);
+        if (icon is null)
+        {
+            return;
+        }
+
+        var ix = blockX + MmToPx(part.Bounds.X, dpi);
+        var iy = blockY + MmToPx(part.Bounds.Y, dpi);
+        var iw = MmToPx(Math.Max(0.5, part.Bounds.Width), dpi);
+        var ih = MmToPx(Math.Max(0.5, part.Bounds.Height), dpi);
+        canvas.DrawBitmap(icon, new SKRect(ix, iy, ix + iw, iy + ih));
+    }
+
+    private static void DrawAddonsKitchenText(
+        SKCanvas canvas,
+        AddonsKitchenPart part,
+        TemplateElementDocument element,
+        float blockX,
+        float blockY,
+        int dpi)
+    {
+        var fontModel = part.Font ?? element.Font ?? new TemplateFont { Family = "Inter", SizePt = 8, Bold = true };
+        var sizePt = Math.Max(4, fontModel.SizePt);
+        var typeface = LabelAssets.ResolveTypeface(fontModel.Family, fontModel.Bold);
+        var sizePx = (float)(sizePt * dpi / 72d);
+        using var skFont = new SKFont(typeface, sizePx);
+        using var paint = new SKPaint
+        {
+            Color = (part.Invert || element.Invert) ? SKColors.White : SKColors.Black,
+            IsAntialias = true
+        };
+
+        var text = part.Content ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        var boxX = blockX + MmToPx(part.Bounds.X, dpi);
+        var boxY = blockY + MmToPx(part.Bounds.Y, dpi);
+        var boxW = MmToPx(Math.Max(1, part.Bounds.Width), dpi);
+        var boxH = MmToPx(Math.Max(sizePt * 25.4 / 72.0, part.Bounds.Height), dpi);
+        var skAlign = fontModel.HorizontalAlign switch
+        {
+            TextHorizontalAlign.Center => SKTextAlign.Center,
+            TextHorizontalAlign.Right => SKTextAlign.Right,
+            _ => SKTextAlign.Left
+        };
+        var tx = skAlign switch
+        {
+            SKTextAlign.Center => boxX + boxW / 2f,
+            SKTextAlign.Right => boxX + boxW,
+            _ => boxX
+        };
+        var baseline = fontModel.VerticalAlign switch
+        {
+            TextVerticalAlign.Middle => boxY + (boxH + sizePx) / 2f,
+            TextVerticalAlign.Bottom => boxY + boxH,
+            _ => boxY + sizePx
+        };
+        canvas.DrawText(text, tx, baseline, skAlign, skFont, paint);
+    }
+
+    private static void DrawAddonsKitchenRowText(
+        SKCanvas canvas,
+        AddonsKitchenPart part,
+        TemplateElementDocument element,
+        string text,
+        float blockX,
+        float rowOriginY,
+        int dpi)
+    {
+        var fontModel = part.Font ?? element.Font ?? new TemplateFont { Family = "Inter", SizePt = 8, Bold = true };
+        var sizePt = Math.Max(4, fontModel.SizePt);
+        var typeface = LabelAssets.ResolveTypeface(fontModel.Family, fontModel.Bold);
+        var sizePx = (float)(sizePt * dpi / 72d);
+        using var skFont = new SKFont(typeface, sizePx);
+        using var paint = new SKPaint
+        {
+            Color = (part.Invert || element.Invert) ? SKColors.White : SKColors.Black,
+            IsAntialias = true
+        };
+
+        var boxX = blockX + MmToPx(part.Bounds.X, dpi);
+        var boxY = rowOriginY + MmToPx(part.Bounds.Y, dpi);
+        var boxW = MmToPx(Math.Max(1, part.Bounds.Width), dpi);
+        var boxH = MmToPx(Math.Max(sizePt * 25.4 / 72.0, part.Bounds.Height), dpi);
+        var lines = WrapText(text, skFont, boxW).Take(AddonsKitchenLayoutDefaults.MaxLinesPerItem).ToList();
+        if (lines.Count == 0)
+        {
+            return;
+        }
+
+        var lineStep = sizePx * 1.1f;
+        var blockHeight = sizePx + (lines.Count - 1) * lineStep;
+        var startBaseline = fontModel.VerticalAlign switch
+        {
+            TextVerticalAlign.Middle => boxY + Math.Max(0f, (boxH - blockHeight) / 2f) + sizePx,
+            TextVerticalAlign.Bottom => boxY + Math.Max(0f, boxH - blockHeight) + sizePx,
+            _ => boxY + sizePx
+        };
+        var skAlign = fontModel.HorizontalAlign switch
+        {
+            TextHorizontalAlign.Center => SKTextAlign.Center,
+            TextHorizontalAlign.Right => SKTextAlign.Right,
+            _ => SKTextAlign.Left
+        };
+        var tx = skAlign switch
+        {
+            SKTextAlign.Center => boxX + boxW / 2f,
+            SKTextAlign.Right => boxX + boxW,
+            _ => boxX
+        };
+
+        var textY = startBaseline;
+        foreach (var line in lines)
+        {
+            canvas.DrawText(line, tx, textY, skAlign, skFont, paint);
+            textY += lineStep;
+        }
+    }
+
+    private static void DrawAddonsKitchenLine(
+        SKCanvas canvas,
+        AddonsKitchenPart part,
+        TemplateElementDocument element,
+        float blockX,
+        float originY,
+        int dpi)
+    {
+        var color = (part.Invert || element.Invert) ? SKColors.White : SKColors.Black;
+        var stroke = Math.Max(1f, MmToPx(Math.Max(0.1, part.StrokeThickness), dpi));
+        using var paint = new SKPaint
+        {
+            Color = color,
+            IsAntialias = true,
+            StrokeWidth = stroke,
+            Style = SKPaintStyle.Stroke,
+            PathEffect = part.Dashed ? SKPathEffect.CreateDash([5f, 4f], 0f) : null
+        };
+
+        var x1 = blockX + MmToPx(part.Bounds.X, dpi);
+        var y1 = originY + MmToPx(part.Bounds.Y, dpi) + stroke * 0.5f;
+        var x2 = x1 + MmToPx(Math.Max(0.5, part.Bounds.Width), dpi);
+        canvas.DrawLine(x1, y1, x2, y1, paint);
     }
 
     private static void DrawImage(

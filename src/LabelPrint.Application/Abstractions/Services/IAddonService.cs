@@ -8,7 +8,7 @@ public sealed class AddonListItemDto
     public Guid Id { get; init; }
     public string Name { get; init; } = string.Empty;
     public string? MatchAliases { get; init; }
-    public string IconKey { get; init; } = "bullet";
+    public string IconKey { get; init; } = string.Empty;
 }
 
 /// <summary>Create/update payload for an add-on icon mapping.</summary>
@@ -16,7 +16,7 @@ public sealed class AddonUpsertDto
 {
     public string Name { get; set; } = string.Empty;
     public string? MatchAliases { get; set; }
-    public string IconKey { get; set; } = "bullet";
+    public string IconKey { get; set; } = string.Empty;
 }
 
 /// <summary>

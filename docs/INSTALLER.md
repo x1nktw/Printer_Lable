@@ -1,7 +1,9 @@
 # Installer & distribution
 
-LabelPrint Pro **1.0.1** — self-contained .NET 8 Windows x64.  
-FrontPad Bridge **1.3.15** (версия в `extensions/frontpad-bridge/manifest.json`).
+LabelPrint Pro **1.1.0** — self-contained .NET 8 Windows x64.  
+FrontPad Bridge **1.4.4** (версия в `extensions/frontpad-bridge/manifest.json`).
+
+Заметки к релизу: [RELEASE_NOTES_1.1.0.md](RELEASE_NOTES_1.1.0.md).
 
 ## GitHub Releases (recommended)
 
@@ -9,8 +11,8 @@ FrontPad Bridge **1.3.15** (версия в `extensions/frontpad-bridge/manifest
 2. Tag and push (triggers [.github/workflows/release.yml](../.github/workflows/release.yml)):
 
 ```powershell
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.1.0
+git push origin v1.1.0
 ```
 
 3. Assets on the release page:
@@ -19,8 +21,8 @@ git push origin v1.0.0
 |-------|---------|
 | `LabelPrintPro-win-Setup.exe` | **Velopack Setup** — первая установка и база для автообновлений |
 | `LabelPrintPro-win-Portable.zip` | **Portable** — распаковать и запустить установщик/ярлык Velopack |
-| `LabelPrintPro-1.0.0-full.nupkg` + `releases.win.json` | Канал автообновлений Velopack |
-| `frontpad-bridge-1.3.15.zip` | Только Chrome/Edge расширение (не путать с версией приложения) |
+| `LabelPrintPro-1.1.0-full.nupkg` + `releases.win.json` | Канал автообновлений Velopack |
+| `frontpad-bridge-1.4.4.zip` | Только Chrome/Edge расширение (не путать с версией приложения) |
 
 Имена: app = `<Version>` из `LabelPrint.UI.csproj`; Bridge = `version` из `manifest.json`.
 
@@ -48,7 +50,7 @@ vpk-app/
   config/appsettings.json
   plugins/                   # optional plugin DLLs
   extensions/
-    frontpad-bridge/         # Bridge 1.3.15 — см. INSTALL.txt
+    frontpad-bridge/         # Bridge 1.4.4 — см. INSTALL.txt
 ```
 
 После Velopack Setup приложение лежит в:
@@ -69,15 +71,15 @@ vpk-app/
 3. Bridge: `%LocalAppData%\LabelPrintPro\current\extensions\frontpad-bridge`.
 4. Optional: drop plugin DLLs into `current\plugins\` (see [README](../README.md#plugins)).
 
-### FrontPad Bridge 1.3.15 (Chrome / Edge)
+### FrontPad Bridge 1.4.4 (Chrome / Edge)
 
 Расширение уже в сборке — отдельно скачивать не обязательно (zip на релизе — для обновления только Bridge).
 
 1. Запустите LabelPrint Pro, в **Настройки → Общие** проверьте webhook (например `http://127.0.0.1:8765/`), сохраните и перезапустите приложение.
 2. Chrome: `chrome://extensions` или Edge: `edge://extensions` → **Режим разработчика**.
 3. **Загрузить распакованное** → `extensions\frontpad-bridge` из каталога **`current\`**.
-4. Откройте FrontPad заново; в popup — «Хук на странице FrontPad активен».
-5. Опционально: галочка **«Тёмная тема FrontPad»** в popup.
+4. Откройте FrontPad заново; справа вверху нажмите **LP** → **Подключить** (иконка зелёная при связи).
+5. Опционально: в окне LP включите **«Тёмная тема FrontPad»**.
 
 Краткая памятка: `extensions\frontpad-bridge\INSTALL.txt`. Подробнее: [FRONTPAD_KITCHEN.md](FRONTPAD_KITCHEN.md).
 
@@ -104,8 +106,9 @@ vpk-app/
 
 - In-app обновление работает только для копий, установленных через **Velopack Setup**.
 - Пользователям **0.8.x** на Inno Setup нужно один раз поставить новый `LabelPrintPro-win-Setup.exe`.
-- С **0.9.x** достаточно **Обновить** в приложении или новый Setup.
+- С **0.9.x** / **1.0.x** достаточно **Обновить** в приложении или новый Setup.
 - После этого обновления ставятся в один клик, даже если папка приложения была перемещена.
+- Bridge обновляется отдельно (расширение в браузере), не через Velopack.
 
 Data defaults:
 
@@ -115,16 +118,17 @@ Data defaults:
 - Backups: `%LocalAppData%\LabelPrintPro\backups\` (override in **Настройки**)
 - Prints (File): `%LocalAppData%\LabelPrintPro\prints\`
 - Orders inbox: `%LocalAppData%\LabelPrintPro\orders-inbox\`
+- Addon icons: `%LocalAppData%\LabelPrintPro\addon-icons\`
 
 ## winget (planned)
 
 ```yaml
 PackageIdentifier: LabelPrintPro.LabelPrintPro
-PackageVersion: 1.0.0
+PackageVersion: 1.1.0
 Installers:
   - Architecture: x64
     InstallerType: exe
-    InstallerUrl: https://github.com/x1nktw/Printer_Lable/releases/download/v1.0.0/LabelPrintPro-win-Setup.exe
+    InstallerUrl: https://github.com/x1nktw/Printer_Lable/releases/download/v1.1.0/LabelPrintPro-win-Setup.exe
     InstallerSha256: <sha256>
 ```
 

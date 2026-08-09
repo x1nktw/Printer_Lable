@@ -35,21 +35,36 @@ public partial class SettingsViewModel : PageViewModelBase
 
         AccentOptions = new ObservableCollection<AccentOption>(
         [
-            new("Белый", "#FFFFFF", light: true),
-            new("Жемчужный", "#F5F5F4", light: true),
-            new("Светло-серый", "#E5E7EB", light: true),
-            new("Мятный", "#D1FAE5", light: true),
-            new("Небесный", "#DBEAFE", light: true),
-            new("Лавандовый", "#EDE9FE", light: true),
-            new("Персиковый", "#FFEDD5", light: true),
             new("ChatGPT", "#10A37F"),
-            new("Синий", "#3B82F6"),
-            new("Бирюзовый", "#14B8A6"),
-            new("Оранжевый", "#F97316"),
-            new("Красный", "#EF4444"),
-            new("Фиолетовый", "#8B5CF6"),
-            new("Розовый", "#EC4899")
+            new("Изумруд", "#059669"),
+            new("Бирюза", "#0D9488"),
+            new("Небо", "#0284C7"),
+            new("Синий", "#2563EB"),
+            new("Индиго", "#4F46E5"),
+            new("Фиолетовый", "#7C3AED"),
+            new("Фуксия", "#C026D3"),
+            new("Розовый", "#DB2777"),
+            new("Алый", "#DC2626"),
+            new("Оранжевый", "#EA580C"),
+            new("Янтарный", "#D97706"),
+            new("Лайм", "#65A30D"),
+            new("Сланец", "#64748B"),
+            new("Светлый", "#F1F5F9", light: true)
         ]);
+
+        ThemeOptions =
+        [
+            new(AppTheme.Light, "Светлая"),
+            new(AppTheme.Medium, "Средняя"),
+            new(AppTheme.Dark, "Тёмная"),
+            new(AppTheme.System, "Системная"),
+            new(AppTheme.Blue, "Синяя"),
+            new(AppTheme.Forest, "Лесная"),
+            new(AppTheme.Violet, "Фиолетовая"),
+            new(AppTheme.Ocean, "Океан"),
+            new(AppTheme.Warm, "Тёплая")
+        ];
+        SyncSelectedTheme(Theme);
     }
 
     public PrintersViewModel Printers { get; }
@@ -57,10 +72,12 @@ public partial class SettingsViewModel : PageViewModelBase
     public HistoryViewModel History { get; }
     public TemplatesViewModel Templates { get; }
     public ObservableCollection<AccentOption> AccentOptions { get; }
+    public IReadOnlyList<ThemeOption> ThemeOptions { get; }
 
     [ObservableProperty] private bool _isAdministrator;
     [ObservableProperty] private int _selectedTabIndex;
     [ObservableProperty] private AppTheme _theme = AppTheme.Dark;
+    [ObservableProperty] private ThemeOption? _selectedTheme;
     [ObservableProperty] private string _accentColor = ThemeApplier.DefaultAccentHex;
     [ObservableProperty] private AccentOption? _selectedAccent;
     [ObservableProperty] private AppLanguage _language = AppLanguage.Russian;
@@ -76,6 +93,7 @@ public partial class SettingsViewModel : PageViewModelBase
     [ObservableProperty] private string? _backupPath;
     [ObservableProperty] private string _defaultBackupDirectory = string.Empty;
     private Guid? _ordersPrintTemplateId;
+    private Guid? _ordersPrintPrinterId;
     private Guid? _markingPrintTemplateId;
     [ObservableProperty] private string? _statusMessage;
     [ObservableProperty] private string _updateStatus = string.Empty;
@@ -88,7 +106,6 @@ public partial class SettingsViewModel : PageViewModelBase
     [ObservableProperty] private DateTime? _manualLabelDate = DateTime.Today;
     [ObservableProperty] private TimeSpan? _manualLabelTime = DateTime.Now.TimeOfDay;
 
-    public Array Themes { get; } = Enum.GetValues(typeof(AppTheme));
     public Array Languages { get; } = Enum.GetValues(typeof(AppLanguage));
     public Array LabelDateTimeModes { get; } = Enum.GetValues(typeof(LabelDateTimeMode));
 
@@ -107,8 +124,39 @@ public partial class SettingsViewModel : PageViewModelBase
         ThemeApplier.ApplyAccent(value);
     }
 
-    partial void OnThemeChanged(AppTheme value) =>
+    partial void OnThemeChanged(AppTheme value)
+    {
+        SyncSelectedTheme(value);
         ThemeApplier.Apply(value, AccentColor);
+    }
+
+    partial void OnSelectedThemeChanged(ThemeOption? value)
+    {
+        if (value is null || Theme == value.Theme)
+        {
+            return;
+        }
+
+        Theme = value.Theme;
+    }
+
+    private void SyncSelectedTheme(AppTheme theme)
+    {
+        ThemeOption? match = null;
+        foreach (var option in ThemeOptions)
+        {
+            if (option.Theme == theme)
+            {
+                match = option;
+                break;
+            }
+        }
+
+        if (!ReferenceEquals(SelectedTheme, match))
+        {
+            SelectedTheme = match;
+        }
+    }
 
     partial void OnSelectedAccentChanged(AccentOption? value)
     {
@@ -176,6 +224,7 @@ public partial class SettingsViewModel : PageViewModelBase
                 BackupPath = dto.BackupPath;
                 DefaultBackupDirectory = dto.DefaultBackupDirectory;
                 _ordersPrintTemplateId = dto.OrdersPrintTemplateId;
+                _ordersPrintPrinterId = dto.OrdersPrintPrinterId;
                 _markingPrintTemplateId = dto.MarkingPrintTemplateId;
                 StatusMessage = "Загружено";
                 RefreshAccentSelection();
@@ -344,6 +393,7 @@ public partial class SettingsViewModel : PageViewModelBase
             ManualLabelDateTime = new DateTimeOffset(
                 (ManualLabelDate ?? DateTime.Today).Date.Add(ManualLabelTime ?? TimeSpan.Zero)),
             OrdersPrintTemplateId = _ordersPrintTemplateId,
+            OrdersPrintPrinterId = _ordersPrintPrinterId,
             MarkingPrintTemplateId = _markingPrintTemplateId,
             DatabasePath = DatabasePath,
             BackupPath = BackupPath,

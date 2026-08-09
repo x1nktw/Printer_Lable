@@ -1,7 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:LabelPrint.UI.ViewModels"
-             xmlns:controls="using:LabelPrint.UI.Controls"
              xmlns:svc="using:LabelPrint.Application.Abstractions.Services"
              xmlns:ui="using:LabelPrint.UI"
              x:Class="LabelPrint.UI.Views.Pages.TemplatesPageView"
@@ -25,16 +24,16 @@
         <StackPanel Orientation="Horizontal" Spacing="8">
           <TextBox Watermark="Название" Text="{Binding NewName}" Width="200" />
           <TextBlock Text="Размер" VerticalAlignment="Center" Classes="page-subtitle" />
-          <controls:PlusMinusNumeric Value="{Binding NewWidth}" Minimum="10" Maximum="200"
-                                     Increment="1" FormatString="0.#" FieldWidth="56"
-                                     ToolTip.Tip="Ширина, мм" />
+          <NumericUpDown Value="{Binding NewWidth}" Minimum="10" Maximum="200"
+                         Increment="1" FormatString="0.#"
+                         ToolTip.Tip="Ширина, мм" />
           <TextBlock Text="×" VerticalAlignment="Center" Classes="page-subtitle" />
-          <controls:PlusMinusNumeric Value="{Binding NewHeight}" Minimum="10" Maximum="200"
-                                     Increment="1" FormatString="0.#" FieldWidth="56"
-                                     ToolTip.Tip="Высота, мм" />
+          <NumericUpDown Value="{Binding NewHeight}" Minimum="10" Maximum="200"
+                         Increment="1" FormatString="0.#"
+                         ToolTip.Tip="Высота, мм" />
           <TextBlock Text="мм" VerticalAlignment="Center" Classes="page-subtitle" />
           <Button Classes="accent" Command="{Binding CreateCommand}">
-            <TextBlock Text="Создать"  />
+            <TextBlock Text="Создать" />
           </Button>
         </StackPanel>
       </Border>

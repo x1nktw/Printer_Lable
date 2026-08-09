@@ -87,7 +87,11 @@ public sealed class KitchenOrderPollWorker : IAsyncDisposable
                         {
                             foreach (var orderId in sync.Value.NewOrderIds)
                             {
-                                var print = await orders.PrintAllItemsAsync(orderId, cancellationToken: cancellationToken);
+                                var print = await orders.PrintAllItemsAsync(
+                                    orderId,
+                                    printerId: settings.OrdersPrintPrinterId,
+                                    templateId: settings.OrdersPrintTemplateId,
+                                    cancellationToken: cancellationToken);
                                 if (print.IsFailure)
                                 {
                                     _logger.LogWarning("Auto-print failed for {OrderId}: {Error}", orderId, print.Error);

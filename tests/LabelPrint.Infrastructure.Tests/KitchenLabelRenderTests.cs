@@ -1,5 +1,7 @@
 using FluentAssertions;
 using LabelPrint.Application.Templates;
+using LabelPrint.Domain.Enums;
+using LabelPrint.Domain.Templates;
 using LabelPrint.Infrastructure.Printing.Rendering;
 
 namespace LabelPrint.Infrastructure.Tests;
@@ -42,6 +44,108 @@ public class KitchenLabelRenderTests
             "kitchen-check-40x58-preview.png");
         Directory.CreateDirectory(Path.GetDirectoryName(preview)!);
         await File.WriteAllBytesAsync(preview, result.Payload);
+    }
+
+    [Fact]
+    public async Task AddonsKitchen_CustomLayout_Renders_Without_Title()
+    {
+        var font = new TemplateFont { Family = "Inter", SizePt = 8, Bold = true };
+        var layout = AddonsKitchenLayoutDefaults.Create(font, 37);
+        layout.Title.Visible = false;
+        layout.Underline!.Visible = false;
+        layout.Icon.Bounds = new TemplateBounds { X = 0, Y = 0, Width = 5, Height = 5 };
+        layout.Text.Bounds = new TemplateBounds { X = 6.5, Y = 0, Width = 30, Height = 5 };
+        layout.RowHeightMm = 5.5;
+        layout.RowsOriginYMm = 1;
+
+        var document = new TemplateDocument
+        {
+            SchemaVersion = 1,
+            Name = "Addons layout",
+            Canvas = new TemplateCanvas { WidthMm = 40, HeightMm = 30, Dpi = 203 },
+            Elements =
+            [
+                new TemplateElementDocument
+                {
+                    Id = "addons",
+                    Type = TemplateElementType.Text,
+                    BindingMode = TextBindingMode.Variable,
+                    ValueBinding = "AddonsKitchen",
+                    Bounds = new TemplateBounds { X = 1.5, Y = 2, Width = 37, Height = 26 },
+                    Font = font,
+                    AddonsKitchen = layout
+                }
+            ]
+        };
+
+        var vars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["AddonsKitchen"] = "Добавить халапеньо\nДвойной сыр",
+            ["Addons"] = "Добавить халапеньо\nДвойной сыр"
+        };
+
+        var render = new SkiaLabelRenderService();
+        var custom = await render.RenderAsync(document, vars);
+        custom.Payload.Length.Should().BeGreaterThan(500);
+
+        var defaultsDoc = TemplateDocumentSerializer.Deserialize(
+            TemplateDocumentSerializer.Serialize(document));
+        defaultsDoc.Elements[0].AddonsKitchen = null;
+        var withDefaults = await render.RenderAsync(defaultsDoc, vars);
+
+        custom.Payload.Should().NotEqual(withDefaults.Payload);
+    }
+
+    [Fact]
+    public async Task AddonsKitchen_EmptyState_Renders_When_No_Addons()
+    {
+        var font = new TemplateFont { Family = "Inter", SizePt = 8, Bold = true };
+        var layout = AddonsKitchenLayoutDefaults.Create(font, 37);
+        layout.EmptyElements =
+        [
+            new AddonsKitchenPart
+            {
+                Visible = true,
+                PartType = "text",
+                Content = "Нет добавок к позиции",
+                Bounds = new TemplateBounds { X = 0, Y = 0, Width = 37, Height = 4 },
+                Font = new TemplateFont { Family = "Inter", SizePt = 8, Bold = true }
+            }
+        ];
+
+        var document = new TemplateDocument
+        {
+            SchemaVersion = 1,
+            Canvas = new TemplateCanvas { WidthMm = 40, HeightMm = 20, Dpi = 203 },
+            Elements =
+            [
+                new TemplateElementDocument
+                {
+                    Type = TemplateElementType.Text,
+                    BindingMode = TextBindingMode.Variable,
+                    ValueBinding = "AddonsKitchen",
+                    Bounds = new TemplateBounds { X = 1, Y = 1, Width = 37, Height = 16 },
+                    Font = font,
+                    AddonsKitchen = layout
+                }
+            ]
+        };
+
+        var render = new SkiaLabelRenderService();
+        var emptyVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["AddonsKitchen"] = "",
+            ["Addons"] = ""
+        };
+        var emptyResult = await render.RenderAsync(document, emptyVars);
+        emptyResult.Payload.Length.Should().BeGreaterThan(500);
+
+        var withAddons = await render.RenderAsync(document, new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["AddonsKitchen"] = "Двойной сыр",
+            ["Addons"] = "Двойной сыр"
+        });
+        emptyResult.Payload.Should().NotEqual(withAddons.Payload);
     }
 
     private static Task<string> LoadKitchenPresetJsonAsync()

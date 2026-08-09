@@ -150,7 +150,7 @@ public partial class MainViewModel : ViewModelBase
         var result = await settings.GetAsync();
         if (result.IsSuccess)
         {
-            IsDarkTheme = result.Value.Theme != AppTheme.Light;
+            IsDarkTheme = !ThemeApplier.IsLightChrome(result.Value.Theme);
             ThemeApplier.Apply(result.Value.Theme, result.Value.AccentColor);
             return;
         }

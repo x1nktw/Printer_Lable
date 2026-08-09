@@ -1,6 +1,8 @@
 using System.ComponentModel;
+using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Media;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media.Transformation;
 using Avalonia.Threading;
 using LabelPrint.UI.ViewModels;
@@ -17,6 +19,34 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         Opened += (_, _) => _pageMotionReady = true;
+        PropertyChanged += OnWindowPropertyChanged;
+    }
+
+    private void OnWindowPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == WindowStateProperty)
+        {
+            UpdateMaximizeGlyph();
+        }
+    }
+
+    private void UpdateMaximizeGlyph()
+    {
+        var maximized = WindowState == WindowState.Maximized;
+        if (MaximizeGlyph is not null)
+        {
+            MaximizeGlyph.IsVisible = !maximized;
+        }
+
+        if (RestoreGlyph is not null)
+        {
+            RestoreGlyph.IsVisible = maximized;
+        }
+
+        if (MaximizeButton is not null)
+        {
+            ToolTip.SetTip(MaximizeButton, maximized ? "Свернуть в окно" : "Развернуть");
+        }
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -57,4 +87,29 @@ public partial class MainWindow : Window
         PageHost.Opacity = 1;
         PageHost.RenderTransform = TransformOperations.Parse("none");
     }
+
+    private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            BeginMoveDrag(e);
+        }
+    }
+
+    private void OnTitleBarDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        WindowState = WindowState == WindowState.Maximized
+            ? WindowState.Normal
+            : WindowState.Maximized;
+    }
+
+    private void OnMinimizeClick(object? sender, RoutedEventArgs e) =>
+        WindowState = WindowState.Minimized;
+
+    private void OnMaximizeClick(object? sender, RoutedEventArgs e) =>
+        WindowState = WindowState == WindowState.Maximized
+            ? WindowState.Normal
+            : WindowState.Maximized;
+
+    private void OnCloseClick(object? sender, RoutedEventArgs e) => Close();
 }

@@ -1,85 +1,61 @@
 "use strict";
 
-async function load() {
-  const data = await chrome.storage.local.get({
-    enabled: true,
-    darkTheme: false,
-    lastStatus: "—",
-    lastOrderNumber: null,
-    lastError: null,
-    lastDebug: null,
-    sentCount: 0,
-    webhookUrl: "http://127.0.0.1:8765/",
-    hookSeenAt: null,
-    hookHref: null,
-    lastHeartbeatAt: null,
-    lastHeartbeatError: null
-  });
+const HEARTBEAT_FRESH_MS = 120000;
 
-  const statusEl = document.getElementById("status");
-  const errorEl = document.getElementById("error");
-  const debugEl = document.getElementById("debug");
-  const enabledEl = document.getElementById("enabled");
-  const darkThemeEl = document.getElementById("darkTheme");
-  const metaEl = document.getElementById("meta");
-  if (!statusEl || !errorEl || !debugEl || !enabledEl || !darkThemeEl || !metaEl) return;
-
-  statusEl.textContent = data.lastStatus || "—";
-  errorEl.textContent = data.lastError || data.lastHeartbeatError || "";
-  debugEl.textContent = data.lastDebug || "";
-  enabledEl.checked = !!data.enabled;
-  darkThemeEl.checked = !!data.darkTheme;
-
-  let meta = `Webhook: ${data.webhookUrl} · отправлено: ${data.sentCount || 0}`;
-  if (data.lastOrderNumber) meta += ` · последний №${data.lastOrderNumber}`;
-  if (data.lastHeartbeatAt) meta += `\nHeartbeat: ${data.lastHeartbeatAt}`;
-  else meta += `\nHeartbeat: ещё не был`;
-  if (data.hookSeenAt) meta += `\nХук FrontPad: ${data.hookSeenAt}`;
-  if (data.hookHref) meta += `\n${data.hookHref}`;
-  metaEl.textContent = meta;
+function computeConnected(data) {
+  if (!data) return false;
+  if (data.lastHeartbeatError) return false;
+  if (!data.lastHeartbeatAt) return false;
+  const age = Date.now() - new Date(data.lastHeartbeatAt).getTime();
+  return Number.isFinite(age) && age >= 0 && age <= HEARTBEAT_FRESH_MS;
 }
 
-function pingHeartbeat(thenLoad) {
+async function loadIcon() {
+  const host = document.getElementById("previewIcon");
+  if (!host) return;
   try {
-    chrome.runtime.sendMessage({ type: "ping-heartbeat" }, () => {
-      void chrome.runtime.lastError;
-      if (thenLoad) load();
-    });
+    const res = await fetch(chrome.runtime.getURL("icons/printer.svg"));
+    host.innerHTML = await res.text();
   } catch {
-    if (thenLoad) load();
+    host.textContent = "🖨";
   }
 }
 
-document.getElementById("enabled").addEventListener("change", async (e) => {
-  await chrome.storage.local.set({
-    enabled: e.target.checked,
-    lastStatus: e.target.checked ? "Мост включён" : "Пауза: мост выключен",
-    lastError: null
+async function load() {
+  const manifest = chrome.runtime.getManifest();
+  const verEl = document.getElementById("version");
+  if (verEl) verEl.textContent = "Версия " + (manifest.version || "");
+
+  const data = await chrome.storage.local.get({
+    lastHeartbeatAt: null,
+    lastHeartbeatError: null,
+    lastStatus: "",
+    webhookUrl: "http://127.0.0.1:8765/"
   });
-  pingHeartbeat(true);
-});
 
-document.getElementById("darkTheme").addEventListener("change", async (e) => {
-  await chrome.storage.local.set({ darkTheme: e.target.checked });
-});
+  const preview = document.getElementById("preview");
+  const ok = computeConnected(data);
+  if (preview) preview.classList.toggle("ok", ok);
 
-document.getElementById("options").addEventListener("click", () => {
-  chrome.runtime.openOptionsPage();
-});
+  const foot = document.getElementById("foot");
+  if (foot) {
+    foot.textContent = ok
+      ? "Соединение с LabelPrint установлено"
+      : "Нет соединения — запустите LabelPrint и нажмите LP в FrontPad";
+  }
+}
 
-document.getElementById("refresh").addEventListener("click", () => {
-  pingHeartbeat(true);
-});
-
-document.getElementById("test").addEventListener("click", () => {
-  chrome.runtime.sendMessage({ type: "test-webhook" }, () => {
-    void chrome.runtime.lastError;
-    load();
-  });
-});
-
+loadIcon();
 load();
-pingHeartbeat(true);
 chrome.storage.onChanged.addListener(() => {
   load();
 });
+
+try {
+  chrome.runtime.sendMessage({ type: "ping-heartbeat" }, () => {
+    void chrome.runtime.lastError;
+    load();
+  });
+} catch {
+  // ignore
+}

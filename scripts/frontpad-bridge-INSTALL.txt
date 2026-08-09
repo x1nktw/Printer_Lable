@@ -1,20 +1,22 @@
-LabelPrint FrontPad Bridge 1.3.15 — установка
+LabelPrint FrontPad Bridge 1.4.4 — установка
 
-1. Запустите LabelPrint Pro 1.0.0+ (должен слушать webhook, обычно http://127.0.0.1:8765/).
+1. Запустите LabelPrint Pro 1.1.0+ (должен слушать webhook, обычно http://127.0.0.1:8765/).
 2. Откройте Chrome или Edge:
    chrome://extensions
    edge://extensions
 3. Включите «Режим разработчика».
 4. «Загрузить распакованное расширение» → выберите эту папку:
    extensions\frontpad-bridge
+   (в установленной копии: …\current\extensions\frontpad-bridge).
 5. Откройте FrontPad, при необходимости перезагрузите вкладку (Ctrl+Shift+R).
-6. URL webhook: LabelPrint → Настройки → Общие.
-7. Опционально: в popup расширения включите «Тёмная тема FrontPad».
+6. Справа вверху нажмите LP → Подключить (зелёная иконка = связь есть).
+7. URL webhook: LabelPrint → Настройки → Общие (или IP/Port в окне LP).
+8. Опционально: в окне LP включите «Тёмная тема FrontPad».
 
 После обновления LabelPrint Pro или файлов расширения: на странице расширений
 нажмите «Обновить» у FrontPad Bridge (или удалите и загрузите папку снова),
 затем жёстко перезагрузите вкладку FrontPad.
 
-Отдельный архив на GitHub Releases: frontpad-bridge-1.3.15.zip
+Отдельный архив на GitHub Releases: frontpad-bridge-1.4.4.zip
 
 Подробнее: docs/FRONTPAD_KITCHEN.md и README.md в этой папке.
